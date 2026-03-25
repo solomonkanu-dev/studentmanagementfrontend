@@ -1,0 +1,44 @@
+[    8139ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[   78258ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/fees-structure:0
+[  710390ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5002/api/v1/admin/fee-analysis/by-class:0
+[  712919ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5002/api/v1/admin/fee-analysis/by-class:0
+[  787802ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/fees-structure:0
+[  799169ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/admin/fees/assign:0
+[  819045ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/fees-structure:0
+[ 1415710ms] TypeError: Cannot read properties of undefined (reading 'toLocaleString')
+    at http://localhost:3000/_next/static/chunks/_0kbhx3e._.js:813:70
+    at Array.map (<anonymous>)
+    at FeesParticularsPage (http://localhost:3000/_next/static/chunks/_0kbhx3e._.js:797:58)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9098:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10263:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10179:316)
+    at processRootScheduleInMicrotask (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10200:106)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10274:158
+[ 1423665ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[ 1432477ms] TypeError: Cannot read properties of undefined (reading 'toLocaleString')
+    at http://localhost:3000/_next/static/chunks/_0kbhx3e._.js:813:70
+    at Array.map (<anonymous>)
+    at FeesParticularsPage (http://localhost:3000/_next/static/chunks/_0kbhx3e._.js:797:58)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9098:47)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_0rpq4pf._.js:2647:64)
+[ 1551093ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1552262ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[ 5133412ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5002/api/v1/admin/fee-analysis/by-class:0
+[ 5135107ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5002/api/v1/admin/fee-analysis/by-class:0

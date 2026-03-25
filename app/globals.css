@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode (useColorMode adds .dark to <body>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f1f5f9;
+  --foreground: #1e293b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-satoshi);
+
+  /* Brand */
+  --color-primary:    #3c50e0;
+  --color-secondary:  #80caee;
+
+  /* Backgrounds */
+  --color-boxdark:    #24303f;
+  --color-boxdark-2:  #1a222c;
+  --color-whiten:     #f1f5f9;
+  --color-whiter:     #f5f7fd;
+
+  /* Borders */
+  --color-stroke:     #e2e8f0;
+  --color-strokedark: #2e3a47;
+
+  /* Text */
+  --color-body:       #64748b;
+  --color-bodydark:   #aeb7c0;
+  --color-bodydark1:  #e0e5ee;
+
+  /* Meta / status */
+  --color-meta-1:     #dc3545;
+  --color-meta-2:     #eef2ff;
+  --color-meta-3:     #10b981;
+  --color-meta-4:     #313d4a;
+  --color-meta-5:     #f43f5e;
+}
+
+@layer base {
+  body {
+    @apply bg-whiten font-sans text-base text-body antialiased;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

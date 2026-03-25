@@ -1,0 +1,7 @@
+[  119752ms] [ERROR] Failed to load resource: the server responded with a status of 409 (Conflict) @ http://localhost:5001/api/v1/attendance/mark-attendance:0
+[  149039ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5001/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[  151836ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5001/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[  176891ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5001/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[  178300ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5001/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[  189048ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/lecturer/salary?_rsc=1osvc:0
+[  189164ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/lecturer/salary:0

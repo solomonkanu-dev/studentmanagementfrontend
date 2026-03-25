@@ -1,0 +1,15 @@
+[     313ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/theme/active:0
+[     329ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[     331ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/announcements:0
+[    1337ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[    1339ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/announcements:0
+[   31345ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[   32352ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[   62361ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[   63366ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[   93373ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[   94378ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[  101408ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/announcements:0
+[  104421ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/announcements:0
+[  124385ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0
+[  125390ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5002/api/v1/notifications/unread-count:0

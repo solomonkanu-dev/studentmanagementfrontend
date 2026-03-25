@@ -1,0 +1,34 @@
+[     768ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[    1771ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[   10857ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/salary-slips:0
+[   10858ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[   10860ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/my-salary:0
+[   10862ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/summary:0
+[   18750ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/salary-slips:0
+[  326557ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[  327561ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[  424602ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[  425606ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[ 1072368ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[ 1073371ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/salary/lecturer/69c3149e756d15f960e7806c:0
+[ 1091844ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/logout:0
+[ 1098824ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1112486ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1113606ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1114758ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1137636ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1138539ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1139324ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1140206ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1158982ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1184235ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1185124ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5001/api/v1/auth/login:0
+[ 1235542ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1726296ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0

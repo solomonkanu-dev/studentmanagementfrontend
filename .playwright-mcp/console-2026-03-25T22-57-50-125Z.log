@@ -1,0 +1,22 @@
+[    1408ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[   11069ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5002/api/v1/super-admin/super-admin/login:0
+[   95958ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[   97173ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  101109ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/announcement:0
+[  102394ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/announcement:0
+[  127380ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  129121ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  159841ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  161513ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  191731ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  192950ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  226043ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  227260ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  257976ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  259170ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  289371ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  290600ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  293763ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/announcement:0
+[  322392ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  330986ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0
+[  348604ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5002/api/v1/notification/unread-count:0

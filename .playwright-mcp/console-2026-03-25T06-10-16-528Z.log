@@ -1,0 +1,3 @@
+[    3281ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5000/api/v1/attendance/report/class?classId=69c314ec756d15f960e78078&from=2026-03-25&to=2026-03-25:0
+[    4288ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5000/api/v1/attendance/report/class?classId=69c314ec756d15f960e78078&from=2026-03-25&to=2026-03-25:0
+[  121227ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5000/api/v1/attendance/report/class?classId=69c314ec756d15f960e78078&from=2026-03-25&to=2026-03-25:0
