@@ -1,0 +1,5 @@
+[    2252ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[   33446ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/attendance/subject?classId=69c314ec756d15f960e78078&date=2026-03-26:0
+[  131880ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5002/api/v1/attendance/mark-attendance:0
+[  896271ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5002/api/v1/attendance/mark-attendance:0
+[  947628ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5002/api/v1/attendance/mark-attendance:0

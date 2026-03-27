@@ -99,8 +99,13 @@ function ProfileSection({ user }: { user: ReturnType<typeof useAuth>["user"] }) 
       <CardContent>
         {/* Avatar placeholder */}
         <div className="mb-5 flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-white uppercase">
-            {user?.fullName?.charAt(0) ?? "?"}
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-bold text-white uppercase overflow-hidden">
+            {user?.profilePhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.profilePhoto} alt={user.fullName ?? ""} className="h-full w-full object-cover" />
+            ) : (
+              user?.fullName?.charAt(0) ?? "?"
+            )}
           </div>
           <div>
             <p className="text-sm font-semibold text-black dark:text-white">

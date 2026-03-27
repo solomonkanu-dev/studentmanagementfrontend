@@ -32,7 +32,7 @@ import type { Subject, Assignment, Submission, AuthUser, Class } from "@/lib/typ
 const assignmentSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  dueDate: z.string().optional(),
+  dueDate: z.string().min(1, "Due date is required"),
 });
 
 type AssignmentFormValues = z.infer<typeof assignmentSchema>;
@@ -295,7 +295,8 @@ function CreateAssignmentModal({
     createMutation.mutate({
       title: values.title,
       description: values.description,
-      dueDate: values.dueDate || undefined,
+      dueDate: values.dueDate,
+      subject: subjectId,
       subjectId,
     });
   };
@@ -322,13 +323,16 @@ function CreateAssignmentModal({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-black dark:text-white">
-            Due Date
+            Due Date *
           </label>
           <input
             type="date"
             className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
             {...register("dueDate")}
           />
+          {errors.dueDate && (
+            <p className="text-xs text-meta-1">{errors.dueDate.message}</p>
+          )}
         </div>
 
         {serverError && (

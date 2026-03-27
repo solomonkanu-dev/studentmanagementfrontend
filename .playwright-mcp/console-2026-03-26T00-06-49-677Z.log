@@ -1,0 +1,35 @@
+[     815ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[   19145ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[   19145ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[   19148ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[   19149ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[   19150ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[   19150ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[   19151ms] [ERROR] Error: <foreignObject> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:14476
+[   19152ms] [ERROR] Error: <svg> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[   19152ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[   19152ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[   19154ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[   19154ms] [ERROR] Error: <circle> attribute r: A negative value is not valid. ("-3.3000000000000007") @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[   19155ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[   19155ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[   44473ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/assignment/create-assignment:0
+[  253685ms] [WARNING] The specified value "04/30/2026" does not conform to the required format, "yyyy-MM-dd". @ :6937
+[  271706ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/assignment/create-assignment:0
+[  892575ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[  915872ms] [ERROR] Failed to load resource: the server responded with a status of 409 (Conflict) @ http://localhost:5002/api/v1/attendance/mark-attendance:0
+[  938716ms] [ERROR] Failed to load resource: the server responded with a status of 409 (Conflict) @ http://localhost:5002/api/v1/attendance/mark-attendance:0
+[  997550ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  997550ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  997552ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  997552ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  997553ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  997554ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  997555ms] [ERROR] Error: <foreignObject> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:14476
+[  997555ms] [ERROR] Error: <svg> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  997555ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  997556ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  997557ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  997558ms] [ERROR] Error: <circle> attribute r: A negative value is not valid. ("-3.3000000000000007") @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  997558ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  997559ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357

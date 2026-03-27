@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { attendanceApi } from "@/lib/api/attendance";
 import { classApi } from "@/lib/api/class";
+import { subjectApi } from "@/lib/api/subject";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -22,13 +23,14 @@ import {
   Clock,
   CheckCircle2,
 } from "lucide-react";
-import type { Class, AuthUser } from "@/lib/types";
+import type { Class, Subject, AuthUser } from "@/lib/types";
 
 type StudentStatus = "present" | "absent";
 
 export default function LecturerAttendancePage() {
   const queryClient = useQueryClient();
   const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
   const [markDate, setMarkDate] = useState(
     () => new Date().toISOString().split("T")[0]
   );
@@ -42,21 +44,45 @@ export default function LecturerAttendancePage() {
     queryFn: classApi.getForLecturer,
   });
 
-  const { data: students = [], isLoading: studentsLoading } = useQuery({
-    queryKey: ["class-students", selectedClass],
-    queryFn: () => classApi.getStudents(selectedClass),
-    enabled: !!selectedClass,
+  const { data: allSubjects = [], isLoading: subjectsLoading } = useQuery({
+    queryKey: ["lecturer-subjects"],
+    queryFn: subjectApi.getForLecturer,
   });
+
+  // Filter subjects belonging to the selected class
+  const classSubjects = useMemo(
+    () =>
+      (allSubjects as Subject[]).filter((s) => {
+        const classId =
+          typeof s.class === "string" ? s.class : (s.class as Class)._id;
+        return classId === selectedClass;
+      }),
+    [allSubjects, selectedClass]
+  );
+
+  // Step 1: fetch students for the selected class + subject
+  const {
+    data: attendanceData,
+    isLoading: studentsLoading,
+    isError: studentsError,
+  } = useQuery({
+    queryKey: ["attendance-students", selectedClass, selectedSubject],
+    queryFn: () =>
+      attendanceApi.getStudentsForAttendance(selectedClass, selectedSubject),
+    enabled: !!selectedClass && !!selectedSubject,
+  });
+
+  const students = attendanceData?.students ?? [];
 
   // ── Derived stats ────────────────────────────────────────────────────────────
 
   const stats = useMemo(() => {
     const vals = Object.values(statuses);
     return {
-      total: (students as AuthUser[]).length,
+      total: students.length,
       present: vals.filter((v) => v === "present").length,
       absent: vals.filter((v) => v === "absent").length,
-      unmarked: (students as AuthUser[]).length - vals.length,
+      unmarked: students.length - vals.length,
     };
   }, [statuses, students]);
 
@@ -88,14 +114,19 @@ export default function LecturerAttendancePage() {
   });
 
   const submitAttendance = () => {
-    if (!selectedClass || !markDate) return;
+    if (!selectedClass || !selectedSubject || !markDate) return;
     setFormError("");
     const records = Object.entries(statuses).map(([studentId, status]) => ({
       studentId,
       status,
     }));
     if (records.length === 0) return;
-    markMutation.mutate({ classId: selectedClass, date: markDate, records });
+    markMutation.mutate({
+      classId: selectedClass,
+      subjectId: selectedSubject,
+      date: markDate,
+      records,
+    });
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -106,22 +137,22 @@ export default function LecturerAttendancePage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Students"
-          value={selectedClass ? stats.total : "—"}
+          value={selectedClass && selectedSubject ? stats.total : "—"}
           icon={GraduationCap}
         />
         <StatCard
           label="Present"
-          value={selectedClass ? stats.present : "—"}
+          value={selectedClass && selectedSubject ? stats.present : "—"}
           icon={UserCheck}
         />
         <StatCard
           label="Absent"
-          value={selectedClass ? stats.absent : "—"}
+          value={selectedClass && selectedSubject ? stats.absent : "—"}
           icon={UserX}
         />
         <StatCard
           label="Unmarked"
-          value={selectedClass ? stats.unmarked : "—"}
+          value={selectedClass && selectedSubject ? stats.unmarked : "—"}
           icon={Clock}
         />
       </div>
@@ -135,9 +166,9 @@ export default function LecturerAttendancePage() {
         </CardHeader>
         <CardContent>
           {/* Controls */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end mb-6">
+          <div className="flex flex-wrap gap-4 items-end mb-6">
             {/* Class selector */}
-            <div className="flex flex-col gap-1.5 flex-1 max-w-xs">
+            <div className="flex flex-col gap-1.5 min-w-[180px]">
               <label className="text-sm font-medium text-black dark:text-white">
                 Class
               </label>
@@ -148,6 +179,7 @@ export default function LecturerAttendancePage() {
                   value={selectedClass}
                   onChange={(e) => {
                     setSelectedClass(e.target.value);
+                    setSelectedSubject("");
                     setStatuses({});
                     setFormError("");
                   }}
@@ -157,6 +189,41 @@ export default function LecturerAttendancePage() {
                   {(classes as Class[]).map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Subject selector */}
+            <div className="flex flex-col gap-1.5 min-w-[180px]">
+              <label className="text-sm font-medium text-black dark:text-white">
+                Subject
+              </label>
+              {subjectsLoading ? (
+                <div className="h-9 w-full animate-pulse rounded border border-stroke bg-stroke dark:border-strokedark dark:bg-strokedark" />
+              ) : (
+                <select
+                  value={selectedSubject}
+                  onChange={(e) => {
+                    setSelectedSubject(e.target.value);
+                    setStatuses({});
+                    setFormError("");
+                  }}
+                  disabled={!selectedClass}
+                  className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                >
+                  <option value="">
+                    {selectedClass
+                      ? classSubjects.length === 0
+                        ? "No subjects for this class"
+                        : "Select a subject"
+                      : "Select class first"}
+                  </option>
+                  {classSubjects.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
+                      {s.code ? ` (${s.code})` : ""}
                     </option>
                   ))}
                 </select>
@@ -177,7 +244,7 @@ export default function LecturerAttendancePage() {
             </div>
 
             {/* Bulk buttons */}
-            {selectedClass && (students as AuthUser[]).length > 0 && (
+            {selectedClass && selectedSubject && students.length > 0 && (
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -200,21 +267,27 @@ export default function LecturerAttendancePage() {
           </div>
 
           {/* Student list / empty states */}
-          {!selectedClass ? (
+          {!selectedClass || !selectedSubject ? (
             <div className="flex flex-col items-center gap-2 py-12 text-center">
               <CalendarCheck
                 className="h-8 w-8 text-body"
                 aria-hidden="true"
               />
               <p className="text-sm text-body">
-                Select a class above to begin marking attendance.
+                Select a class and subject above to begin marking attendance.
               </p>
             </div>
           ) : studentsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
             </div>
-          ) : (students as AuthUser[]).length === 0 ? (
+          ) : studentsError ? (
+            <div className="flex flex-col items-center gap-2 py-12 text-center">
+              <p className="text-sm text-meta-1">
+                Failed to load students. Please try again.
+              </p>
+            </div>
+          ) : students.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-center">
               <GraduationCap
                 className="h-8 w-8 text-body"

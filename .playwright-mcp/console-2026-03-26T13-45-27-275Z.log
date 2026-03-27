@@ -1,0 +1,65 @@
+[     700ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[ 1658122ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 1658122ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 1658125ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 1658126ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 1658127ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 1658128ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 1658129ms] [ERROR] Error: <foreignObject> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:14476
+[ 1658130ms] [ERROR] Error: <svg> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 1658130ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 1658131ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 1658133ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 1658134ms] [ERROR] Error: <circle> attribute r: A negative value is not valid. ("-3.3000000000000007") @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 1658134ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 1658135ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 2485851ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[ 2486856ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[ 2512304ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[ 2513308ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[ 2549354ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[ 2550357ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[ 2573313ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[ 2574316ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[ 2580362ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[ 2581366ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[ 5138176ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 5138176ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 5138178ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 5138178ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 5138179ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 5138179ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 5138180ms] [ERROR] Error: <foreignObject> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:14476
+[ 5138180ms] [ERROR] Error: <svg> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 5138180ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 5138180ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 5138181ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 5138182ms] [ERROR] Error: <circle> attribute r: A negative value is not valid. ("-3.3000000000000007") @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 5138182ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[ 5138183ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[ 5152117ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5153594ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5158471ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5160420ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5166410ms] TypeError: submissions.map is not a function
+    at SubmissionPanel (http://localhost:3000/_next/static/chunks/_0.bl4wo._.js:532:47)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9098:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10263:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10179:316)
+    at processRootScheduleInMicrotask (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10200:106)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10274:158
+[ 5173664ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[ 5199684ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5201273ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5216944ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5218559ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5222983ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0
+[ 5224928ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:5002/api/v1/admin/results/class/69c314ec756d15f960e78078:0

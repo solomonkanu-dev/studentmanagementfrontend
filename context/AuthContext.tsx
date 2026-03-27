@@ -18,6 +18,7 @@ interface AuthContextValue {
   login: (email: string, password: string, asSuperAdmin?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   isRole: (...roles: Role[]) => boolean;
+  updateUser: (patch: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -74,8 +75,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
+  const updateUser = useCallback((patch: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...patch };
+      localStorage.setItem("user", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isRole }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isRole, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

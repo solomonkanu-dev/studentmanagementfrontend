@@ -2,9 +2,13 @@ import { apiClient } from "./client";
 
 export const attendanceApi = {
   // ─── Student Attendance ──────────────────────────────────
+  getStudentsForAttendance: async (classId: string, subjectId: string) => {
+    const { data } = await apiClient.get("/attendance/students", { params: { classId, subjectId } });
+    return data as { class: { _id: string; name: string }; subject: { _id: string; name: string; code?: string }; students: import("../types").AuthUser[] };
+  },
   mark: async (payload: {
-    classId?: string;
-    subjectId?: string;
+    classId: string;
+    subjectId: string;
     date: string;
     records: { studentId: string; status: "present" | "absent" }[];
   }) => {

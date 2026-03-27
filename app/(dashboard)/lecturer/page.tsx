@@ -73,15 +73,23 @@ export default function LecturerDashboard() {
     })),
   });
 
-  // Fetch today's attendance for every class in parallel
+  // Fetch today's attendance for every subject (attendance is per subject, not per class)
   const attendanceQueries = useQueries({
-    queries: (classes as Class[]).map((c) => ({
-      queryKey: ["attendance", "today", c._id, today],
-      queryFn: () =>
-        attendanceApi.getSubjectAttendance({ classId: c._id, date: today }),
-      enabled: (classes as Class[]).length > 0,
-      retry: false,
-    })),
+    queries: (subjects as Subject[]).map((s) => {
+      const classId =
+        typeof s.class === "string" ? s.class : (s.class as Class)._id;
+      return {
+        queryKey: ["attendance", "today", classId, s._id, today],
+        queryFn: () =>
+          attendanceApi.getSubjectAttendance({
+            classId,
+            subjectId: s._id,
+            date: today,
+          }),
+        enabled: (subjects as Subject[]).length > 0,
+        retry: false,
+      };
+    }),
   });
 
   // Fetch students for all classes in parallel
@@ -171,7 +179,7 @@ export default function LecturerDashboard() {
       </div>
 
       {/* ── Today's Attendance ──────────────────────────────────────────────── */}
-      <TodayAttendanceCard classes={classes as Class[]} />
+      <TodayAttendanceCard classes={classes as Class[]} subjects={subjects as Subject[]} />
 
       {/* ── Bottom two-column grid ──────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">

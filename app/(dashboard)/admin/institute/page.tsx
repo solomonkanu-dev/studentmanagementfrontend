@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { adminApi } from "@/lib/api/admin";
+import { uploadApi } from "@/lib/api/upload";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +20,8 @@ import {
   Target,
   ImageIcon,
   CheckCircle2,
+  Upload,
+  Loader2,
 } from "lucide-react";
 
 const schema = z.object({
@@ -36,6 +39,9 @@ type FormValues = z.infer<typeof schema>;
 
 export default function InstitutePage() {
   const queryClient = useQueryClient();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
 
   const { data: institute, isLoading } = useQuery({
     queryKey: ["my-institute"],
@@ -65,6 +71,7 @@ export default function InstitutePage() {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -183,11 +190,71 @@ export default function InstitutePage() {
               />
             </div>
 
-            <Input
-              label="Logo URL"
-              placeholder="https://cdn.example.com/logo.png"
-              {...register("logo")}
-            />
+            {/* Logo upload */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-black dark:text-white">
+                Institute Logo
+              </label>
+              <div className="flex items-center gap-3">
+                {/* Preview */}
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-stroke bg-whiter dark:border-strokedark dark:bg-meta-4 overflow-hidden">
+                  {watched.logo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={watched.logo}
+                      alt="Logo"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Building2 className="h-6 w-6 text-body" aria-hidden="true" />
+                  )}
+                </div>
+                {/* Upload button */}
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={logoUploading}
+                    className="flex items-center gap-2 rounded-md border border-stroke bg-white px-3 py-2 text-sm font-medium text-black transition-colors hover:bg-whiter disabled:opacity-50 dark:border-strokedark dark:bg-meta-4 dark:text-white dark:hover:bg-boxdark"
+                  >
+                    {logoUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Upload className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    {logoUploading ? "Uploading…" : watched.logo ? "Change logo" : "Upload logo"}
+                  </button>
+                  <p className="text-[10px] text-body">PNG, JPG or WebP · max 5 MB</p>
+                  {logoError && (
+                    <p className="text-[10px] text-meta-1">{logoError}</p>
+                  )}
+                </div>
+              </div>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setLogoError("");
+                  setLogoUploading(true);
+                  try {
+                    const { logoUrl } = await uploadApi.instituteLogo(file);
+                    setValue("logo", logoUrl, { shouldDirty: true });
+                  } catch (err: unknown) {
+                    const msg =
+                      (err as { response?: { data?: { message?: string } } })
+                        ?.response?.data?.message ?? "Upload failed. Please try again.";
+                    setLogoError(msg);
+                  } finally {
+                    setLogoUploading(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+            </div>
 
             {mutation.isSuccess && (
               <div className="flex items-center gap-2 rounded-md bg-meta-3/10 px-3 py-2 text-xs text-meta-3">

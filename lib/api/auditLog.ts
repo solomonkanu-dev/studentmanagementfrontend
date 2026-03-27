@@ -9,17 +9,21 @@ export interface AuditLogListResponse {
   totalPages: number;
 }
 
-// Backend returns: { success, data: [...], pagination: { page, limit, total, pages } }
 function parsePaginatedResponse(res: {
   data?: AuditLog[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  // legacy shape
   pagination?: { page?: number; limit?: number; total?: number; pages?: number };
 }): AuditLogListResponse {
   return {
     data: res.data ?? [],
-    total: res.pagination?.total ?? 0,
-    page: res.pagination?.page ?? 1,
-    limit: res.pagination?.limit ?? 50,
-    totalPages: res.pagination?.pages ?? 1,
+    total: res.total ?? res.pagination?.total ?? 0,
+    page: res.page ?? res.pagination?.page ?? 1,
+    limit: res.limit ?? res.pagination?.limit ?? 25,
+    totalPages: res.totalPages ?? res.pagination?.pages ?? 1,
   };
 }
 

@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, Menu, CheckCheck, Trash2, Camera, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { notificationApi } from "@/lib/api/notification";
+import { uploadApi } from "@/lib/api/upload";
 import DarkModeSwitcher from "@/components/ui/Header/DarkModeSwitcher";
 import type { Notification } from "@/lib/types";
 
@@ -144,9 +145,23 @@ interface HeaderProps {
 }
 
 export function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const pathname = usePathname();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setAvatarOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["notification-count"],
@@ -198,8 +213,76 @@ export function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
         </div>
 
         {/* User avatar */}
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-white uppercase">
-          {user?.fullName?.charAt(0) ?? "?"}
+        <div ref={avatarRef} className="relative">
+          <button
+            onClick={() => setAvatarOpen((v) => !v)}
+            className="relative flex h-8 w-8 items-center justify-center rounded-full overflow-hidden ring-2 ring-transparent hover:ring-primary/50 transition-all focus:outline-none focus:ring-primary"
+            aria-label="Profile options"
+            title={user?.fullName ?? "Profile"}
+          >
+            {user?.profilePhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.profilePhoto}
+                alt={user.fullName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center bg-primary text-sm font-bold text-white uppercase">
+                {user?.fullName?.charAt(0) ?? "?"}
+              </span>
+            )}
+            {uploading && (
+              <span className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+              </span>
+            )}
+          </button>
+
+          {avatarOpen && (
+            <div className="absolute right-0 top-full mt-2 w-44 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark z-50">
+              <div className="border-b border-stroke px-4 py-2.5 dark:border-strokedark">
+                <p className="truncate text-xs font-semibold text-black dark:text-white">
+                  {user?.fullName}
+                </p>
+                <p className="truncate text-[10px] text-body capitalize">
+                  {user?.role?.replace("_", " ")}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setAvatarOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-black transition-colors hover:bg-whiter dark:text-white dark:hover:bg-meta-4"
+              >
+                <Camera className="h-4 w-4 text-body" aria-hidden="true" />
+                {user?.profilePhoto ? "Change photo" : "Upload photo"}
+              </button>
+            </div>
+          )}
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setUploading(true);
+              try {
+                const { profilePhoto } = await uploadApi.profilePhoto(file);
+                updateUser({ profilePhoto });
+              } catch {
+                // silently fail — user stays as-is
+              } finally {
+                setUploading(false);
+                e.target.value = "";
+              }
+            }}
+          />
         </div>
       </div>
     </header>

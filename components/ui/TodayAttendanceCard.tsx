@@ -12,7 +12,7 @@ import {
   UserX,
   TrendingUp,
 } from "lucide-react";
-import type { Class } from "@/lib/types";
+import type { Class, Subject } from "@/lib/types";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -95,7 +95,13 @@ function parseReport(data: unknown): { present: number; absent: number; late: nu
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function TodayAttendanceCard({ classes }: { classes: Class[] }) {
+export default function TodayAttendanceCard({
+  classes,
+  subjects = [],
+}: {
+  classes: Class[];
+  subjects?: Subject[];
+}) {
   const today = new Date().toISOString().split("T")[0];
   const [isDark, setIsDark] = useState(false);
 
@@ -112,26 +118,56 @@ export default function TodayAttendanceCard({ classes }: { classes: Class[] }) {
     return () => obs.disconnect();
   }, []);
 
-  // Fetch today's attendance for every class in parallel
-  const classReports = useQueries({
-    queries: classes.map((c: Class) => ({
-      queryKey: ["attendance", "today", c._id, today],
-      queryFn: () =>
-        attendanceApi.getSubjectAttendance({ classId: c._id, date: today }),
-      staleTime: 0,
-      retry: false,
-    })),
+  // Build a query per subject (attendance is stored per class+subject)
+  const subjectReports = useQueries({
+    queries: subjects.map((s: Subject) => {
+      const classId =
+        typeof s.class === "string" ? s.class : (s.class as Class)._id;
+      return {
+        queryKey: ["attendance", "today", classId, s._id, today],
+        queryFn: () =>
+          attendanceApi.getSubjectAttendance({
+            classId,
+            subjectId: s._id,
+            date: today,
+          }),
+        staleTime: 0,
+        retry: false,
+      };
+    }),
   });
 
-  // Aggregate across all classes
-  const classData: ClassAttendanceData[] = classes.map((c, i) => {
-    const parsed = parseReport(classReports[i]?.data);
-    return {
-      className: c.name,
-      ...parsed,
-      total: parsed.present + parsed.absent + parsed.late,
+  // Aggregate per class name for the breakdown rows
+  const classDataMap = new Map<string, ClassAttendanceData>();
+  subjects.forEach((s, i) => {
+    const classObj = typeof s.class === "string" ? null : (s.class as Class);
+    const className =
+      classObj?.name ??
+      classes.find(
+        (c) => c._id === (typeof s.class === "string" ? s.class : classObj?._id)
+      )?.name ??
+      "Unknown";
+    const parsed = parseReport(subjectReports[i]?.data);
+    const existing = classDataMap.get(className) ?? {
+      className,
+      present: 0,
+      absent: 0,
+      late: 0,
+      total: 0,
     };
+    classDataMap.set(className, {
+      className,
+      present: existing.present + parsed.present,
+      absent: existing.absent + parsed.absent,
+      late: existing.late + parsed.late,
+      total:
+        existing.total +
+        parsed.present +
+        parsed.absent +
+        parsed.late,
+    });
   });
+  const classData = Array.from(classDataMap.values());
 
   const totalPresent = classData.reduce((s, c) => s + c.present, 0);
   const totalAbsent = classData.reduce((s, c) => s + c.absent, 0);
@@ -140,7 +176,7 @@ export default function TodayAttendanceCard({ classes }: { classes: Class[] }) {
   const rate =
     totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
 
-  const isLoading = classReports.some((q) => q.isLoading);
+  const isLoading = subjectReports.some((q) => q.isLoading);
 
   // ─── Chart options ──────────────────────────────────────────────────────────
 

@@ -4,7 +4,7 @@ import type { Assignment, Submission } from "../types";
 export const assignmentApi = {
   create: async (payload: Record<string, unknown>): Promise<Assignment> => {
     const { data } = await apiClient.post("/assignment/create-assignment", payload);
-    return data.data ?? data;
+    return data.assignment ?? data.data ?? data;
   },
   getBySubject: async (subjectId: string): Promise<Assignment[]> => {
     const { data } = await apiClient.get(`/assignment/subject/${subjectId}`);

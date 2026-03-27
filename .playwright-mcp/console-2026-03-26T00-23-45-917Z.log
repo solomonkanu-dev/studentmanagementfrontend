@@ -1,0 +1,25 @@
+[    1578ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:5002/api/v1/theme/active:0
+[  244027ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  244027ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  244029ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  244029ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  244030ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0) scale(1)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  244031ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  244032ms] [ERROR] Error: <foreignObject> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:14476
+[  244032ms] [ERROR] Error: <svg> attribute height: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  244033ms] [ERROR] Error: <svg> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  244033ms] [ERROR] Error: <foreignObject> attribute width: Expected length, "NaN". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  244034ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  244035ms] [ERROR] Error: <circle> attribute r: A negative value is not valid. ("-3.3000000000000007") @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  244036ms] [ERROR] Error: <path> attribute d: Expected number, "M e -17 1.47500000…". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:15498
+[  244036ms] [ERROR] Error: <g> attribute transform: Expected number, "translate(NaN, 0)". @ http://localhost:3000/_next/static/chunks/node_modules_03xk6n-._.js:1357
+[  431002ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[  432006ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[  444533ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[  445537ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[  475541ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[  476545ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[  492012ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[  493016ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/announcements:0
+[  506548ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
+[  507551ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5002/api/v1/notifications/unread-count:0
