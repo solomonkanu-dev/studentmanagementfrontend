@@ -6,12 +6,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { adminApi } from "@/lib/api/admin";
+import { classApi } from "@/lib/api/class";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
+import Link from "next/link";
 import {
   Plus,
   Search,
@@ -30,7 +32,7 @@ import {
   Download,
 } from "lucide-react";
 import { exportApi } from "@/lib/api/export";
-import type { AuthUser } from "@/lib/types";
+import type { AuthUser, Class } from "@/lib/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -301,11 +303,20 @@ function LecturerFormFields({
                 <option value="widowed">Widowed</option>
               </select>
             </div>
-            <Input
-              label="Blood Group"
-              placeholder="O+"
-              {...register("bloodGroup")}
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-black dark:text-white">
+                Blood Group
+              </label>
+              <select
+                className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                {...register("bloodGroup")}
+              >
+                <option value="">Select</option>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                  <option key={bg} value={bg}>{bg}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <Input
             label="Phone"
@@ -328,6 +339,7 @@ function LecturerFormFields({
 export default function LecturersListPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("");
 
   // Create modal state
   const [showCreate, setShowCreate] = useState(false);
@@ -351,10 +363,15 @@ export default function LecturersListPage() {
   const [suspendError, setSuspendError] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
-  // ── Query ──
+  // ── Queries ──
   const { data: lecturers = [], isLoading } = useQuery({
     queryKey: ["admin-lecturers"],
     queryFn: adminApi.getLecturers,
+  });
+
+  const { data: classes = [] } = useQuery({
+    queryKey: ["classes"],
+    queryFn: classApi.getAll,
   });
 
   // ── Create form ──
@@ -460,11 +477,15 @@ export default function LecturersListPage() {
   });
 
   // ── Filtered list ──
-  const filtered = lecturers.filter(
-    (l: AuthUser) =>
+  const filtered = lecturers.filter((l: AuthUser) => {
+    const matchesSearch =
       l.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      l.email.toLowerCase().includes(search.toLowerCase())
-  );
+      l.email.toLowerCase().includes(search.toLowerCase());
+    const lecturerClassId =
+      typeof l.class === "string" ? l.class : (l.class as unknown as { _id: string } | null)?._id ?? "";
+    const matchesClass = !classFilter || lecturerClassId === classFilter;
+    return matchesSearch && matchesClass;
+  });
 
   // ── Submit handlers ──
   function buildPayload(values: FormValues) {
@@ -516,12 +537,12 @@ export default function LecturersListPage() {
       department: lp.department ?? "",
       position: lp.position ?? "",
       employeeId: lp.employeeId ?? "",
-      dateOfJoining: lp.joiningDate?.slice(0, 10) ?? "",
-      dateOfBirth: lp.dateOfBirth?.slice(0, 10) ?? "",
+      dateOfJoining: lp.dateOfJoining ? String(lp.dateOfJoining).slice(0, 10) : "",
+      dateOfBirth: lp.dateOfBirth ? String(lp.dateOfBirth).slice(0, 10) : "",
       gender: lp.gender ?? "",
       maritalStatus: lp.maritalStatus ?? "",
       bloodGroup: lp.bloodGroup ?? "",
-      phoneNumber: lp.phone ?? "",
+      phoneNumber: lp.phoneNumber ?? "",
       address: lp.address ?? "",
     });
     setEditTarget(l);
@@ -554,21 +575,36 @@ export default function LecturersListPage() {
 
   return (
     <div className="space-y-6">
-      {/* Search + Add */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-xs w-full">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body"
-            aria-hidden="true"
-          />
-          <input
-            type="text"
-            aria-label="Search lecturers"
-            placeholder="Search by name or email…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          />
+      {/* Search + Filter + Add */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:max-w-xs">
+            <Search
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body"
+              aria-hidden="true"
+            />
+            <input
+              type="text"
+              aria-label="Search lecturers"
+              placeholder="Search by name or email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            />
+          </div>
+          <select
+            aria-label="Filter by class"
+            value={classFilter}
+            onChange={(e) => setClassFilter(e.target.value)}
+            className="h-9 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+          >
+            <option value="">All Classes</option>
+            {(classes as Class[]).map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={() => exportApi.lecturers()}>
@@ -598,7 +634,7 @@ export default function LecturersListPage() {
               <Users className="h-7 w-7 text-primary" aria-hidden="true" />
             </div>
             <p className="text-sm text-body">
-              {search ? "No lecturers match your search." : "No lecturers found."}
+              {search || classFilter ? "No lecturers match your filters." : "No lecturers found."}
             </p>
           </div>
         ) : (
@@ -652,6 +688,13 @@ export default function LecturersListPage() {
                   </Td>
                   <Td>
                     <div className="flex items-center gap-1">
+                      <Link href={`/admin/lecturers/${l._id}`}>
+                        <ActionBtn
+                          icon={<Eye className="h-3.5 w-3.5" />}
+                          label="View lecturer"
+                          onClick={() => {}}
+                        />
+                      </Link>
                       <ActionBtn
                         icon={<Pencil className="h-3.5 w-3.5" />}
                         label="Edit lecturer"

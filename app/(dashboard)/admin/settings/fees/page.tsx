@@ -180,8 +180,8 @@ export default function FeesParticularsPage() {
       {/* Summary row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SummaryTile label="Total Structures" value={list.length} />
-        <SummaryTile label="Highest Total" value={`$${maxAmount.toLocaleString()}`} />
-        <SummaryTile label="Sum of All" value={`$${totalAmount.toLocaleString()}`} />
+        <SummaryTile label="Highest Total" value={`Nle ${maxAmount.toLocaleString()}`} />
+        <SummaryTile label="Sum of All" value={`Nle ${totalAmount.toLocaleString()}`} />
       </div>
 
       {/* Table card */}
@@ -243,12 +243,12 @@ export default function FeesParticularsPage() {
                     <Td className="max-w-xs text-xs text-body">
                       {f.particulars.map((p) => (
                         <span key={p.label} className="mr-2 whitespace-nowrap">
-                          {p.label} <span className="font-medium text-black dark:text-white">${p.amount}</span>
+                          {p.label} <span className="font-medium text-black dark:text-white">Nle {p.amount}</span>
                         </span>
                       ))}
                     </Td>
                     <Td>
-                      <Badge variant="success">${f.totalAmount.toLocaleString()}</Badge>
+                      <Badge variant="success">Nle {f.totalAmount.toLocaleString()}</Badge>
                     </Td>
                     <Td className="text-xs text-body">
                       {new Date(f.createdAt).toLocaleDateString("en-US", {

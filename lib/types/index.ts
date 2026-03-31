@@ -1,6 +1,6 @@
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
-export type Role = "super_admin" | "admin" | "lecturer" | "student";
+export type Role = "super_admin" | "admin" | "lecturer" | "student" | "parent";
 
 export interface AuthUser {
   _id: string;
@@ -9,13 +9,25 @@ export interface AuthUser {
   role: Role;
   approved: boolean;
   isActive: boolean;
+  lifecycleStatus?: "active" | "graduated" | "transferred" | "withdrawn";
+  lifecycleNote?: string;
+  lifecycleUpdatedAt?: string;
   institute?: string;
   class?: string;
   profilePhoto?: string;
   studentProfile?: StudentProfile;
   lecturerProfile?: LecturerProfile;
+  linkedStudents?: LinkedStudent[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LinkedStudent {
+  _id: string;
+  fullName: string;
+  profilePhoto?: string;
+  class?: { _id: string; name: string } | string;
+  studentProfile?: StudentProfile;
 }
 
 export interface LoginPayload {
@@ -74,12 +86,12 @@ export interface LecturerProfile {
   employeeId?: string;
   department?: string;
   position?: string;
-  joiningDate?: string;
+  dateOfJoining?: string;
   dateOfBirth?: string;
   gender?: string;
   maritalStatus?: string;
   bloodGroup?: string;
-  phone?: string;
+  phoneNumber?: string;
   address?: string;
 }
 
@@ -115,7 +127,10 @@ export interface Assignment {
   title: string;
   description?: string;
   subject: string | Subject;
+  class?: string | { _id: string; name: string };
   dueDate?: string;
+  totalMarks?: number;
+  status?: string;
   createdBy: string | AuthUser;
   institute: string;
   createdAt: string;

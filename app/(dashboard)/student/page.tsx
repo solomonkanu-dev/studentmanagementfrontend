@@ -5,6 +5,7 @@ import { subjectApi } from "@/lib/api/subject";
 import { submissionApi } from "@/lib/api/assignment";
 import { attendanceApi } from "@/lib/api/attendance";
 import { StatCard } from "@/components/ui/StatCard";
+import AcademicTermBanner from "@/components/ui/AcademicTermBanner";
 import { BookOpen, ClipboardList, CalendarCheck, CheckCircle } from "lucide-react";
 
 export default function StudentDashboard() {
@@ -20,11 +21,12 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-6">
+      <AcademicTermBanner />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Enrolled Subjects" value={subjects.length} icon={BookOpen} color="blue" />
-        <StatCard label="Submissions" value={submissions.length} icon={ClipboardList} color="emerald" />
-        <StatCard label="Attendance" value={overallAttendance !== null ? `${overallAttendance}%` : "—"} icon={CalendarCheck} color="amber" />
-        <StatCard label="Completed" value={submissions.filter((s: { grade?: number }) => s.grade !== undefined).length} icon={CheckCircle} color="slate" />
+        <StatCard label="Enrolled Subjects" value={subjects.length} icon={BookOpen} />
+        <StatCard label="Submissions" value={submissions.length} icon={ClipboardList} />
+        <StatCard label="Attendance" value={overallAttendance !== null ? `${overallAttendance}%` : "—"} icon={CalendarCheck} />
+        <StatCard label="Completed" value={submissions.filter((s: { grade?: number }) => s.grade !== undefined).length} icon={CheckCircle} />
       </div>
     </div>
   );

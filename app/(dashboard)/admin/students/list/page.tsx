@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -17,7 +18,7 @@ import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import {
   Plus, Search, GraduationCap, Copy, CheckCircle2,
   Pencil, KeyRound, Eye, EyeOff, RefreshCw,
-  ShieldOff, PlayCircle, Trash2, ShieldAlert, Download,
+  ShieldOff, PlayCircle, Trash2, ShieldAlert, Download, Activity,
 } from "lucide-react";
 import type { AuthUser, Class } from "@/lib/types";
 
@@ -28,6 +29,7 @@ const createSchema = z.object({
   email: z.string().email("Invalid email"),
   classId: z.string().min(1, "Select a class"),
   registrationNumber: z.string().optional(),
+  dateOfAdmission: z.string().optional(),
   dateOfBirth: z.string().optional(),
   gender: z.string().optional(),
   mobileNumber: z.string().optional(),
@@ -35,6 +37,8 @@ const createSchema = z.object({
   bloodGroup: z.string().optional(),
   religion: z.string().optional(),
   previousSchool: z.string().optional(),
+  familyType: z.string().optional(),
+  medicalInfo: z.string().optional(),
   guardianName: z.string().optional(),
   guardianPhone: z.string().optional(),
   guardianEmail: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -47,6 +51,7 @@ const editSchema = z.object({
   email: z.string().email("Invalid email"),
   classId: z.string().min(1, "Select a class"),
   registrationNumber: z.string().optional(),
+  dateOfAdmission: z.string().optional(),
   dateOfBirth: z.string().optional(),
   gender: z.string().optional(),
   mobileNumber: z.string().optional(),
@@ -54,6 +59,8 @@ const editSchema = z.object({
   bloodGroup: z.string().optional(),
   religion: z.string().optional(),
   previousSchool: z.string().optional(),
+  familyType: z.string().optional(),
+  medicalInfo: z.string().optional(),
   guardianName: z.string().optional(),
   guardianPhone: z.string().optional(),
   guardianEmail: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -76,6 +83,7 @@ function generatePassword() {
 export default function StudentsListPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("");
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -100,6 +108,12 @@ export default function StudentsListPage() {
   const [deleteTarget, setDeleteTarget] = useState<AuthUser | null>(null);
   const [suspendError, setSuspendError] = useState("");
   const [deleteError, setDeleteError] = useState("");
+
+  // Lifecycle modal
+  const [lifecycleTarget, setLifecycleTarget] = useState<AuthUser | null>(null);
+  const [lifecycleStatus, setLifecycleStatus] = useState("active");
+  const [lifecycleNote, setLifecycleNote] = useState("");
+  const [lifecycleError, setLifecycleError] = useState("");
 
   // ─── Queries ────────────────────────────────────────────────────────────────
 
@@ -160,6 +174,17 @@ export default function StudentsListPage() {
     mutationFn: adminApi.deleteUser,
     onSuccess: () => { invalidateStudents(); setDeleteTarget(null); setDeleteError(""); },
     onError: (e: unknown) => setDeleteError(apiMsg(e, "Failed to delete student")),
+  });
+
+  const lifecycleMutation = useMutation({
+    mutationFn: ({ studentId, payload }: { studentId: string; payload: { lifecycleStatus: string; lifecycleNote?: string } }) =>
+      adminApi.updateStudentLifecycle(studentId, payload),
+    onSuccess: () => {
+      invalidateStudents();
+      setLifecycleTarget(null);
+      setLifecycleError("");
+    },
+    onError: (e: unknown) => setLifecycleError(apiMsg(e, "Failed to update lifecycle status")),
   });
 
   // ─── Create form ─────────────────────────────────────────────────────────────
@@ -228,6 +253,7 @@ export default function StudentsListPage() {
       email: s.email,
       classId: typeof s.class === "string" ? s.class : (s.class as unknown as Class)?._id ?? "",
       registrationNumber: (p as Record<string, string>).registrationNumber ?? "",
+      dateOfAdmission: (p as Record<string, string>).dateOfAdmission ? (p as Record<string, string>).dateOfAdmission.slice(0, 10) : "",
       dateOfBirth: (p as Record<string, string>).dateOfBirth ?? "",
       gender: (p as Record<string, string>).gender ?? "",
       mobileNumber: (p as Record<string, string>).mobileNumber ?? "",
@@ -235,6 +261,8 @@ export default function StudentsListPage() {
       bloodGroup: (p as Record<string, string>).bloodGroup ?? "",
       religion: (p as Record<string, string>).religion ?? "",
       previousSchool: (p as Record<string, string>).previousSchool ?? "",
+      familyType: (p as Record<string, string>).familyType ?? "",
+      medicalInfo: (p as Record<string, string>).medicalInfo ?? "",
       guardianName: g?.guardianName ?? "",
       guardianPhone: g?.guardianPhone ?? "",
       guardianEmail: g?.guardianEmail ?? "",
@@ -291,29 +319,62 @@ export default function StudentsListPage() {
     setTimeout(() => setResetCopied(false), 2000);
   };
 
+  // ─── Lifecycle handlers ──────────────────────────────────────────────────────
+
+  const openLifecycle = (s: AuthUser) => {
+    setLifecycleTarget(s);
+    setLifecycleStatus(s.lifecycleStatus ?? "active");
+    setLifecycleNote(s.lifecycleNote ?? "");
+    setLifecycleError("");
+  };
+
+  const closeLifecycle = () => {
+    setLifecycleTarget(null);
+    setLifecycleError("");
+  };
+
   // ─── Filtered list ───────────────────────────────────────────────────────────
 
-  const filtered = students.filter(
-    (s: AuthUser) =>
+  const filtered = students.filter((s: AuthUser) => {
+    const matchesSearch =
       s.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      s.email.toLowerCase().includes(search.toLowerCase())
-  );
+      s.email.toLowerCase().includes(search.toLowerCase());
+    const studentClassId =
+      typeof s.class === "string" ? s.class : (s.class as unknown as { _id: string } | null)?._id ?? "";
+    const matchesClass = !classFilter || studentClassId === classFilter;
+    return matchesSearch && matchesClass;
+  });
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-xs w-full">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body" aria-hidden="true" />
-          <input
-            type="text"
-            aria-label="Search students"
-            placeholder="Search by name or email…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body" aria-hidden="true" />
+            <input
+              type="text"
+              aria-label="Search students"
+              placeholder="Search by name or email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            />
+          </div>
+          <select
+            aria-label="Filter by class"
+            value={classFilter}
+            onChange={(e) => setClassFilter(e.target.value)}
+            className="h-9 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+          >
+            <option value="">All Classes</option>
+            {(classes as Class[]).map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={() => exportApi.students()}>
@@ -338,7 +399,7 @@ export default function StudentsListPage() {
               <GraduationCap className="h-7 w-7 text-primary" aria-hidden="true" />
             </div>
             <p className="text-sm text-body">
-              {search ? "No students match your search." : "No students found."}
+              {search || classFilter ? "No students match your filters." : "No students found."}
             </p>
           </div>
         ) : (
@@ -349,6 +410,7 @@ export default function StudentsListPage() {
                 <Th>Email</Th>
                 <Th>Class</Th>
                 <Th>Status</Th>
+                <Th>Lifecycle</Th>
                 <Th>Joined</Th>
                 <Th>Actions</Th>
               </tr>
@@ -372,21 +434,34 @@ export default function StudentsListPage() {
                     <Td className="text-body">{className ?? "—"}</Td>
                     <Td>
                       <div className="flex flex-col gap-0.5">
+                        {s.isActive && (
                         <Badge variant={s.approved ? "success" : "warning"}>
                           {s.approved ? "Approved" : "Pending"}
                         </Badge>
+                        )}
                         {!s.isActive && (
                           <Badge variant="danger">Suspended</Badge>
                         )}
                       </div>
+                    </Td>
+                    <Td>
+                      <LifecycleStatusBadge status={s.lifecycleStatus} />
                     </Td>
                     <Td className="text-xs text-body">
                       {new Date(s.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
                     </Td>
                     <Td>
                       <div className="flex items-center gap-1">
+                        <Link href={`/admin/students/${s._id}`}>
+                          <ActionBtn title="View student" onClick={() => {}}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </ActionBtn>
+                        </Link>
                         <ActionBtn title="Edit student" onClick={() => openEdit(s)}>
                           <Pencil className="h-3.5 w-3.5" />
+                        </ActionBtn>
+                        <ActionBtn title="Update lifecycle status" onClick={() => openLifecycle(s)}>
+                          <Activity className="h-3.5 w-3.5" />
                         </ActionBtn>
                         <ActionBtn title="Reset password" onClick={() => openReset(s)} danger>
                           <KeyRound className="h-3.5 w-3.5" />
@@ -574,6 +649,65 @@ export default function StudentsListPage() {
           </div>
         </div>
       </Modal>
+
+      {/* ── Lifecycle modal ──────────────────────────────────────────────────── */}
+      <Modal
+        open={lifecycleTarget !== null}
+        onClose={closeLifecycle}
+        title="Update Lifecycle Status"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-body">
+            Update the lifecycle status for{" "}
+            <span className="font-semibold text-black dark:text-white">{lifecycleTarget?.fullName}</span>.
+          </p>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">Status</label>
+            <select
+              value={lifecycleStatus}
+              onChange={(e) => setLifecycleStatus(e.target.value)}
+              className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
+            >
+              <option value="active">Active</option>
+              <option value="graduated">Graduated</option>
+              <option value="transferred">Transferred</option>
+              <option value="withdrawn">Withdrawn</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">
+              Note <span className="font-normal text-body">(optional)</span>
+            </label>
+            <textarea
+              value={lifecycleNote}
+              onChange={(e) => setLifecycleNote(e.target.value)}
+              placeholder="Add a note about this status change…"
+              rows={3}
+              className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white resize-none"
+            />
+          </div>
+
+          {lifecycleError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{lifecycleError}</p>}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="secondary" onClick={closeLifecycle}>Cancel</Button>
+            <Button
+              isLoading={lifecycleMutation.isPending}
+              onClick={() =>
+                lifecycleTarget &&
+                lifecycleMutation.mutate({
+                  studentId: lifecycleTarget._id,
+                  payload: { lifecycleStatus, lifecycleNote: lifecycleNote || undefined },
+                })
+              }
+            >
+              Save Status
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -615,20 +749,25 @@ function StudentFormFields({
       <div>
         <SectionLabel optional>Student Profile</SectionLabel>
         <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Input label="Registration No." placeholder="STU-001" {...register("registrationNumber")} />
+            <Input label="Admission Date" type="date" {...register("dateOfAdmission")} />
             <Input label="Date of Birth" type="date" {...register("dateOfBirth")} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <SelectField label="Gender" name="gender" register={register} options={["male", "female", "other"]} />
-            <Input label="Blood Group" placeholder="O+" {...register("bloodGroup")} />
+            <SelectField label="Blood Group" name="bloodGroup" register={register} options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Phone" placeholder="+234 801 234 5678" {...register("mobileNumber")} />
             <Input label="Religion" placeholder="Christianity" {...register("religion")} />
           </div>
           <Input label="Address" placeholder="123 Main St, Lagos" {...register("address")} />
-          <Input label="Previous School" placeholder="St. Mary's Academy" {...register("previousSchool")} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input label="Previous School" placeholder="St. Mary's Academy" {...register("previousSchool")} />
+            <Input label="Family Type" placeholder="Nuclear / Extended" {...register("familyType")} />
+          </div>
+          <Input label="Medical Info" placeholder="Any allergies or conditions" {...register("medicalInfo")} />
         </div>
       </div>
 
@@ -651,6 +790,27 @@ function StudentFormFields({
 }
 
 // ─── Reusable sub-components ──────────────────────────────────────────────────
+
+// ─── Lifecycle status badge ───────────────────────────────────────────────────
+
+type LifecycleStatusValue = "active" | "graduated" | "transferred" | "withdrawn" | undefined;
+
+function LifecycleStatusBadge({ status }: { status: LifecycleStatusValue }) {
+  if (!status || status === "active") {
+    return <Badge variant="success">Active</Badge>;
+  }
+  if (status === "graduated") {
+    return (
+      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+        Graduated
+      </span>
+    );
+  }
+  if (status === "transferred") {
+    return <Badge variant="warning">Transferred</Badge>;
+  }
+  return <Badge variant="danger">Withdrawn</Badge>;
+}
 
 function PasswordReveal({
   label, note, password, copied, onCopy, onDone,
@@ -758,6 +918,7 @@ function apiMsg(e: unknown, fallback: string) {
 function buildStudentProfile(v: CreateForm | EditForm) {
   const p: Record<string, unknown> = {};
   if (v.registrationNumber) p.registrationNumber = v.registrationNumber;
+  if (v.dateOfAdmission) p.dateOfAdmission = v.dateOfAdmission;
   if (v.dateOfBirth) p.dateOfBirth = v.dateOfBirth;
   if (v.gender) p.gender = v.gender;
   if (v.mobileNumber) p.mobileNumber = v.mobileNumber;
@@ -765,6 +926,8 @@ function buildStudentProfile(v: CreateForm | EditForm) {
   if (v.bloodGroup) p.bloodGroup = v.bloodGroup;
   if (v.religion) p.religion = v.religion;
   if (v.previousSchool) p.previousSchool = v.previousSchool;
+  if (v.familyType) p.familyType = v.familyType;
+  if (v.medicalInfo) p.medicalInfo = v.medicalInfo;
   return p;
 }
 

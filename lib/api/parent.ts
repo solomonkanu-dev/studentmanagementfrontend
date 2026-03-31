@@ -1,0 +1,81 @@
+import { apiClient } from "./client";
+import type { LinkedStudent } from "../types";
+
+export interface ChildAttendanceSummary {
+  total: number;
+  present: number;
+  absent: number;
+  late: number;
+  rate: number;
+  recentRecords: { date: string; status: string; subject?: string }[];
+}
+
+export interface ChildFee {
+  _id: string;
+  category: string;
+  totalAmount: number;
+  amountPaid: number;
+  balance: number;
+  status: "paid" | "partial" | "unpaid";
+  dueDate?: string;
+}
+
+export const parentApi = {
+  getMyChildren: async (): Promise<LinkedStudent[]> => {
+    const { data } = await apiClient.get("/parent/my-children");
+    return data.data ?? data;
+  },
+
+  getChildAttendance: async (studentId: string): Promise<ChildAttendanceSummary> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/attendance`);
+    return data.data ?? data;
+  },
+
+  getChildResults: async (studentId: string): Promise<unknown[]> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/results`);
+    return data.data ?? data;
+  },
+
+  getChildFees: async (studentId: string): Promise<ChildFee[]> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/fees`);
+    return data.data ?? data;
+  },
+
+  getAnnouncements: async (): Promise<unknown[]> => {
+    const { data } = await apiClient.get("/parent/announcements");
+    return data.data ?? data;
+  },
+};
+
+// Admin: manage parents
+export const adminParentApi = {
+  getAll: async (): Promise<unknown[]> => {
+    const { data } = await apiClient.get("/admin/parents");
+    return data.data ?? data;
+  },
+
+  create: async (payload: {
+    fullName: string;
+    email: string;
+    password: string;
+    linkedStudents?: string[];
+  }): Promise<unknown> => {
+    const { data } = await apiClient.post("/admin/parents", payload);
+    return data.data ?? data;
+  },
+
+  linkStudent: async (parentId: string, studentId: string): Promise<unknown> => {
+    const { data } = await apiClient.post("/admin/parents/link-student", { parentId, studentId });
+    return data;
+  },
+
+  unlinkStudent: async (parentId: string, studentId: string): Promise<unknown> => {
+    const { data } = await apiClient.post("/admin/parents/unlink-student", { parentId, studentId });
+    return data;
+  },
+
+  revoke: async (parentId: string): Promise<unknown> => {
+    const { data } = await apiClient.patch(`/admin/parents/${parentId}/revoke`);
+    return data;
+  },
+};

@@ -1,6 +1,18 @@
 import { apiClient } from "./client";
 import type { AuthUser, Institute, Class, Result, FeeSummary, FeeByClass, FeeByStatus, FeeDefaulter, FeeCollectionTrend } from "../types";
 
+export interface AcademicTerm {
+  _id: string;
+  name: string;
+  type: "term" | "semester";
+  academicYear: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  institute: string;
+  createdAt: string;
+}
+
 export const adminApi = {
   // Students
   getStudents: async (): Promise<AuthUser[]> => {
@@ -9,6 +21,10 @@ export const adminApi = {
   },
   getStudent: async (id: string): Promise<AuthUser> => {
     const { data } = await apiClient.get(`/admin/students/${id}`);
+    return data.data ?? data;
+  },
+  getStudentAssignments: async (studentId: string): Promise<{ assignment: import("../types").Assignment; submission: { _id: string; status: string; score?: number; feedback?: string; isLate?: boolean; createdAt: string } | null }[]> => {
+    const { data } = await apiClient.get(`/admin/students/${studentId}/assignments`);
     return data.data ?? data;
   },
   createStudent: async (payload: Record<string, unknown>): Promise<AuthUser> => {
@@ -69,6 +85,10 @@ export const adminApi = {
   },
 
   // Results
+  getClassRankings: async (classId: string): Promise<{ rankings: Array<{ student: AuthUser; total: number; subjects: number; rank: number }>; total: number }> => {
+    const { data } = await apiClient.get(`/admin/results/class/${classId}/rankings`);
+    return data.data ?? data;
+  },
   getResultsByClass: async (classId: string): Promise<Result[]> => {
     const { data } = await apiClient.get(`/admin/results/class/${classId}`);
     return data.data ?? data;
@@ -93,6 +113,10 @@ export const adminApi = {
     const { data } = await apiClient.post("/admin/fees/create", payload);
     return data.data ?? data;
   },
+  getFeeStructuresForStudent: async (studentId: string): Promise<{ _id: string; category: string; particulars: { label: string; amount: number }[] }[]> => {
+    const { data } = await apiClient.get(`/admin/fees/structures/for-student/${studentId}`);
+    return (data.structures ?? data.data ?? data) as { _id: string; category: string; particulars: { label: string; amount: number }[] }[];
+  },
   assignFeeToStudent: async (payload: Record<string, unknown>) => {
     const { data } = await apiClient.post("/admin/fees/assign", payload);
     return data.data ?? data;
@@ -108,6 +132,26 @@ export const adminApi = {
   getStudentFee: async (studentId: string): Promise<unknown> => {
     const { data } = await apiClient.get(`/admin/fees/student/${studentId}`);
     return data.data ?? data;
+  },
+
+  // Report Card
+  getReportCard: async (studentId: string) => {
+    const { data } = await apiClient.get(`/admin/report-card/${studentId}`);
+    return data;
+  },
+
+  // Fee Payments
+  recordPayment: async (studentId: string, payload: { amount: number; method: string; reference?: string; notes?: string }) => {
+    const { data } = await apiClient.post(`/admin/fees/student/${studentId}/payment`, payload);
+    return data;
+  },
+  getStudentPayments: async (studentId: string) => {
+    const { data } = await apiClient.get(`/admin/fees/student/${studentId}/payments`);
+    return Array.isArray(data) ? data : data.data ?? [];
+  },
+  getPaymentReceipt: async (paymentId: string) => {
+    const { data } = await apiClient.get(`/admin/fees/payment/${paymentId}/receipt`);
+    return data;
   },
 
   // Update
@@ -138,6 +182,33 @@ export const adminApi = {
   deleteUser: async (userId: string) => {
     const { data } = await apiClient.delete(`/admin/users/${userId}`);
     return data;
+  },
+
+  // Academic Terms
+  getTerms: async (): Promise<AcademicTerm[]> => {
+    const { data } = await apiClient.get("/admin/terms");
+    return data.data ?? data;
+  },
+  createTerm: async (payload: Omit<AcademicTerm, "_id" | "institute" | "createdAt">): Promise<AcademicTerm> => {
+    const { data } = await apiClient.post("/admin/terms", payload);
+    return data.data ?? data;
+  },
+  updateTerm: async (termId: string, payload: Partial<AcademicTerm>): Promise<AcademicTerm> => {
+    const { data } = await apiClient.patch(`/admin/terms/${termId}`, payload);
+    return data.data ?? data;
+  },
+  deleteTerm: async (termId: string): Promise<void> => {
+    await apiClient.delete(`/admin/terms/${termId}`);
+  },
+  setCurrentTerm: async (termId: string): Promise<AcademicTerm> => {
+    const { data } = await apiClient.patch(`/admin/terms/${termId}/set-current`);
+    return data.data ?? data;
+  },
+
+  // Lifecycle
+  updateStudentLifecycle: async (studentId: string, payload: { lifecycleStatus: string; lifecycleNote?: string }) => {
+    const { data } = await apiClient.patch(`/admin/students/${studentId}/lifecycle`, payload);
+    return data.data ?? data;
   },
 
   // Fee Analysis

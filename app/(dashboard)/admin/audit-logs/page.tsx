@@ -199,6 +199,7 @@ export default function AdminAuditLogsPage() {
   });
 
   // Reset to page 1 when filters change
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setPage(1); }, [debouncedAction, debouncedEntity, startDate, endDate]);
 
   const logs = data?.data ?? [];

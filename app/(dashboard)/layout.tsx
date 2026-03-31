@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { StudentChatWidget } from "@/components/ui/StudentChatWidget";
+import { LecturerChatWidget } from "@/components/ui/LecturerChatWidget";
+import { AdminChatWidget } from "@/components/ui/AdminChatWidget";
 import useColorMode from "@/hooks/useColorMode";
 
 export default function DashboardLayout({
@@ -21,6 +24,9 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace("/login");
+    }
+    if (!isLoading && user && user.isActive === false) {
+      router.replace("/suspended");
     }
   }, [user, isLoading, router]);
 
@@ -47,6 +53,17 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+
+      {/* AI chat widgets — role-scoped */}
+      {user.role === "student" && (
+        <StudentChatWidget token={localStorage.getItem("token") ?? ""} />
+      )}
+      {user.role === "lecturer" && (
+        <LecturerChatWidget token={localStorage.getItem("token") ?? ""} />
+      )}
+      {user.role === "admin" && (
+        <AdminChatWidget token={localStorage.getItem("token") ?? ""} />
+      )}
     </div>
   );
 }

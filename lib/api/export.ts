@@ -12,9 +12,9 @@ async function downloadCsv(url: string, filename: string) {
 }
 
 export const exportApi = {
-  students: () => downloadCsv("/export/students", "students.csv"),
-  lecturers: () => downloadCsv("/export/lecturers", "lecturers.csv"),
-  feeCollection: () => downloadCsv("/export/fee-collection", "fee-collection.csv"),
-  salary: () => downloadCsv("/export/salary", "salary.csv"),
-  attendanceSummary: () => downloadCsv("/export/attendance-summary", "attendance-summary.csv"),
+  students: () => downloadCsv("/exports/students", "students.csv"),
+  lecturers: () => downloadCsv("/exports/lecturers", "lecturers.csv"),
+  feeCollection: () => downloadCsv("/exports/fee-collection", "fee-collection.csv"),
+  salary: () => downloadCsv("/exports/salary", "salary.csv"),
+  attendanceSummary: () => downloadCsv("/exports/attendance-summary", "attendance-summary.csv"),
 };

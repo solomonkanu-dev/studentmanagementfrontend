@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useController, useWatch, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { Resolver } from "react-hook-form";
 import { z } from "zod";
 import { announcementApi } from "@/lib/api/announcement";
 import { apiClient } from "@/lib/api/client";
@@ -99,7 +100,7 @@ function AnnouncementModal({
   const institutes = institutesData ?? [];
 
   const { register, handleSubmit, formState: { errors }, control } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: existing
       ? {
           title: existing.title,
@@ -122,9 +123,9 @@ function AnnouncementModal({
         type: values.type,
         institute: values.type === "institute_specific" ? values.institute : undefined,
         expiresAt: values.expiresAt || undefined,
-        targetRoles: values.targetRoles.length > 0
+        targetRoles: (values.targetRoles.length > 0
           ? (values.targetRoles.includes("super_admin") ? values.targetRoles : [...values.targetRoles, "super_admin"])
-          : ["admin", "lecturer", "student", "super_admin"],
+          : ["admin", "lecturer", "student", "super_admin"]) as import("@/lib/types").AnnouncementRole[],
       };
       return isEdit
         ? announcementApi.update(existing!._id, payload)

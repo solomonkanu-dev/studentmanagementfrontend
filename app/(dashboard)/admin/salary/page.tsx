@@ -157,8 +157,8 @@ export default function AdminSalaryPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatPill icon={<Banknote className="h-5 w-5" />} label="Total Records" value={String(total)} color="default" />
-        <StatPill icon={<TrendingUp className="h-5 w-5" />} label="Base Salary (page)" value={`$${fmt(totalSalary)}`} color="green" />
-        <StatPill icon={<CheckCircle className="h-5 w-5" />} label="Paid (page)" value={`$${fmt(totalPaid)}`} color="green" />
+        <StatPill icon={<TrendingUp className="h-5 w-5" />} label="Base Salary (page)" value={`Nle ${fmt(totalSalary)}`} color="green" />
+        <StatPill icon={<CheckCircle className="h-5 w-5" />} label="Paid (page)" value={`Nle ${fmt(totalPaid)}`} color="green" />
         <StatPill icon={<Clock className="h-5 w-5" />} label="Pending (page)" value={String(pendingCount)} color="yellow" />
       </div>
 
@@ -242,12 +242,12 @@ export default function AdminSalaryPage() {
                         {getLecturerName(s.lecturer)}
                       </Td>
                       <Td className="text-body">{formatMonth(s.salaryMonth)}</Td>
-                      <Td className="text-body">${fmt(s.salary ?? 0)}</Td>
-                      <Td className="text-meta-3">+${fmt(s.bonus ?? 0)}</Td>
-                      <Td className="text-meta-1">-${fmt(s.deduction ?? 0)}</Td>
+                      <Td className="text-body">Nle {fmt(s.salary ?? 0)}</Td>
+                      <Td className="text-meta-3">+Nle {fmt(s.bonus ?? 0)}</Td>
+                      <Td className="text-meta-1">-Nle {fmt(s.deduction ?? 0)}</Td>
                       <Td>
                         <span className="font-semibold text-black dark:text-white">
-                          ${fmt(s.totalAmount ?? 0)}
+                          Nle {fmt(s.totalAmount ?? 0)}
                         </span>
                       </Td>
                       <Td>

@@ -43,7 +43,7 @@ export default function MyPlanPage() {
               <CreditCard className="h-4 w-4 text-primary" aria-hidden="true" />
               <h2 className="text-sm font-semibold text-black dark:text-white">Current Plan</h2>
             </div>
-            <Badge variant="success">{plan.name}</Badge>
+            <Badge variant="success">{plan.name.toLocaleUpperCase()}</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -58,7 +58,7 @@ export default function MyPlanPage() {
                   <GraduationCap className="h-4 w-4 text-primary" aria-hidden="true" />
                   <span className="text-xs font-medium text-body">Students</span>
                 </div>
-                <p className="text-xl font-bold text-black dark:text-white">{plan.maxStudents}</p>
+                <p className="text-xl font-bold text-black dark:text-white">{plan.limits?.maxStudents}</p>
                 <p className="text-xs text-body">max allowed</p>
               </div>
               <div className="rounded-md border border-stroke p-4 dark:border-strokedark">
@@ -66,7 +66,7 @@ export default function MyPlanPage() {
                   <Users className="h-4 w-4 text-primary" aria-hidden="true" />
                   <span className="text-xs font-medium text-body">Lecturers</span>
                 </div>
-                <p className="text-xl font-bold text-black dark:text-white">{plan.maxLecturers}</p>
+                <p className="text-xl font-bold text-black dark:text-white">{plan.limits?.maxLecturers}</p>
                 <p className="text-xs text-body">max allowed</p>
               </div>
               <div className="rounded-md border border-stroke p-4 dark:border-strokedark">
@@ -74,7 +74,7 @@ export default function MyPlanPage() {
                   <School className="h-4 w-4 text-primary" aria-hidden="true" />
                   <span className="text-xs font-medium text-body">Classes</span>
                 </div>
-                <p className="text-xl font-bold text-black dark:text-white">{plan.maxClasses}</p>
+                <p className="text-xl font-bold text-black dark:text-white">{plan.limits?.maxClasses}</p>
                 <p className="text-xs text-body">max allowed</p>
               </div>
             </div>
@@ -82,7 +82,7 @@ export default function MyPlanPage() {
             {plan.price != null && (
               <div className="border-t border-stroke pt-4 dark:border-strokedark">
                 <p className="text-sm text-body">
-                  Plan price: <span className="font-semibold text-black dark:text-white">${plan.price}</span>
+                  Plan price: <span className="font-semibold text-black dark:text-white">Nle {plan.price}</span>
                 </p>
               </div>
             )}

@@ -31,6 +31,9 @@ import {
   Layers,
   Wrench,
   ScrollText,
+  CalendarDays,
+  Sparkles,
+  Heart,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -84,10 +87,12 @@ const adminNav: NavItem[] = [
       { label: "All Subjects", href: "/admin/subjects/list" },
     ],
   },
+  { label: "Parents", href: "/admin/parents", icon: Heart },
   { label: "Assignments", href: "/admin/assignments", icon: ClipboardList },
   { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck },
   { label: "Results", href: "/admin/results", icon: FileText },
   { label: "Fees", href: "/admin/fees", icon: CreditCard },
+  { label: "Terms", href: "/admin/terms", icon: CalendarDays },
   { label: "Salary", href: "/admin/salary", icon: DollarSign },
   { label: "Institute", href: "/admin/institute", icon: Building2 },
   { label: "Theme", href: "/admin/theme", icon: Palette },
@@ -130,10 +135,19 @@ const studentNav: NavItem[] = [
   { label: "Announcements", href: "/student/announcements", icon: Megaphone },
 ];
 
+const parentNav: NavItem[] = [
+  { label: "Dashboard", href: "/parent", icon: LayoutDashboard },
+  { label: "Attendance", href: "/parent/attendance", icon: CalendarCheck },
+  { label: "Results", href: "/parent/results", icon: FileText },
+  { label: "Fees", href: "/parent/fees", icon: CreditCard },
+  { label: "Announcements", href: "/parent/announcements", icon: Megaphone },
+];
+
 const superAdminNav: NavItem[] = [
   { label: "Dashboard", href: "/super-admin", icon: LayoutDashboard },
   { label: "Admins", href: "/super-admin/admins", icon: ShieldCheck },
   { label: "System Monitor", href: "/super-admin/monitor", icon: Monitor },
+  { label: "AI Analytics", href: "/super-admin/ai-analytics", icon: Sparkles },
   { label: "Plans", href: "/super-admin/plans", icon: Layers },
   { label: "Announcements", href: "/super-admin/announcements", icon: Megaphone },
   { label: "System Config", href: "/super-admin/system", icon: Wrench },
@@ -157,6 +171,8 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     ? lecturerNav
     : isRole("student")
     ? studentNav
+    : isRole("parent")
+    ? parentNav
     : superAdminNav;
 
   const { data: announcements = [] } = useQuery({

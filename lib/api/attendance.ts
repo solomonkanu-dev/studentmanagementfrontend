@@ -8,7 +8,7 @@ export const attendanceApi = {
   },
   mark: async (payload: {
     classId: string;
-    subjectId: string;
+    subjectId?: string;
     date: string;
     records: { studentId: string; status: "present" | "absent" }[];
   }) => {

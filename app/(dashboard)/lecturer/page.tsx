@@ -9,6 +9,7 @@ import { attendanceApi } from "@/lib/api/attendance";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import TodayAttendanceCard from "@/components/ui/TodayAttendanceCard";
+import AcademicTermBanner from "@/components/ui/AcademicTermBanner";
 import { BookOpen, School, ClipboardList, CalendarCheck } from "lucide-react";
 import type { Subject, AuthUser, Class, Assignment } from "@/lib/types";
 
@@ -154,6 +155,9 @@ export default function LecturerDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* ── Current Term ────────────────────────────────────────────────────── */}
+      <AcademicTermBanner />
+
       {/* ── Stat Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

@@ -27,6 +27,7 @@ type CreateForm = z.infer<typeof createSchema>;
 export default function SubjectsListPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [formError, setFormError] = useState("");
@@ -92,9 +93,12 @@ export default function SubjectsListPage() {
     })),
   });
 
-  const filtered = subjects.filter((s: Subject) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = subjects.filter((s: Subject) => {
+    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase());
+    const classId = typeof s.class === "object" && s.class ? s.class._id : s.class;
+    const matchesClass = !classFilter || classId === classFilter;
+    return matchesSearch && matchesClass;
+  });
 
   const getClassName = (classField: string | Class) =>
     typeof classField === "object" ? classField.name : "—";
@@ -102,19 +106,32 @@ export default function SubjectsListPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-xs w-full">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body"
-            aria-hidden="true"
-          />
-          <input
-            type="text"
-            aria-label="Search subjects"
-            placeholder="Search subjects…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:max-w-xs">
+            <Search
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body"
+              aria-hidden="true"
+            />
+            <input
+              type="text"
+              aria-label="Search subjects"
+              placeholder="Search subjects…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            />
+          </div>
+          <select
+            aria-label="Filter by class"
+            value={classFilter}
+            onChange={(e) => setClassFilter(e.target.value)}
+            className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary sm:w-44"
+          >
+            <option value="">All Classes</option>
+            {(classes as Class[]).map((c) => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setShowAssign(true)}>
@@ -142,7 +159,7 @@ export default function SubjectsListPage() {
               <BookOpen className="h-7 w-7 text-primary" aria-hidden="true" />
             </div>
             <p className="text-sm text-body">
-              {search ? "No subjects match your search." : "No subjects found."}
+              {search || classFilter ? "No subjects match your filters." : "No subjects found."}
             </p>
           </div>
         ) : (

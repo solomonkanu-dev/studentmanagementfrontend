@@ -12,8 +12,36 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
-import { Plus, Search, School } from "lucide-react";
+import { Plus, Search, School, Users } from "lucide-react";
 import type { Class, AuthUser } from "@/lib/types";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function classId(c: unknown): string {
+  if (!c) return "";
+  if (typeof c === "string") return c;
+  return (c as { _id: string })._id ?? "";
+}
+
+function genderStats(students: AuthUser[], cId: string) {
+  const inClass = students.filter((s) => classId(s.class) === cId);
+  const male = inClass.filter((s) => s.studentProfile?.gender?.toLowerCase() === "male").length;
+  const female = inClass.filter((s) => s.studentProfile?.gender?.toLowerCase() === "female").length;
+  const total = inClass.length;
+  const malePct = total > 0 ? Math.round((male / total) * 100) : 0;
+  const femalePct = total > 0 ? Math.round((female / total) * 100) : 0;
+  return { total, male, female, malePct, femalePct };
+}
+
+function GenderBar({ malePct, femalePct }: { malePct: number; femalePct: number }) {
+  if (malePct === 0 && femalePct === 0) return <span className="text-xs text-body">—</span>;
+  return (
+    <div className="flex h-2 w-full max-w-[120px] overflow-hidden rounded-full bg-stroke dark:bg-strokedark">
+      <div className="bg-primary transition-all" style={{ width: `${malePct}%` }} title={`Male ${malePct}%`} />
+      <div className="bg-meta-6 transition-all" style={{ width: `${femalePct}%` }} title={`Female ${femalePct}%`} />
+    </div>
+  );
+}
 
 const createSchema = z.object({
   name: z.string().min(1, "Class name is required"),
@@ -42,6 +70,11 @@ export default function ClassesListPage() {
   const { data: lecturers = [] } = useQuery({
     queryKey: ["admin-lecturers"],
     queryFn: adminApi.getLecturers,
+  });
+
+  const { data: allStudents = [] } = useQuery({
+    queryKey: ["admin-students"],
+    queryFn: adminApi.getStudents,
   });
 
   const createMutation = useMutation({
@@ -120,6 +153,33 @@ export default function ClassesListPage() {
         </div>
       </div>
 
+      {/* ── Overall gender stats ── */}
+      {!isLoading && (allStudents as AuthUser[]).length > 0 && (() => {
+        const total = (allStudents as AuthUser[]).length;
+        const male = (allStudents as AuthUser[]).filter((s) => s.studentProfile?.gender?.toLowerCase() === "male").length;
+        const female = (allStudents as AuthUser[]).filter((s) => s.studentProfile?.gender?.toLowerCase() === "female").length;
+        const other = total - male - female;
+        return (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {[
+              { label: "Total Students", value: total, color: "text-primary", bg: "bg-primary/10" },
+              { label: "Male", value: male, sub: `${total > 0 ? Math.round((male / total) * 100) : 0}%`, color: "text-primary", bg: "bg-primary/10" },
+              { label: "Female", value: female, sub: `${total > 0 ? Math.round((female / total) * 100) : 0}%`, color: "text-meta-6", bg: "bg-meta-6/10" },
+              { label: "Other / Unknown", value: other, sub: `${total > 0 ? Math.round((other / total) * 100) : 0}%`, color: "text-body", bg: "bg-stroke/50 dark:bg-meta-4" },
+            ].map(({ label, value, sub, color, bg }) => (
+              <div key={label} className="rounded-xl border border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
+                <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${bg}`}>
+                  <Users className={`h-5 w-5 ${color}`} aria-hidden="true" />
+                </div>
+                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                <p className="text-xs text-body">{label}</p>
+                {sub && <p className={`mt-0.5 text-xs font-medium ${color}`}>{sub}</p>}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       <Card>
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -143,38 +203,57 @@ export default function ClassesListPage() {
             <TableHead>
               <tr>
                 <Th>Class Name</Th>
-                <Th>Students</Th>
+                <Th>Total</Th>
+                <Th>Male</Th>
+                <Th>Female</Th>
+                <Th>Ratio</Th>
                 <Th>Created</Th>
               </tr>
             </TableHead>
             <TableBody>
-              {filtered.map((c: Class) => (
-                <tr
-                  key={c._id}
-                  className="hover:bg-whiter transition-colors dark:hover:bg-meta-4"
-                >
-                  <Td>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-meta-2 text-sm font-bold uppercase text-primary dark:bg-meta-4 dark:text-white">
-                        {c.name.charAt(0)}
+              {filtered.map((c: Class) => {
+                const stats = genderStats(allStudents as AuthUser[], c._id);
+                return (
+                  <tr
+                    key={c._id}
+                    className="hover:bg-whiter transition-colors dark:hover:bg-meta-4"
+                  >
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-meta-2 text-sm font-bold uppercase text-primary dark:bg-meta-4 dark:text-white">
+                          {c.name.charAt(0)}
+                        </div>
+                        <span className="font-medium text-black dark:text-white">
+                          {c.name}
+                        </span>
                       </div>
-                      <span className="font-medium text-black dark:text-white">
-                        {c.name}
-                      </span>
-                    </div>
-                  </Td>
-                  <Td className="text-body">
-                    {Array.isArray(c.students) ? c.students.length : 0}
-                  </Td>
-                  <Td className="text-xs text-body">
-                    {new Date(c.createdAt).toLocaleDateString("en-US", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </Td>
-                </tr>
-              ))}
+                    </Td>
+                    <Td className="text-body">{stats.total}</Td>
+                    <Td>
+                      <span className="font-medium text-primary">{stats.male}</span>
+                      {stats.total > 0 && (
+                        <span className="ml-1 text-xs text-body">({stats.malePct}%)</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <span className="font-medium text-meta-6">{stats.female}</span>
+                      {stats.total > 0 && (
+                        <span className="ml-1 text-xs text-body">({stats.femalePct}%)</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <GenderBar malePct={stats.malePct} femalePct={stats.femalePct} />
+                    </Td>
+                    <Td className="text-xs text-body">
+                      {new Date(c.createdAt).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </Td>
+                  </tr>
+                );
+              })}
             </TableBody>
           </Table>
         )}

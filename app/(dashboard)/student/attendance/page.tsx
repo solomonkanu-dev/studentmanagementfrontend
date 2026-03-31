@@ -81,10 +81,10 @@ export default function StudentAttendancePage() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Overall Attendance" value={isLoading ? "—" : `${overall}%`} icon={BarChart2} color="blue" />
-        <StatCard label="Total Classes" value={isLoading ? "—" : totalClasses} icon={CalendarCheck} color="emerald" />
-        <StatCard label="Total Present" value={isLoading ? "—" : totalPresent} icon={UserCheck} color="emerald" />
-        <StatCard label="Total Absent" value={isLoading ? "—" : totalAbsent} icon={UserX} color="red" />
+        <StatCard label="Overall Attendance" value={isLoading ? "—" : `${overall}%`} icon={BarChart2} />
+        <StatCard label="Total Classes" value={isLoading ? "—" : totalClasses} icon={CalendarCheck} />
+        <StatCard label="Total Present" value={isLoading ? "—" : totalPresent} icon={UserCheck} />
+        <StatCard label="Total Absent" value={isLoading ? "—" : totalAbsent} icon={UserX} />
       </div>
 
       {/* Per-class summary table */}

@@ -110,7 +110,7 @@ function GlobalMaintenanceCard() {
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
               <Button
-                variant={isGlobal ? "default" : "danger"}
+                variant={isGlobal ? "secondary" : "danger"}
                 onClick={() => { setError(""); mutation.mutate(); }}
                 isLoading={mutation.isPending}
               >

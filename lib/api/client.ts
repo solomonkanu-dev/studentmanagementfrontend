@@ -31,6 +31,12 @@ apiClient.interceptors.response.use(
     const requestUrl: string = error.config?.url ?? "";
     const isAuthEndpoint = AUTH_PATHS.some((path) => requestUrl.includes(path));
 
+    if (error.response?.status === 403 && error.response?.data?.message === "Account has been suspended") {
+      if (typeof window !== "undefined") {
+        window.location.href = "/suspended";
+      }
+    }
+
     if (error.response?.status === 401 && !isAuthEndpoint) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");

@@ -26,9 +26,9 @@ import type { InstituteDeepReport, GrowthPoint } from "@/lib/types";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-  return `$${n.toLocaleString()}`;
+  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `₦${(n / 1_000).toFixed(1)}K`;
+  return `₦${n.toLocaleString()}`;
 }
 
 function pct(a: number, b: number) {
@@ -433,7 +433,7 @@ function GrowthTab() {
     SERIES.map((s) => ({ label: s.label, color: s.color, data: data[s.label as keyof typeof data] as GrowthPoint[] }))
   );
 
-  const maxVal = Math.max(1, ...merged.flatMap((m) => SERIES.map((s) => (m as Record<string, number>)[s.label] ?? 0)));
+  const maxVal = Math.max(1, ...merged.flatMap((m) => SERIES.map((s) => (m as unknown as Record<string, number>)[s.label] ?? 0)));
 
   return (
     <div className="space-y-5">
@@ -474,7 +474,7 @@ function GrowthTab() {
               <div key={m.label} className="flex shrink-0 flex-col items-center gap-1">
                 <div className="flex items-end gap-0.5" style={{ height: 140 }}>
                   {SERIES.map((s) => {
-                    const val = (m as Record<string, number>)[s.label] ?? 0;
+                    const val = (m as unknown as Record<string, number>)[s.label] ?? 0;
                     const h = Math.max(4, (val / maxVal) * 140);
                     return (
                       <div
@@ -513,7 +513,7 @@ function GrowthTab() {
                   <td className="px-4 py-2.5 font-medium text-gray-700 dark:text-gray-300">{m.label}</td>
                   {SERIES.map((s) => (
                     <td key={s.label} className={`px-4 py-2.5 text-right font-semibold ${s.text}`}>
-                      {(m as Record<string, number>)[s.label] ?? 0}
+                      {(m as unknown as Record<string, number>)[s.label] ?? 0}
                     </td>
                   ))}
                 </tr>

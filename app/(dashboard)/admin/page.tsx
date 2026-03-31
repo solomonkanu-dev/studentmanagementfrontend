@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
+import { subjectApi } from "@/lib/api/subject";
 import CardDataStats from "@/components/ui/CardDataStats";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -27,9 +28,9 @@ const MONTH_NAMES = [
 ];
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toLocaleString()}`;
+  if (n >= 1_000_000) return `Nle ${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `Nle ${(n / 1_000).toFixed(1)}k`;
+  return `Nle ${n.toLocaleString()}`;
 }
 
 function statusVariant(status: string): "success" | "warning" | "danger" {
@@ -129,6 +130,11 @@ export default function AdminDashboard() {
     queryFn: adminApi.getFeeCollectionTrend,
   });
 
+  const { data: subjects = [] } = useQuery({
+    queryKey: ["admin-subjects"],
+    queryFn: subjectApi.getAll,
+  });
+
   // Derived
   const trendSlice = [...(trend as FeeCollectionTrend[])].slice(-6);
   const trendMax = Math.max(...trendSlice.map((t) => t.totalBilled), 1);
@@ -152,7 +158,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Today's Attendance ─────────────────────────────────────────────── */}
-      <TodayAttendanceCard classes={classes} />
+      <TodayAttendanceCard classes={classes} subjects={subjects} />
 
       {/* ── Fee Analysis header ────────────────────────────────────────────── */}
       <div>

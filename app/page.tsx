@@ -19,6 +19,7 @@ export default function RootPage() {
       lecturer: "/lecturer",
       student: "/student",
       super_admin: "/super-admin",
+      parent: "/parent",
     };
     router.replace(roleRedirects[user.role] ?? "/login");
   }, [user, isLoading, router]);

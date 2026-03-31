@@ -1,16 +1,30 @@
 "use client";
 
-import { useQueries } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { studentApi } from "@/lib/api/student";
+import type { FeePayment } from "@/lib/api/student";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { CreditCard, Building2, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
+import { CreditCard, Building2, CheckCircle2, AlertCircle, Clock, Receipt } from "lucide-react";
+import Link from "next/link";
 
 const STATUS_BADGE: Record<string, "success" | "warning" | "danger" | "default"> = {
   paid: "success",
   partial: "warning",
   unpaid: "danger",
 };
+
+function formatMethod(method: string): string {
+  const map: Record<string, string> = {
+    cash: "Cash",
+    bank_transfer: "Bank Transfer",
+    card: "Card",
+    mobile_money: "Mobile Money",
+    cheque: "Cheque",
+  };
+  return map[method] ?? method;
+}
 
 export default function StudentFeesPage() {
   const [feesQuery, accountsQuery] = useQueries({
@@ -20,8 +34,14 @@ export default function StudentFeesPage() {
     ],
   });
 
+  const { data: payments = [], isLoading: paymentsLoading } = useQuery({
+    queryKey: ["my-payments"],
+    queryFn: studentApi.getMyPayments,
+  });
+
   const fee = feesQuery.data;
   const accounts = accountsQuery.data ?? [];
+  const paymentList = payments as FeePayment[];
   const isLoading = feesQuery.isLoading || accountsQuery.isLoading;
 
   if (isLoading) {
@@ -170,6 +190,67 @@ export default function StudentFeesPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Payment History */}
+      <Card>
+        <div className="flex items-center gap-2 border-b border-stroke px-5 py-4 dark:border-strokedark">
+          <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-black dark:text-white">Payment History</h2>
+        </div>
+        <CardContent>
+          {paymentsLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+            </div>
+          ) : paymentList.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <Receipt className="h-8 w-8 text-body" aria-hidden="true" />
+              <p className="text-sm font-medium text-black dark:text-white">No payments yet</p>
+              <p className="text-xs text-body">Your payment history will appear here once payments are recorded.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHead>
+                  <tr>
+                    <Th>Receipt No.</Th>
+                    <Th>Amount</Th>
+                    <Th>Method</Th>
+                    <Th>Date</Th>
+                    <Th>Receipt</Th>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {paymentList.map((payment) => (
+                    <tr key={payment._id} className="hover:bg-meta-2 transition-colors dark:hover:bg-meta-4">
+                      <Td className="font-mono text-xs text-black dark:text-white">
+                        {payment.receiptNumber}
+                      </Td>
+                      <Td>
+                        <span className="font-semibold text-black dark:text-white">
+                          {payment.amount.toLocaleString()}
+                        </span>
+                      </Td>
+                      <Td className="text-body text-xs">{formatMethod(payment.method)}</Td>
+                      <Td className="text-body text-xs">
+                        {new Date(payment.createdAt).toLocaleDateString()}
+                      </Td>
+                      <Td>
+                        <Link
+                          href={`/student/fees/receipt?paymentId=${payment._id}`}
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <Receipt className="h-3.5 w-3.5" aria-hidden="true" /> View Receipt
+                        </Link>
+                      </Td>
+                    </tr>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

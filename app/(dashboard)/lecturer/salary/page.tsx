@@ -108,21 +108,21 @@ export default function LecturerSalaryPage() {
         <StatPill
           icon={<CheckCircle2 className="h-5 w-5" aria-hidden="true" />}
           label="Total Received"
-          value={`$${fmt(totalReceived)}`}
+          value={`₦${fmt(totalReceived)}`}
           sub={`${salaries.filter((s) => s.status === "paid").length} paid`}
           color="green"
         />
         <StatPill
           icon={<Clock className="h-5 w-5" aria-hidden="true" />}
           label="Pending"
-          value={`$${fmt(totalPending)}`}
+          value={`₦${fmt(totalPending)}`}
           sub={`${salaries.filter((s) => s.status === "pending").length} record(s)`}
           color="yellow"
         />
         <StatPill
           icon={<TrendingUp className="h-5 w-5" aria-hidden="true" />}
           label="Latest Total"
-          value={latestSalary ? `$${fmt(latestSalary.totalAmount ?? 0)}` : "—"}
+          value={latestSalary ? `₦${fmt(latestSalary.totalAmount ?? 0)}` : "—"}
           sub={latestSalary ? formatMonth(latestSalary.salaryMonth) : undefined}
           color="blue"
         />
@@ -191,12 +191,12 @@ export default function LecturerSalaryPage() {
                           {formatMonth(s.salaryMonth)}
                         </span>
                       </Td>
-                      <Td className="text-body">${fmt(s.salary ?? 0)}</Td>
-                      <Td className="text-meta-3">+${fmt(s.bonus ?? 0)}</Td>
-                      <Td className="text-meta-1">-${fmt(s.deduction ?? 0)}</Td>
+                      <Td className="text-body">₦{fmt(s.salary ?? 0)}</Td>
+                      <Td className="text-meta-3">+₦{fmt(s.bonus ?? 0)}</Td>
+                      <Td className="text-meta-1">-₦{fmt(s.deduction ?? 0)}</Td>
                       <Td>
                         <span className="font-semibold text-black dark:text-white">
-                          ${fmt(s.totalAmount ?? 0)}
+                          ₦{fmt(s.totalAmount ?? 0)}
                         </span>
                       </Td>
                       <Td>

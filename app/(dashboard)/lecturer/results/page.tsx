@@ -28,10 +28,10 @@ import type { Class, Subject, AuthUser, Result } from "@/lib/types";
 
 function computeGrade(pct: number): { label: string; variant: "success" | "info" | "warning" | "danger" | "default" } {
   if (pct >= 90) return { label: "A+", variant: "success" };
-  if (pct >= 80) return { label: "A", variant: "success" };
-  if (pct >= 70) return { label: "B", variant: "info" };
-  if (pct >= 60) return { label: "C", variant: "info" };
-  if (pct >= 50) return { label: "D", variant: "warning" };
+  if (pct >= 80) return { label: "A",  variant: "success" };
+  if (pct >= 70) return { label: "B",  variant: "info" };
+  if (pct >= 60) return { label: "C",  variant: "warning" };
+  if (pct >= 50) return { label: "D",  variant: "warning" };
   return { label: "F", variant: "danger" };
 }
 
