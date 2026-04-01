@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 import { attendanceApi } from "@/lib/api/attendance";
+import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
+import type { DocStudent, DocInstitute } from "@/components/documents/DocumentsPanel";
 import CardDataStats from "@/components/ui/CardDataStats";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -46,7 +48,7 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export default function StudentDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"overview" | "profile">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "profile" | "documents">("overview");
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: student, isLoading: loadingStudent } = useQuery({
@@ -75,6 +77,11 @@ export default function StudentDetailPage({ params }: PageProps) {
     queryKey: ["student-assignments", id],
     queryFn: () => adminApi.getStudentAssignments(id),
     enabled: !!id,
+  });
+
+  const { data: institute } = useQuery({
+    queryKey: ["admin-institute"],
+    queryFn: adminApi.getMyInstitute,
   });
 
   const studentResults = useMemo(() => {
@@ -186,7 +193,7 @@ export default function StudentDetailPage({ params }: PageProps) {
       {/* Tab navigation */}
       <div className="border-b border-stroke dark:border-strokedark">
         <nav className="-mb-px flex gap-6">
-          {(["overview", "profile"] as const).map((tab) => (
+          {(["overview", "profile", "documents"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -537,6 +544,39 @@ export default function StudentDetailPage({ params }: PageProps) {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {activeTab === "documents" && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-black dark:text-white">Official Documents</h2>
+            <p className="mt-0.5 text-xs text-body">Generate and download official school documents for this student.</p>
+          </div>
+          <DocumentsPanel
+            student={{
+              _id: student._id,
+              fullName: student.fullName,
+              email: student.email,
+              // class is populated by the backend (populate('class','name'))
+              // className is already extracted above using the same typeof check
+              class: className !== "—" ? { _id: classId ?? "", name: className } : null,
+              studentProfile: {
+                registrationNumber: (sp?.registrationNumber as string | undefined),
+                admissionDate: (sp?.dateOfAdmission as string | undefined) ?? (sp?.admissionDate as string | undefined),
+                dateOfAdmission: (sp?.dateOfAdmission as string | undefined),
+                dateOfBirth: (sp?.dateOfBirth as string | undefined),
+                gender: (sp?.gender as string | undefined),
+                phone: (sp?.mobileNumber as string | undefined),
+              },
+              profilePhoto: student.profilePhoto,
+              lifecycleStatus: student.lifecycleStatus,
+              createdAt: student.createdAt,
+              promotionHistory: (student as unknown as { promotionHistory?: DocStudent["promotionHistory"] }).promotionHistory,
+            }}
+            institute={institute as DocInstitute | null}
+            showCustomize
+          />
         </div>
       )}
 

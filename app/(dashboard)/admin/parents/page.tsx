@@ -19,6 +19,7 @@ import {
   Link2,
   Link2Off,
   ShieldOff,
+  ShieldCheck,
   Users,
   Search,
 } from "lucide-react";
@@ -83,6 +84,11 @@ export default function ParentsPage() {
 
   const revokeMutation = useMutation({
     mutationFn: (parentId: string) => adminParentApi.revoke(parentId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-parents"] }),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (parentId: string) => adminParentApi.restore(parentId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-parents"] }),
   });
 
@@ -187,7 +193,7 @@ export default function ParentsPage() {
                         >
                           <Link2 className="h-4 w-4" />
                         </button>
-                        {parent.isActive && (
+                        {parent.isActive ? (
                           <button
                             onClick={() => {
                               if (confirm(`Revoke access for ${parent.fullName}?`)) {
@@ -198,6 +204,18 @@ export default function ParentsPage() {
                             className="rounded p-1 text-meta-1 hover:bg-meta-1/10 transition-colors"
                           >
                             <ShieldOff className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Restore access for ${parent.fullName}?`)) {
+                                restoreMutation.mutate(parent._id);
+                              }
+                            }}
+                            title="Restore access"
+                            className="rounded p-1 text-meta-3 hover:bg-meta-3/10 transition-colors"
+                          >
+                            <ShieldCheck className="h-4 w-4" />
                           </button>
                         )}
                       </div>
@@ -239,7 +257,7 @@ export default function ParentsPage() {
             </p>
           )}
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => { setShowCreate(false); reset(); }}>
+            <Button type="button" variant="secondary" onClick={() => { setShowCreate(false); reset(); }}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || createMutation.isPending}>
@@ -345,7 +363,7 @@ function LinkStudentModal({
           )}
         </div>
         <div className="flex justify-end pt-1">
-          <Button variant="outline" onClick={onClose}>Done</Button>
+          <Button variant="secondary" onClick={onClose}>Done</Button>
         </div>
       </div>
     </Modal>

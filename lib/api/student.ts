@@ -82,9 +82,15 @@ export const studentApi = {
     return arr[0] ?? null;
   },
 
-  getMyResults: async (): Promise<Result[]> => {
-    const { data } = await apiClient.get("/student/my-results");
+  getMyResults: async (classId?: string): Promise<Result[]> => {
+    const url = classId ? `/student/my-results?classId=${classId}` : "/student/my-results";
+    const { data } = await apiClient.get(url);
     return Array.isArray(data) ? data : data.data ?? [];
+  },
+
+  getMyPromotionHistory: async (): Promise<{ currentClass: { _id: string; name: string } | null; history: { fromClass: { _id: string; name: string } | null; toClass: { _id: string; name: string } | null; promotedAt: string }[] }> => {
+    const { data } = await apiClient.get("/student/my-promotion-history");
+    return data;
   },
 
   getPaymentAccounts: async (): Promise<InvoiceAccount[]> => {
@@ -110,5 +116,10 @@ export const studentApi = {
   getMyRanking: async (): Promise<{ rank: number | null; outOf: number; total: number }> => {
     const { data } = await apiClient.get("/student/my-ranking");
     return data.data ?? data;
+  },
+
+  updateEmailPreferences: async (optOut: string[]): Promise<{ emailOptOut: string[] }> => {
+    const { data } = await apiClient.patch("/student/email-preferences", { optOut });
+    return data;
   },
 };

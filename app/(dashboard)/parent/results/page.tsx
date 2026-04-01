@@ -6,12 +6,14 @@ import { useQuery } from "@tanstack/react-query";
 import { parentApi } from "@/lib/api/parent";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { FileText, GraduationCap } from "lucide-react";
+import { FileText, GraduationCap, History } from "lucide-react";
 import type { LinkedStudent } from "@/lib/types";
+import type { ChildPromotionHistory } from "@/lib/api/parent";
 
 interface Result {
   _id: string;
   subject?: { _id: string; name: string } | string;
+  class?: { _id: string; name: string } | string;
   marksObtained?: number;
   totalMarks?: number;
   grade?: string;
@@ -44,9 +46,39 @@ function ResultsPage() {
     (children as LinkedStudent[])[0]?._id ??
     null;
 
+  // Load promotion history to build class selector
+  const { data: promotionData } = useQuery<ChildPromotionHistory>({
+    queryKey: ["parent-promotion-history", childId],
+    queryFn: () => parentApi.getChildPromotionHistory(childId!),
+    enabled: !!childId,
+  });
+
+  // Build list of selectable classes: current + all historical "fromClass" entries
+  const classOptions = (() => {
+    if (!promotionData) return [];
+    const seen = new Set<string>();
+    const opts: { _id: string; name: string; isCurrent: boolean }[] = [];
+    if (promotionData.currentClass) {
+      seen.add(promotionData.currentClass._id);
+      opts.push({ ...promotionData.currentClass, isCurrent: true });
+    }
+    for (const p of promotionData.history) {
+      if (p.fromClass && !seen.has(p.fromClass._id)) {
+        seen.add(p.fromClass._id);
+        opts.push({ ...p.fromClass, isCurrent: false });
+      }
+    }
+    return opts;
+  })();
+
+  const [selectedClassId, setSelectedClassId] = useState<string | undefined>(undefined);
+
+  // When promotion data loads, default to current class
+  const activeClassId = selectedClassId ?? promotionData?.currentClass?._id;
+
   const { data: results = [], isLoading } = useQuery({
-    queryKey: ["parent-results", childId],
-    queryFn: () => parentApi.getChildResults(childId!),
+    queryKey: ["parent-results", childId, activeClassId],
+    queryFn: () => parentApi.getChildResults(childId!, activeClassId),
     enabled: !!childId,
   });
 
@@ -56,6 +88,8 @@ function ResultsPage() {
     typedResults.length > 0
       ? typedResults.reduce((s, r) => s + (r.percentage ?? 0), 0) / typedResults.length
       : null;
+
+  const activeClassName = classOptions.find((c) => c._id === activeClassId)?.name;
 
   return (
     <div className="space-y-6">
@@ -75,7 +109,7 @@ function ResultsPage() {
           {(children as LinkedStudent[]).map((child) => (
             <button
               key={child._id}
-              onClick={() => setSelectedId(child._id)}
+              onClick={() => { setSelectedId(child._id); setSelectedClassId(undefined); }}
               className={[
                 "flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
                 childId === child._id
@@ -90,12 +124,39 @@ function ResultsPage() {
         </div>
       )}
 
+      {/* Class / history picker */}
+      {classOptions.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <History className="h-4 w-4 text-body shrink-0" />
+          <span className="text-xs text-body">View results by class:</span>
+          {classOptions.map((c) => (
+            <button
+              key={c._id}
+              onClick={() => setSelectedClassId(c._id)}
+              className={[
+                "rounded-lg border px-3 py-1 text-xs font-medium transition-colors",
+                activeClassId === c._id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-stroke text-body hover:border-primary dark:border-strokedark",
+              ].join(" ")}
+            >
+              {c.name}
+              {c.isCurrent && (
+                <span className="ml-1 rounded-full bg-meta-3/20 px-1.5 py-0.5 text-[10px] text-meta-3">
+                  current
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex h-32 items-center justify-center">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
         </div>
       ) : typedResults.length === 0 ? (
-        <p className="text-sm text-body">No results available yet.</p>
+        <p className="text-sm text-body">No results available for {activeClassName ?? "this class"}.</p>
       ) : (
         <>
           {/* Average */}
@@ -103,7 +164,9 @@ function ResultsPage() {
             <Card>
               <CardContent className="flex items-center justify-between p-4">
                 <div>
-                  <p className="text-sm text-body">Average Score</p>
+                  <p className="text-sm text-body">
+                    Average Score{activeClassName ? ` — ${activeClassName}` : ""}
+                  </p>
                   <p className="text-2xl font-bold text-black dark:text-white">
                     {avg.toFixed(1)}%
                   </p>
@@ -116,7 +179,9 @@ function ResultsPage() {
           {/* Results table */}
           <Card>
             <CardHeader>
-              <span className="text-sm font-semibold text-black dark:text-white">Subject Results</span>
+              <span className="text-sm font-semibold text-black dark:text-white">
+                Subject Results{activeClassName ? ` — ${activeClassName}` : ""}
+              </span>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">

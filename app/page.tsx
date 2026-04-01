@@ -11,7 +11,7 @@ export default function RootPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.replace("/login");
+      router.replace("/home");
       return;
     }
     const roleRedirects: Record<string, string> = {

@@ -52,7 +52,7 @@ function FeesPage() {
     enabled: !!childId,
   });
 
-  const typedFees = fees as ChildFeeRecord[];
+  const typedFees = fees as unknown as ChildFeeRecord[];
 
   const totalBilled = typedFees.reduce((s, f) => s + f.totalAmount, 0);
   const totalPaid = typedFees.reduce((s, f) => s + f.amountPaid, 0);

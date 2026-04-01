@@ -13,6 +13,19 @@ export interface AcademicTerm {
   createdAt: string;
 }
 
+export interface PromotionEligibilityEntry {
+  _id: string;
+  fullName: string;
+  email: string;
+  lifecycleStatus?: string;
+  flags: {
+    grades: { flagged: boolean; average: number | null; threshold: number; subjectCount: number };
+    fees: { flagged: boolean; balance: number };
+    attendance: { flagged: boolean; rate: number | null; threshold: number };
+  };
+  clearForPromotion: boolean;
+}
+
 export const adminApi = {
   // Students
   getStudents: async (): Promise<AuthUser[]> => {
@@ -231,5 +244,26 @@ export const adminApi = {
   getFeeCollectionTrend: async (): Promise<FeeCollectionTrend[]> => {
     const { data } = await apiClient.get("/admin/fee-analysis/collection-trend");
     return data.data ?? data;
+  },
+
+  // Promotion
+  getPromotionPreview: async (classId: string): Promise<AuthUser[]> => {
+    const { data } = await apiClient.get(`/admin/promote/preview/${classId}`);
+    return data.data ?? data;
+  },
+  getPromotionEligibility: async (
+    classId: string,
+    opts?: { gradeThreshold?: number; attendanceThreshold?: number }
+  ): Promise<PromotionEligibilityEntry[]> => {
+    const params = new URLSearchParams();
+    if (opts?.gradeThreshold != null) params.set("gradeThreshold", String(opts.gradeThreshold));
+    if (opts?.attendanceThreshold != null) params.set("attendanceThreshold", String(opts.attendanceThreshold));
+    const qs = params.toString() ? `?${params}` : "";
+    const { data } = await apiClient.get(`/admin/promote/eligibility/${classId}${qs}`);
+    return data.data ?? data;
+  },
+  bulkPromote: async (payload: { sourceClassId: string; targetClassId: string; studentIds: string[] }) => {
+    const { data } = await apiClient.post("/admin/promote/bulk", payload);
+    return data;
   },
 };

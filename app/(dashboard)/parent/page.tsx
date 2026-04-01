@@ -15,9 +15,12 @@ import {
   GraduationCap,
   ChevronRight,
   AlertCircle,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import type { LinkedStudent } from "@/lib/types";
+import type { ChildPromotionHistory } from "@/lib/api/parent";
 
 export default function ParentDashboard() {
   const { user } = useAuth();
@@ -57,6 +60,18 @@ export default function ParentDashboard() {
     queryFn: parentApi.getAnnouncements,
     refetchInterval: 60_000,
   });
+
+  const { data: promotionData } = useQuery<ChildPromotionHistory>({
+    queryKey: ["parent-promotion-history", childId],
+    queryFn: () => parentApi.getChildPromotionHistory(childId!),
+    enabled: !!childId,
+  });
+
+  // Show banner if most recent promotion was within the last 60 days
+  const latestPromotion = promotionData?.history?.[0] ?? null;
+  const isRecentPromotion =
+    latestPromotion &&
+    Date.now() - new Date(latestPromotion.promotedAt).getTime() < 60 * 24 * 60 * 60 * 1000;
 
   const outstandingFees = (fees as { balance: number; status: string }[]).filter(
     (f) => f.status !== "paid"
@@ -137,6 +152,27 @@ export default function ParentDashboard() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Promotion banner */}
+      {isRecentPromotion && latestPromotion && (
+        <div className="flex items-center gap-3 rounded-xl border border-meta-3/40 bg-meta-3/10 px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-meta-3/20">
+            <Sparkles className="h-4 w-4 text-meta-3" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-meta-3">
+              {selectedChild?.fullName.split(" ")[0]} was promoted!
+            </p>
+            <p className="text-xs text-body flex items-center gap-1 flex-wrap">
+              <span>{latestPromotion.fromClass?.name ?? "Previous class"}</span>
+              <ArrowRight className="h-3 w-3 shrink-0" />
+              <span className="font-medium text-black dark:text-white">{latestPromotion.toClass?.name ?? "New class"}</span>
+              <span>·</span>
+              <span>{new Date(latestPromotion.promotedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Quick stats */}

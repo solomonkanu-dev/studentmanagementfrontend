@@ -18,6 +18,7 @@ export interface AuthUser {
   studentProfile?: StudentProfile;
   lecturerProfile?: LecturerProfile;
   linkedStudents?: LinkedStudent[];
+  emailOptOut?: string[];
   createdAt: string;
   updatedAt: string;
 }

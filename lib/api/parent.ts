@@ -20,6 +20,17 @@ export interface ChildFee {
   dueDate?: string;
 }
 
+export interface PromotionEntry {
+  fromClass: { _id: string; name: string } | null;
+  toClass: { _id: string; name: string } | null;
+  promotedAt: string;
+}
+
+export interface ChildPromotionHistory {
+  currentClass: { _id: string; name: string } | null;
+  history: PromotionEntry[];
+}
+
 export const parentApi = {
   getMyChildren: async (): Promise<LinkedStudent[]> => {
     const { data } = await apiClient.get("/parent/my-children");
@@ -31,8 +42,11 @@ export const parentApi = {
     return data.data ?? data;
   },
 
-  getChildResults: async (studentId: string): Promise<unknown[]> => {
-    const { data } = await apiClient.get(`/parent/child/${studentId}/results`);
+  getChildResults: async (studentId: string, classId?: string): Promise<unknown[]> => {
+    const url = classId
+      ? `/parent/child/${studentId}/results?classId=${classId}`
+      : `/parent/child/${studentId}/results`;
+    const { data } = await apiClient.get(url);
     return data.data ?? data;
   },
 
@@ -44,6 +58,11 @@ export const parentApi = {
   getAnnouncements: async (): Promise<unknown[]> => {
     const { data } = await apiClient.get("/parent/announcements");
     return data.data ?? data;
+  },
+
+  getChildPromotionHistory: async (studentId: string): Promise<ChildPromotionHistory> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/promotion-history`);
+    return data;
   },
 };
 
@@ -76,6 +95,11 @@ export const adminParentApi = {
 
   revoke: async (parentId: string): Promise<unknown> => {
     const { data } = await apiClient.patch(`/admin/parents/${parentId}/revoke`);
+    return data;
+  },
+
+  restore: async (parentId: string): Promise<unknown> => {
+    const { data } = await apiClient.patch(`/admin/parents/${parentId}/restore`);
     return data;
   },
 };
