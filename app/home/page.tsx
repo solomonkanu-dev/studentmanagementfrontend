@@ -23,6 +23,10 @@ import {
   Globe,
   Menu,
   X,
+  Bot,
+  Sparkles,
+  MessageCircle,
+  Send,
 } from "lucide-react";
 
 // ─── Scroll-reveal hook ───────────────────────────────────────────────────────
@@ -124,7 +128,7 @@ function DashboardMockup() {
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: "Students", val: "1,248", color: "from-blue-400/40 to-blue-500/40" },
-                { label: "Lecturers", val: "64", color: "from-violet-400/40 to-violet-500/40" },
+                { label: "Teachers", val: "64", color: "from-violet-400/40 to-violet-500/40" },
                 { label: "Classes", val: "18", color: "from-emerald-400/40 to-emerald-500/40" },
               ].map(({ label, val, color }) => (
                 <div key={label} className={`rounded-xl bg-gradient-to-br p-2.5 ${color}`}>
@@ -177,7 +181,7 @@ function DashboardMockup() {
             </div>
             <div>
               <p className="text-[10px] font-semibold text-gray-800">Payment Received</p>
-              <p className="text-[9px] text-gray-500">₦45,000 · just now</p>
+              <p className="text-[9px] text-gray-500">NLe 45,000 · just now</p>
             </div>
           </div>
         </div>
@@ -274,9 +278,16 @@ const FEATURES = [
   {
     icon: Shield,
     title: "Role-Based Access",
-    desc: "Super Admin, Admin, Lecturer, Student and Parent roles each with tailored dashboards and permissions.",
+    desc: "Super Admin, Admin, Teacher, Student and Parent roles each with tailored dashboards and permissions.",
     color: "from-slate-600 to-slate-700",
     bg: "bg-slate-50",
+  },
+  {
+    icon: Bot,
+    title: "AI Assistant",
+    desc: "Built-in AI chat for every role — admins query live data, teachers get insights, students ask about results and fees.",
+    color: "from-fuchsia-500 to-purple-600",
+    bg: "bg-fuchsia-50",
   },
 ];
 
@@ -320,7 +331,7 @@ const ROLES = [
     ],
   },
   {
-    role: "Lecturer",
+    role: "Teacher",
     emoji: "👨‍🏫",
     color: "border-violet-200 bg-violet-50",
     badge: "bg-violet-100 text-violet-700",
@@ -364,21 +375,21 @@ const ROLES = [
 
 const TESTIMONIALS = [
   {
-    name: "Dr. Chidi Okafor",
-    role: "School Principal, Lagos",
+    name: "Mr. Abu Bangura",
+    role: "School Principal, Freetown",
     text: "StudentMS transformed how we manage our 1,200 students. The report card generation alone saves us 3 days every term.",
     stars: 5,
   },
   {
-    name: "Mrs. Fatima Bello",
-    role: "Admin Officer, Abuja",
+    name: "Mrs. Aminata Koroma",
+    role: "Admin Officer, Bo",
     text: "Fee tracking used to be a nightmare. Now we see exactly who has paid, who owes, and receipts go out automatically.",
     stars: 5,
   },
   {
-    name: "Mr. Emeka Eze",
-    role: "Head of Academics, Enugu",
-    text: "Lecturers adapted in one day. Marking attendance and publishing results is now a 2-minute job per class.",
+    name: "Mr. Ibrahim Sesay",
+    role: "Head of Academics, Kenema",
+    text: "Teachers adapted in one day. Marking attendance and publishing results is now a 2-minute job per class.",
     stars: 5,
   },
 ];
@@ -388,8 +399,132 @@ const TESTIMONIALS = [
 const TICKER = [
   "Student Enrolment", "Fee Management", "Results & Grading", "Attendance Tracking",
   "Document Generation", "Email Notifications", "Role-Based Access", "Salary Management",
-  "Assignment Tracking", "Parent Portal", "Analytics Dashboard", "Audit Logs",
+  "Assignment Tracking", "Parent Portal", "Analytics Dashboard", "Audit Logs", "AI Assistant",
 ];
+
+// ─── AI Chat Mockup ───────────────────────────────────────────────────────────
+
+const AI_MESSAGES = [
+  {
+    role: "Admin",
+    color: "bg-blue-500",
+    question: "How many students haven't paid fees this term?",
+    answer: "15 students have outstanding balances totalling NLe 45,000. Class 3B has the highest default rate at 40%.",
+    delay: 0,
+  },
+  {
+    role: "Teacher",
+    color: "bg-violet-500",
+    question: "What's the average grade for Form 2A in Maths?",
+    answer: "Class average is 72.4%. Top performer is Abu Bangura with 94%. 3 students are below the pass threshold.",
+    delay: 0.6,
+  },
+  {
+    role: "Student",
+    color: "bg-emerald-500",
+    question: "What is my attendance rate this term?",
+    answer: "Your attendance is 87% — 26 days present, 4 absent. You need 75% minimum to sit exams. You're good!",
+    delay: 1.2,
+  },
+];
+
+function AIChatMockup() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setActive((v) => (v + 1) % AI_MESSAGES.length), 3500);
+    return () => clearInterval(t);
+  }, []);
+
+  const msg = AI_MESSAGES[active];
+
+  return (
+    <div className="relative mx-auto w-full max-w-md">
+      {/* Glow */}
+      <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-fuchsia-500/30 to-purple-600/30 blur-3xl" />
+
+      <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden ring-1 ring-white/15">
+        {/* Title bar */}
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg">
+            <Bot className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">StudentMS AI</p>
+            <p className="text-[10px] text-white/50">Always available · Role-aware</p>
+          </div>
+          <span className="ml-auto flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-1 text-[10px] font-medium text-emerald-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Online
+          </span>
+        </div>
+
+        {/* Chat area */}
+        <div className="space-y-4 p-5 min-h-[220px]">
+          {/* Role indicator */}
+          <div
+            key={active + "-role"}
+            className="flex items-center gap-2"
+            style={{ animation: "fade-in 0.4s ease" }}
+          >
+            <div className={`flex h-7 w-7 items-center justify-center rounded-full ${msg.color} text-[10px] font-bold text-white`}>
+              {msg.role[0]}
+            </div>
+            <span className="text-[11px] font-medium text-white/50">{msg.role}</span>
+          </div>
+
+          {/* User question bubble */}
+          <div
+            key={active + "-q"}
+            className="flex justify-end"
+            style={{ animation: "fade-in 0.4s ease 0.1s both" }}
+          >
+            <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-white/15 px-4 py-2.5">
+              <p className="text-sm text-white">{msg.question}</p>
+            </div>
+          </div>
+
+          {/* AI response */}
+          <div
+            key={active + "-a"}
+            className="flex items-start gap-2.5"
+            style={{ animation: "fade-in 0.5s ease 0.5s both" }}
+          >
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600">
+              <Sparkles className="h-3.5 w-3.5 text-white" />
+            </div>
+            <div className="max-w-[80%] rounded-2xl rounded-tl-sm bg-gradient-to-br from-fuchsia-500/20 to-purple-600/20 px-4 py-2.5 ring-1 ring-white/10">
+              <p className="text-sm leading-relaxed text-white/90">{msg.answer}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Input bar */}
+        <div className="flex items-center gap-3 border-t border-white/10 px-4 py-3">
+          <input
+            readOnly
+            value="Ask anything about your school…"
+            className="flex-1 bg-transparent text-sm text-white/30 outline-none"
+          />
+          <button className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg transition-transform hover:scale-105">
+            <Send className="h-3.5 w-3.5 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Role tab dots */}
+      <div className="mt-4 flex justify-center gap-2">
+        {AI_MESSAGES.map((m, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            className={`h-1.5 rounded-full transition-all ${i === active ? "w-6 bg-fuchsia-400" : "w-1.5 bg-white/20"}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
@@ -422,7 +557,7 @@ function Navbar() {
 
         {/* Desktop links */}
         <div className="hidden items-center gap-8 md:flex">
-          {["Features", "How It Works", "Roles", "Testimonials"].map((label) => (
+          {["Features", "AI Assistant", "How It Works", "Roles", "Testimonials"].map((label) => (
             <a
               key={label}
               href={`#${label.toLowerCase().replace(/ /g, "-")}`}
@@ -465,7 +600,7 @@ function Navbar() {
       {/* Mobile drawer */}
       {open && (
         <div className="md:hidden bg-white border-t border-stroke px-6 py-4 shadow-lg space-y-4">
-          {["Features", "How It Works", "Roles", "Testimonials"].map((label) => (
+          {["Features", "AI Assistant", "How It Works", "Roles", "Testimonials"].map((label) => (
             <a
               key={label}
               href={`#${label.toLowerCase().replace(/ /g, "-")}`}
@@ -541,14 +676,14 @@ export default function LandingPage() {
                 <span className="animate-ping-slow absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
               </span>
-              Now with Email Notifications & PDF Documents
+              Smart School Management · Now with AI Assistant
             </div>
 
             <h1
               className="animate-fade-up text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl"
               style={{ animationDelay: "0.1s" }}
             >
-              The complete
+              Smart school
               <br />
               <span
                 className="animate-shimmer bg-clip-text text-transparent"
@@ -558,19 +693,19 @@ export default function LandingPage() {
                   WebkitBackgroundClip: "text",
                 }}
               >
-                school management
+                management
               </span>
               <br />
-              platform.
+              powered by AI.
             </h1>
 
             <p
               className="animate-fade-up mt-6 max-w-lg text-lg leading-relaxed text-white/65"
               style={{ animationDelay: "0.25s" }}
             >
-              StudentMS handles everything — from enrolment and results to fees,
-              attendance, assignments and official documents. One platform for your
-              entire institution.
+              StudentMS is the smart way to run your school — enrolment, results,
+              fees, attendance, assignments, documents and a built-in AI assistant.
+              One platform. Every role. Sierra Leone.
             </p>
 
             <div
@@ -695,6 +830,76 @@ export default function LandingPage() {
                 </div>
               </Reveal>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI Assistant ──────────────────────────────────────────────────── */}
+      <section id="ai-assistant" className="py-24 overflow-hidden" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #2e1065 100%)" }}>
+        {/* Blobs */}
+        <div className="pointer-events-none absolute left-[-10%] h-96 w-96 animate-drift rounded-full bg-fuchsia-600/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-[-5%] h-80 w-80 animate-drift rounded-full bg-purple-600/20 blur-3xl" style={{ animationDelay: "1.5s" }} />
+
+        <div className="relative mx-auto max-w-7xl px-6">
+          <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+            {/* Text side */}
+            <Reveal>
+              <span className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-400/10 px-4 py-1.5 text-xs font-semibold text-fuchsia-300 mb-6">
+                <Sparkles className="h-3.5 w-3.5" />
+                Powered by Claude AI
+              </span>
+              <h2 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl leading-tight">
+                Your school has its own
+                <br />
+                <span className="bg-gradient-to-r from-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                  AI assistant
+                </span>
+              </h2>
+              <p className="mt-5 text-lg text-white/60 leading-relaxed max-w-lg">
+                Every role gets a context-aware AI that knows your live school data — no copy-paste, no switching tabs.
+              </p>
+
+              <div className="mt-8 space-y-4">
+                {[
+                  {
+                    icon: Bot,
+                    title: "Admin AI — Data on demand",
+                    desc: "Query fee collection rates, attendance trends, student performance and more in plain English.",
+                    color: "text-blue-400",
+                    bg: "bg-blue-400/10",
+                  },
+                  {
+                    icon: MessageCircle,
+                    title: "Teacher AI — Class insights",
+                    desc: "Ask about class averages, struggling students, or assignment submission rates instantly.",
+                    color: "text-violet-400",
+                    bg: "bg-violet-400/10",
+                  },
+                  {
+                    icon: GraduationCap,
+                    title: "Student AI — Personal guide",
+                    desc: "Students can ask about results, attendance, fees, or upcoming deadlines at any time.",
+                    color: "text-emerald-400",
+                    bg: "bg-emerald-400/10",
+                  },
+                ].map(({ icon: Icon, title, desc, color, bg }) => (
+                  <div key={title} className="flex items-start gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur-sm">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${bg}`}>
+                      <Icon className={`h-5 w-5 ${color}`} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{title}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-white/50">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+
+            {/* Chat mockup side */}
+            <Reveal delay={0.2}>
+              <AIChatMockup />
+            </Reveal>
           </div>
         </div>
       </section>

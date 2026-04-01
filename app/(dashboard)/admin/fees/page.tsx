@@ -533,7 +533,7 @@ function AssignStudentModal({
                         <span className="text-sm text-black dark:text-white">{p.label}</span>
                       </div>
                       <span className="shrink-0 text-sm font-medium text-black dark:text-white">
-                        ₦{p.amount.toLocaleString()}
+                        NLe {p.amount.toLocaleString()}
                       </span>
                     </label>
                   );
@@ -542,7 +542,7 @@ function AssignStudentModal({
             ))}
             <div className="flex items-center justify-between rounded border border-stroke bg-whiter px-3 py-2 dark:border-strokedark dark:bg-meta-4">
               <span className="text-xs font-semibold text-black dark:text-white">Total</span>
-              <span className="text-sm font-bold text-primary">₦{total.toLocaleString()}</span>
+              <span className="text-sm font-bold text-primary">NLe {total.toLocaleString()}</span>
             </div>
           </div>
         )}

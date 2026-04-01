@@ -12,6 +12,7 @@ import TodayAttendanceCard from "@/components/ui/TodayAttendanceCard";
 import AcademicTermBanner from "@/components/ui/AcademicTermBanner";
 import { BookOpen, School, ClipboardList, CalendarCheck } from "lucide-react";
 import type { Subject, AuthUser, Class, Assignment } from "@/lib/types";
+import { useClassLabel } from "@/hooks/useClassLabel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ function formatDate(iso: string): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LecturerDashboard() {
+  const { plural: classesLabel } = useClassLabel();
   const today = new Date().toISOString().split("T")[0];
 
   const { data: subjects = [], isLoading: subjectsLoading } = useQuery({
@@ -166,7 +168,7 @@ export default function LecturerDashboard() {
           icon={BookOpen}
         />
         <StatCard
-          label="My Classes"
+          label={`My ${classesLabel}`}
           value={isLoading ? "—" : (classes as Class[]).length}
           icon={School}
         />

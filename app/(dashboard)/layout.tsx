@@ -22,11 +22,23 @@ export default function DashboardLayout({
   useColorMode();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace("/login");
-    }
-    if (!isLoading && user && user.isActive === false) {
-      router.replace("/suspended");
+    if (isLoading) return;
+    if (!user) { router.replace("/login"); return; }
+    if (user.isActive === false) { router.replace("/suspended"); return; }
+
+    // Redirect admin to onboarding if institute isn't set up yet
+    if (user.role === "admin") {
+      const inst = user.institute;
+      const onboardingDone =
+        typeof inst === "object" ? inst.onboardingCompleted : false;
+      const hasInstitute = !!inst;
+      const isOnboardingRoute =
+        typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/admin/onboarding");
+
+      if ((!hasInstitute || !onboardingDone) && !isOnboardingRoute) {
+        router.replace("/admin/onboarding");
+      }
     }
   }, [user, isLoading, router]);
 

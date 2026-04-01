@@ -61,7 +61,7 @@ export default function SuperAdminDashboard() {
           <ShieldCheck className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
         <CardDataStats
-          title="Lecturers"
+          title="Teachers"
           total={String(stats?.lecturers?.total ?? "—")}
           rate=""
           levelUp

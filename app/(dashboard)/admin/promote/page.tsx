@@ -358,7 +358,7 @@ export default function PromotePage() {
                                 const f = student.flags[key];
                                 let detail = "";
                                 if (key === "grades") { const gf = f as typeof student.flags.grades; detail = `${gf.average ?? "N/A"}% avg (min ${gf.threshold}%)`; }
-                                if (key === "fees") detail = `₦${(f as typeof student.flags.fees).balance.toLocaleString()} outstanding`;
+                                if (key === "fees") detail = `NLe ${(f as typeof student.flags.fees).balance.toLocaleString()} outstanding`;
                                 if (key === "attendance") { const af = f as typeof student.flags.attendance; detail = `${af.rate ?? "N/A"}% rate (min ${af.threshold}%)`; }
                                 return (
                                   <span
@@ -383,7 +383,7 @@ export default function PromotePage() {
                             📅 {student.flags.attendance.rate != null ? `${student.flags.attendance.rate}%` : "—"}
                           </span>
                           <span title="Fee balance">
-                            💰 {student.flags.fees.balance > 0 ? `₦${student.flags.fees.balance.toLocaleString()}` : "✓"}
+                            💰 {student.flags.fees.balance > 0 ? `NLe ${student.flags.fees.balance.toLocaleString()}` : "✓"}
                           </span>
                         </div>
                       </label>

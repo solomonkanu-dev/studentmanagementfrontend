@@ -368,7 +368,7 @@ export default function LecturerPromotePage() {
                                 const f = student.flags[key];
                                 let detail = "";
                                 if (key === "grades") { const gf = f as typeof student.flags.grades; detail = `${gf.average ?? "N/A"}% avg (min ${gf.threshold}%)`; }
-                                if (key === "fees") detail = `₦${(f as typeof student.flags.fees).balance.toLocaleString()} outstanding`;
+                                if (key === "fees") detail = `NLe ${(f as typeof student.flags.fees).balance.toLocaleString()} outstanding`;
                                 if (key === "attendance") { const af = f as typeof student.flags.attendance; detail = `${af.rate ?? "N/A"}% rate (min ${af.threshold}%)`; }
                                 return (
                                   <span key={key} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${meta.color} ${meta.bgColor}`}>
@@ -383,7 +383,7 @@ export default function LecturerPromotePage() {
                         <div className="shrink-0 flex gap-3 text-[11px] text-body">
                           <span title="Grade average">📊 {student.flags.grades.average != null ? `${student.flags.grades.average}%` : "—"}</span>
                           <span title="Attendance rate">📅 {student.flags.attendance.rate != null ? `${student.flags.attendance.rate}%` : "—"}</span>
-                          <span title="Fee balance">💰 {student.flags.fees.balance > 0 ? `₦${student.flags.fees.balance.toLocaleString()}` : "✓"}</span>
+                          <span title="Fee balance">💰 {student.flags.fees.balance > 0 ? `NLe ${student.flags.fees.balance.toLocaleString()}` : "✓"}</span>
                         </div>
                       </label>
                     );

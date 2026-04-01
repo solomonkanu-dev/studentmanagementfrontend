@@ -194,7 +194,7 @@ export default function ParentDashboard() {
         <StatCard
           icon={<CreditCard className="h-5 w-5 text-meta-1" />}
           label="Outstanding"
-          value={`₦${totalOutstanding.toLocaleString()}`}
+          value={`NLe ${totalOutstanding.toLocaleString()}`}
           sub={outstandingFees.length > 0 ? `${outstandingFees.length} unpaid` : "All clear"}
           color="bg-meta-1/10"
         />

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useClassLabel } from "@/hooks/useClassLabel";
 import { announcementApi } from "@/lib/api/announcement";
 import { subjectApi } from "@/lib/api/subject";
 import { assignmentApi, submissionApi } from "@/lib/api/assignment";
@@ -62,12 +63,12 @@ const adminNav: NavItem[] = [
     ],
   },
   {
-    label: "Lecturers",
+    label: "Teachers",
     href: "/admin/lecturers",
     icon: Users,
     children: [
       { label: "Overview", href: "/admin/lecturers" },
-      { label: "All Lecturers", href: "/admin/lecturers/list" },
+      { label: "All Teachers", href: "/admin/lecturers/list" },
     ],
   },
   {
@@ -168,14 +169,31 @@ interface SidebarProps {
 
 export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const { user, logout, isRole } = useAuth();
+  const { plural: classesLabel } = useClassLabel();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLElement>(null);
 
+  // Build dynamic nav with the right class/form label
+  const dynamicAdminNav: NavItem[] = adminNav.map((item) =>
+    item.href === "/admin/classes"
+      ? {
+          ...item,
+          label: classesLabel,
+          children: item.children?.map((c) =>
+            c.href === "/admin/classes/list" ? { ...c, label: `All ${classesLabel}` } : c
+          ),
+        }
+      : item
+  );
+  const dynamicLecturerNav: NavItem[] = lecturerNav.map((item) =>
+    item.href === "/lecturer/classes" ? { ...item, label: `My ${classesLabel}` } : item
+  );
+
   const navItems = isRole("admin")
-    ? adminNav
+    ? dynamicAdminNav
     : isRole("lecturer")
-    ? lecturerNav
+    ? dynamicLecturerNav
     : isRole("student")
     ? studentNav
     : isRole("parent")

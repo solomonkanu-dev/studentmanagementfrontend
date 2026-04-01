@@ -154,7 +154,7 @@ function PasswordReveal({
           <p className="text-sm font-semibold text-meta-3">{label}</p>
         </div>
         <p className="mb-3 text-xs text-body">
-          Share this temporary password with the lecturer. They should change it
+          Share this temporary password with the teacher. They should change it
           on first login.
         </p>
         <div className="flex items-center gap-2 rounded border border-stroke bg-white px-3 py-2 dark:border-strokedark dark:bg-boxdark">
@@ -223,7 +223,7 @@ function LecturerFormFields({
           <Input
             label="Email *"
             type="email"
-            placeholder="lecturer@school.edu"
+            placeholder="teacher@school.edu"
             error={errors.email?.message}
             {...register("email")}
           />
@@ -243,7 +243,7 @@ function LecturerFormFields({
             />
             <Input
               label="Position"
-              placeholder="Senior Lecturer"
+              placeholder="Senior Teacher"
               {...register("position")}
             />
           </div>
@@ -320,12 +320,12 @@ function LecturerFormFields({
           </div>
           <Input
             label="Phone"
-            placeholder="+234 801 234 5678"
+            placeholder="+232 76 123 456"
             {...register("phoneNumber")}
           />
           <Input
             label="Address"
-            placeholder="123 University Rd, Lagos"
+            placeholder="123 University Rd, Freetown"
             {...register("address")}
           />
         </div>
@@ -613,7 +613,7 @@ export default function LecturersListPage() {
           </Button>
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Add Lecturer
+            Add Teacher
           </Button>
         </div>
       </div>
@@ -625,7 +625,7 @@ export default function LecturersListPage() {
             <div
               className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary"
               role="status"
-              aria-label="Loading lecturers"
+              aria-label="Loading teachers"
             />
           </div>
         ) : filtered.length === 0 ? (
@@ -634,7 +634,7 @@ export default function LecturersListPage() {
               <Users className="h-7 w-7 text-primary" aria-hidden="true" />
             </div>
             <p className="text-sm text-body">
-              {search || classFilter ? "No lecturers match your filters." : "No lecturers found."}
+              {search || classFilter ? "No teachers match your filters." : "No teachers found."}
             </p>
           </div>
         ) : (
@@ -691,13 +691,13 @@ export default function LecturersListPage() {
                       <Link href={`/admin/lecturers/${l._id}`}>
                         <ActionBtn
                           icon={<Eye className="h-3.5 w-3.5" />}
-                          label="View lecturer"
+                          label="View teacher"
                           onClick={() => {}}
                         />
                       </Link>
                       <ActionBtn
                         icon={<Pencil className="h-3.5 w-3.5" />}
-                        label="Edit lecturer"
+                        label="Edit teacher"
                         onClick={() => openEdit(l)}
                       />
                       <ActionBtn
@@ -730,7 +730,7 @@ export default function LecturersListPage() {
       </Card>
 
       {/* ── Create Modal ── */}
-      <Modal open={showCreate} onClose={closeCreate} title="Add Lecturer">
+      <Modal open={showCreate} onClose={closeCreate} title="Add Teacher">
         <form onSubmit={handleCreate(onCreateSubmit)} className="space-y-5">
           <LecturerFormFields register={regCreate} errors={createErrors} />
 

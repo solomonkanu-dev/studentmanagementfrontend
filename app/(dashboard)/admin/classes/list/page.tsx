@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Plus, Search, School, Users } from "lucide-react";
 import type { Class, AuthUser } from "@/lib/types";
+import { useClassLabel } from "@/hooks/useClassLabel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ const assignSchema = z.object({
 type AssignForm = z.infer<typeof assignSchema>;
 
 export default function ClassesListPage() {
+  const { label: classLabel, plural: classesLabel } = useClassLabel();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -148,7 +150,7 @@ export default function ClassesListPage() {
           </Button>
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            New Class
+            New {classLabel}
           </Button>
         </div>
       </div>
@@ -272,7 +274,7 @@ export default function ClassesListPage() {
           className="space-y-4"
         >
           <Input
-            label="Class Name"
+            label={`${classLabel} Name`}
             placeholder="e.g. Year 1 - Science"
             error={createErrors.name?.message}
             {...registerCreate("name")}

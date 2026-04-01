@@ -109,7 +109,7 @@ function FeesPage() {
               <Card key={s.label}>
                 <CardContent className="p-4 text-center">
                   <p className={`text-lg font-bold ${s.color}`}>
-                    ₦{s.value.toLocaleString()}
+                    NLe {s.value.toLocaleString()}
                   </p>
                   <p className="mt-1 text-xs text-body">{s.label}</p>
                 </CardContent>
@@ -128,7 +128,7 @@ function FeesPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-body">
-                        Paid: ₦{(fee.amountPaid ?? 0).toLocaleString()} / ₦{(fee.totalAmount ?? 0).toLocaleString()}
+                        Paid: NLe {(fee.amountPaid ?? 0).toLocaleString()} / NLe {(fee.totalAmount ?? 0).toLocaleString()}
                       </p>
                       {fee.dueDate && (
                         <p className="text-[11px] text-body">
@@ -142,7 +142,7 @@ function FeesPage() {
                       </Badge>
                       {fee.balance > 0 && (
                         <span className="text-xs font-medium text-meta-1">
-                          ₦{(fee.balance ?? 0).toLocaleString()} due
+                          NLe {(fee.balance ?? 0).toLocaleString()} due
                         </span>
                       )}
                     </div>
@@ -152,7 +152,7 @@ function FeesPage() {
                       {fee.items.map((item, i) => (
                         <div key={i} className="flex items-center justify-between rounded-lg bg-whiter px-3 py-1.5 dark:bg-meta-4/20">
                           <p className="text-sm font-medium text-black dark:text-white">{item.title}</p>
-                          <p className="text-xs text-body">₦{(item.amount ?? 0).toLocaleString()}</p>
+                          <p className="text-xs text-body">NLe {(item.amount ?? 0).toLocaleString()}</p>
                         </div>
                       ))}
                     </div>

@@ -12,7 +12,7 @@ export interface AuthUser {
   lifecycleStatus?: "active" | "graduated" | "transferred" | "withdrawn";
   lifecycleNote?: string;
   lifecycleUpdatedAt?: string;
-  institute?: string;
+  institute?: string | { _id: string; name: string; schoolType?: SchoolType; onboardingCompleted?: boolean };
   class?: string;
   profilePhoto?: string;
   studentProfile?: StudentProfile;
@@ -43,6 +43,8 @@ export interface LoginResponse {
 
 // ─── Institute ────────────────────────────────────────────────────────────────
 
+export type SchoolType = 'primary' | 'secondary';
+
 export interface Institute {
   _id: string;
   name: string;
@@ -54,6 +56,8 @@ export interface Institute {
   targetLine?: string;
   logo?: string;
   admin: string;
+  schoolType?: SchoolType;
+  onboardingCompleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }

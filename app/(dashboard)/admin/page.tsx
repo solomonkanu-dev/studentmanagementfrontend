@@ -19,6 +19,7 @@ import {
   Clock,
 } from "lucide-react";
 import type { FeeByClass, FeeByStatus, FeeDefaulter, FeeCollectionTrend } from "@/lib/types";
+import { useClassLabel } from "@/hooks/useClassLabel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ function FeeStat({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
+  const { plural: classesLabel } = useClassLabel();
   const { data: students = [] } = useQuery({
     queryKey: ["admin-students"],
     queryFn: adminApi.getStudents,
@@ -146,10 +148,10 @@ export default function AdminDashboard() {
         <CardDataStats title="Total Students" total={String(students.length)} rate="" levelUp>
           <GraduationCap className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
-        <CardDataStats title="Lecturers" total={String(lecturers.length)} rate="" levelUp>
+        <CardDataStats title="Teachers" total={String(lecturers.length)} rate="" levelUp>
           <Users className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
-        <CardDataStats title="Classes" total={String(classes.length)} rate="" levelUp>
+        <CardDataStats title={classesLabel} total={String(classes.length)} rate="" levelUp>
           <School className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
         <CardDataStats title="Assignments" total={String(assignments.length)} rate="" levelUp>

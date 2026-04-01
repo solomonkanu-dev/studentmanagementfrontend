@@ -759,10 +759,10 @@ function StudentFormFields({
             <SelectField label="Blood Group" name="bloodGroup" register={register} options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input label="Phone" placeholder="+234 801 234 5678" {...register("mobileNumber")} />
+            <Input label="Phone" placeholder="+232 76 123 456" {...register("mobileNumber")} />
             <Input label="Religion" placeholder="Christianity" {...register("religion")} />
           </div>
-          <Input label="Address" placeholder="123 Main St, Lagos" {...register("address")} />
+          <Input label="Address" placeholder="123 Main St, Freetown" {...register("address")} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Previous School" placeholder="St. Mary's Academy" {...register("previousSchool")} />
             <Input label="Family Type" placeholder="Nuclear / Extended" {...register("familyType")} />
@@ -776,7 +776,7 @@ function StudentFormFields({
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Guardian Name" placeholder="John Doe" {...register("guardianName")} />
-            <Input label="Guardian Phone" placeholder="+234 801 234 5678" {...register("guardianPhone")} />
+            <Input label="Guardian Phone" placeholder="+232 76 123 456" {...register("guardianPhone")} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Guardian Email" type="email" placeholder="john@example.com" error={errors.guardianEmail?.message} {...register("guardianEmail")} />

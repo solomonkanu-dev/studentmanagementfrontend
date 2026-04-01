@@ -156,7 +156,7 @@ export default function InstitutePage() {
             />
             <Input
               label="Address *"
-              placeholder="123 University Ave, Lagos"
+              placeholder="123 University Ave, Freetown"
               error={errors.address?.message}
               {...register("address")}
             />
@@ -164,7 +164,7 @@ export default function InstitutePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 label="Phone *"
-                placeholder="+234 801 234 5678"
+                placeholder="+232 76 123 456"
                 error={errors.phoneNumber?.message}
                 {...register("phoneNumber")}
               />
@@ -185,7 +185,7 @@ export default function InstitutePage() {
               />
               <Input
                 label="Country"
-                placeholder="Nigeria"
+                placeholder="Sierra Leone"
                 {...register("country")}
               />
             </div>

@@ -26,9 +26,9 @@ import type { InstituteDeepReport, GrowthPoint } from "@/lib/types";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `₦${(n / 1_000).toFixed(1)}K`;
-  return `₦${n.toLocaleString()}`;
+  if (n >= 1_000_000) return `NLe ${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `NLe ${(n / 1_000).toFixed(1)}K`;
+  return `NLe ${n.toLocaleString()}`;
 }
 
 function pct(a: number, b: number) {
@@ -266,7 +266,7 @@ function OverviewTab() {
           <StatCard label="Institutes" value={d.institutes.total} sub={`${d.institutes.active} active`} icon={Building2} color="bg-red-600" />
           <StatCard label="Admins" value={d.admins.total} sub={`${d.admins.pending} pending approval`} icon={ShieldCheck} color="bg-indigo-600" />
           <StatCard label="Students" value={d.students.total} sub={`${d.students.active} active`} icon={GraduationCap} color="bg-teal-600" />
-          <StatCard label="Lecturers" value={d.lecturers.total} sub={`${d.lecturers.active} active`} icon={BookOpen} color="bg-orange-500" />
+          <StatCard label="Teachers" value={d.lecturers.total} sub={`${d.lecturers.active} active`} icon={BookOpen} color="bg-orange-500" />
         </div>
       </div>
 
@@ -360,7 +360,7 @@ function InstitutesTab() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                {["Institute","Students","Lecturers","Classes","Subjects","Billed","Collected","Rate",""].map((h) => (
+                {["Institute","Students","Teachers","Classes","Subjects","Billed","Collected","Rate",""].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {h}
                   </th>
