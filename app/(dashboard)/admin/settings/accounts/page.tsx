@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { Landmark, Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import type { InvoiceAccount } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -29,12 +30,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function errMsg(err: unknown, fallback: string): string {
-  return (
-    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

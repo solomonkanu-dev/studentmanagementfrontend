@@ -20,6 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { Theme } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 

@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Megaphone, Plus, Pencil, Trash2, Eye } from "lucide-react";
 import type { Announcement, AnnouncementRole } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -36,10 +37,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function errMsg(e: unknown, fallback: string) {
-  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });

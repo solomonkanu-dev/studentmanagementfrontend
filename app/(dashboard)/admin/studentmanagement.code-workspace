@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"name": "studentmanagement",
+			"path": "../../.."
+		},
+		{
+			"name": "components",
+			"path": "../../../../Downloads/tailadmin-nextjs-pro-main/src/components"
+		},
+		{
+			"name": "types",
+			"path": "../../../../Downloads/tailadmin-nextjs-pro-main/src/types"
+		},
+		{
+			"name": "hooks",
+			"path": "../../../../Downloads/tailadmin-nextjs-pro-main/src/hooks"
+		}
+	],
+	"settings": {}
+}

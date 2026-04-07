@@ -17,6 +17,7 @@ import { exportApi } from "@/lib/api/export";
 import type { FeeStructure, AuthUser, Class } from "@/lib/types";
 import Link from "next/link";
 import type { FeePayment } from "@/lib/api/student";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -64,12 +65,6 @@ function SelectField({
       </select>
       {error && <p className="text-xs text-meta-1">{error}</p>}
     </div>
-  );
-}
-
-function errMsg(err: unknown, fallback: string): string {
-  return (
-    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback
   );
 }
 

@@ -15,6 +15,7 @@ import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Plus, Search, School, Users } from "lucide-react";
 import type { Class, AuthUser } from "@/lib/types";
 import { useClassLabel } from "@/hooks/useClassLabel";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

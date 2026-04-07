@@ -6,6 +6,7 @@ import { submissionApi } from "@/lib/api/assignment";
 import { attendanceApi } from "@/lib/api/attendance";
 import { StatCard } from "@/components/ui/StatCard";
 import AcademicTermBanner from "@/components/ui/AcademicTermBanner";
+import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
 import { BookOpen, ClipboardList, CalendarCheck, CheckCircle } from "lucide-react";
 
 export default function StudentDashboard() {
@@ -28,6 +29,8 @@ export default function StudentDashboard() {
         <StatCard label="Attendance" value={overallAttendance !== null ? `${overallAttendance}%` : "—"} icon={CalendarCheck} />
         <StatCard label="Completed" value={submissions.filter((s: { grade?: number }) => s.grade !== undefined).length} icon={CheckCircle} />
       </div>
+
+      <AcademicCalendarWidget />
     </div>
   );
 }

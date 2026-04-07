@@ -563,6 +563,67 @@ export interface MaintenanceStatus {
   message?: string;
 }
 
+// ─── Timetable ────────────────────────────────────────────────────────────────
+
+export type WeekDay = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+
+export interface TimetableEntry {
+  _id?: string;
+  day: WeekDay;
+  startTime: string;
+  endTime: string;
+  subject: { _id: string; name: string } | string;
+  lecturer: { _id: string; fullName: string } | string;
+}
+
+export interface Timetable {
+  _id: string;
+  class: { _id: string; name: string } | string;
+  entries: TimetableEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Academic Calendar ────────────────────────────────────────────────────────
+
+export type CalendarEventType = "holiday" | "exam" | "event" | "term-start" | "term-end" | "other";
+
+export interface CalendarEvent {
+  _id: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  type: CalendarEventType;
+  institute: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── QR Attendance ────────────────────────────────────────────────────────────
+
+export interface StudentQR {
+  _id: string;
+  fullName: string;
+  registrationNumber?: string;
+  qrToken: string;
+  qrActive: boolean;
+}
+
+export interface QRSessionStudent {
+  _id: string;
+  fullName: string;
+  registrationNumber?: string;
+  status: "present" | "absent" | null;
+}
+
+export interface QRSession {
+  class: { _id: string; name: string };
+  date: string;
+  finalized: boolean;
+  students: QRSessionStudent[];
+}
+
 // ─── API Responses ────────────────────────────────────────────────────────────
 
 export interface ApiResponse<T> {

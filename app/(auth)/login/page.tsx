@@ -184,11 +184,15 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="mb-10">
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="mb-4">
+              <svg width="48" height="48" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
+                <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
+              </svg>
             </div>
             <h1 className="text-2xl font-bold text-black dark:text-white">
-              Student<span className="text-primary">MS</span>
+              Edu<span style={{ color: "#1D9E75" }}>Pulse</span>
             </h1>
             <p className="mt-1 text-sm text-body">Welcome back — sign in to continue</p>
           </div>

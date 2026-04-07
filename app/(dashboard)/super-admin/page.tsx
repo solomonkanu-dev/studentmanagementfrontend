@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { errMsg } from "@/lib/utils/errMsg";
 import { superAdminApi } from "@/lib/api/superAdmin";
 import CardDataStats from "@/components/ui/CardDataStats";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -19,6 +21,7 @@ import type { PendingAdmin } from "@/lib/types";
 
 export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
+  const [approveError, setApproveError] = useState("");
 
   const { data: stats } = useQuery({
     queryKey: ["super-stats"],
@@ -35,7 +38,9 @@ export default function SuperAdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-admins"] });
       queryClient.invalidateQueries({ queryKey: ["super-stats"] });
+      setApproveError("");
     },
+    onError: (err) => setApproveError(errMsg(err, "Failed to approve admin")),
   });
 
   const pendingAdmins = admins.filter((a: PendingAdmin) => !a.approved);
@@ -103,6 +108,9 @@ export default function SuperAdminDashboard() {
         </CardHeader>
 
         <CardContent className="p-0">
+          {approveError && (
+            <p className="mx-5 mt-3 rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{approveError}</p>
+          )}
           {pendingAdmins.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center">
               <ShieldCheck className="h-8 w-8 text-meta-3" aria-hidden="true" />

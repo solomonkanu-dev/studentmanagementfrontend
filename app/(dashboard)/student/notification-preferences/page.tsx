@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { errMsg } from "@/lib/utils/errMsg";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -235,7 +236,9 @@ export default function NotificationPreferencesPage() {
           </span>
         )}
         {mutation.isError && (
-          <span className="text-sm text-meta-1">Failed to save. Please try again.</span>
+          <span className="text-sm text-meta-1">
+            {errMsg(mutation.error, "Failed to save preferences")}
+          </span>
         )}
       </div>
     </div>

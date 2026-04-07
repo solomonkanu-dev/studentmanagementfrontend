@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { LinkedStudent } from "@/lib/types";
+import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
 import type { ChildPromotionHistory } from "@/lib/api/parent";
 
 export default function ParentDashboard() {
@@ -230,6 +231,9 @@ export default function ParentDashboard() {
           />
         </div>
       )}
+
+      {/* Academic Calendar */}
+      <AcademicCalendarWidget />
 
       {/* Recent announcements */}
       {(announcements as { _id: string; title: string; content: string; createdAt: string }[]).length > 0 && (

@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { adminParentApi } from "@/lib/api/parent";
+import { errMsg } from "@/lib/utils/errMsg";
 import { adminApi } from "@/lib/api/admin";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -53,6 +54,7 @@ export default function ParentsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [linkModal, setLinkModal] = useState<{ parentId: string; parentName: string } | null>(null);
   const [search, setSearch] = useState("");
+  const [actionError, setActionError] = useState("");
 
   const { data: parents = [], isLoading } = useQuery({
     queryKey: ["admin-parents"],
@@ -84,12 +86,14 @@ export default function ParentsPage() {
 
   const revokeMutation = useMutation({
     mutationFn: (parentId: string) => adminParentApi.revoke(parentId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-parents"] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-parents"] }); setActionError(""); },
+    onError: (err) => setActionError(errMsg(err, "Failed to revoke access")),
   });
 
   const restoreMutation = useMutation({
     mutationFn: (parentId: string) => adminParentApi.restore(parentId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-parents"] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-parents"] }); setActionError(""); },
+    onError: (err) => setActionError(errMsg(err, "Failed to restore access")),
   });
 
   const filtered = (parents as Parent[]).filter(
@@ -226,6 +230,9 @@ export default function ParentsPage() {
             </Table>
           </div>
         )}
+        {actionError && (
+          <p className="mt-3 rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{actionError}</p>
+        )}
       </Card>
 
       {/* Create modal */}
@@ -252,8 +259,8 @@ export default function ParentsPage() {
             {errors.password && <p className="mt-1 text-xs text-meta-1">{errors.password.message}</p>}
           </div>
           {createMutation.isError && (
-            <p className="text-xs text-meta-1">
-              {(createMutation.error as Error)?.message ?? "Failed to create parent"}
+            <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">
+              {errMsg(createMutation.error, "Failed to create parent")}
             </p>
           )}
           <div className="flex justify-end gap-3 pt-2">

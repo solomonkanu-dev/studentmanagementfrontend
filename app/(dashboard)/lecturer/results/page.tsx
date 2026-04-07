@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { errMsg } from "@/lib/utils/errMsg";
 import { classApi } from "@/lib/api/class";
 import { subjectApi } from "@/lib/api/subject";
 import { adminApi } from "@/lib/api/admin";
@@ -85,6 +86,7 @@ export default function LecturerResultsPage() {
   const resultMap = useMemo(() => {
     const map = new Map<string, Result>();
     (existingResults as Result[]).forEach((r) => {
+      if (!r.subject || !r.student) return;
       const subjectId =
         typeof r.subject === "string" ? r.subject : (r.subject as Subject)._id;
       if (subjectId !== selectedSubjectId) return;
@@ -114,11 +116,38 @@ export default function LecturerResultsPage() {
         marksObtained,
         totalScore,
       }),
-    onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({
-        queryKey: ["class-results", selectedClassId],
-      });
+    onSuccess: (savedResult, vars) => {
+      // Update the cache in-place — no refetch, no loading flash
+      queryClient.setQueryData(
+        ["class-results", selectedClassId],
+        (old: Result[] = []) => {
+          const exists = old.some((r) => {
+            if (!r.student || !r.subject) return false;
+            const sid = typeof r.student === "string" ? r.student : (r.student as AuthUser)._id;
+            const subid = typeof r.subject === "string" ? r.subject : (r.subject as Subject)._id;
+            return sid === vars.studentId && subid === selectedSubjectId;
+          });
+          if (exists) {
+            return old.map((r) => {
+              if (!r.student || !r.subject) return r;
+              const sid = typeof r.student === "string" ? r.student : (r.student as AuthUser)._id;
+              const subid = typeof r.subject === "string" ? r.subject : (r.subject as Subject)._id;
+              return sid === vars.studentId && subid === selectedSubjectId ? savedResult : r;
+            });
+          }
+          return [...old, savedResult];
+        },
+      );
+      // Clear the input for this student so the row resets cleanly
+      setMarks((prev) => { const next = { ...prev }; delete next[vars.studentId]; return next; });
+      setTotals((prev) => { const next = { ...prev }; delete next[vars.studentId]; return next; });
       setSuccessIds((prev) => new Set([...prev, vars.studentId]));
+    },
+    onError: (err, vars) => {
+      setErrors((prev) => ({
+        ...prev,
+        [vars.studentId]: errMsg(err, "Failed to save mark"),
+      }));
     },
   });
 
@@ -394,6 +423,7 @@ export default function LecturerResultsPage() {
                           </span>
                         ) : (
                           <Button
+                            type="button"
                             size="sm"
                             onClick={() => handleSubmitMark(s)}
                             isLoading={

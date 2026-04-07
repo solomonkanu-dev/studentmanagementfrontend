@@ -11,10 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Shield, AlertTriangle, Globe, Building2 } from "lucide-react";
 import type { PendingAdmin } from "@/lib/types";
-
-function errMsg(e: unknown, fallback: string) {
-  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-}
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Toggle Global Maintenance ────────────────────────────────────────────────
 

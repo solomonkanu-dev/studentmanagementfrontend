@@ -14,6 +14,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { BookOpen, ClipboardList, CheckCircle2, Upload, FileText } from "lucide-react";
 import type { Subject, Assignment, Submission } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ function SubmitModal({
       onSuccess();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Submission failed.";
+      const msg = errMsg(err, "Submission failed.");
       setServerError(msg);
     },
   });

@@ -10,6 +10,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import TodayAttendanceCard from "@/components/ui/TodayAttendanceCard";
 import AcademicTermBanner from "@/components/ui/AcademicTermBanner";
+import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
 import { BookOpen, School, ClipboardList, CalendarCheck } from "lucide-react";
 import type { Subject, AuthUser, Class, Assignment } from "@/lib/types";
 import { useClassLabel } from "@/hooks/useClassLabel";
@@ -283,6 +284,9 @@ export default function LecturerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Academic Calendar ──────────────────────────────────────────────── */}
+      <AcademicCalendarWidget />
     </div>
   );
 }

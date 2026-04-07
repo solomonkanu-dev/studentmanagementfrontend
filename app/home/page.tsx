@@ -377,7 +377,7 @@ const TESTIMONIALS = [
   {
     name: "Mr. Abu Bangura",
     role: "School Principal, Freetown",
-    text: "StudentMS transformed how we manage our 1,200 students. The report card generation alone saves us 3 days every term.",
+    text: "EduPulse transformed how we manage our 1,200 students. The report card generation alone saves us 3 days every term.",
     stars: 5,
   },
   {
@@ -450,7 +450,7 @@ function AIChatMockup() {
             <Bot className="h-4 w-4 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">StudentMS AI</p>
+            <p className="text-sm font-semibold text-white">EduPulse AI</p>
             <p className="text-[10px] text-white/50">Always available · Role-aware</p>
           </div>
           <span className="ml-auto flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-1 text-[10px] font-medium text-emerald-300">
@@ -547,11 +547,13 @@ function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30">
-            <GraduationCap className="h-5 w-5 text-white" />
-          </div>
+          <svg width="36" height="36" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+            <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
+            <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
+          </svg>
           <span className={`text-lg font-bold transition-colors ${scrolled ? "text-black" : "text-white"}`}>
-            Student<span className="text-primary">MS</span>
+            Edu<span style={{ color: "#5DCAA5" }}>Pulse</span>
           </span>
         </div>
 
@@ -703,7 +705,7 @@ export default function LandingPage() {
               className="animate-fade-up mt-6 max-w-lg text-lg leading-relaxed text-white/65"
               style={{ animationDelay: "0.25s" }}
             >
-              StudentMS is the smart way to run your school — enrolment, results,
+              EduPulse is the smart way to run your school — enrolment, results,
               fees, attendance, assignments, documents and a built-in AI assistant.
               One platform. Every role. Sierra Leone.
             </p>
@@ -986,7 +988,7 @@ export default function LandingPage() {
               Testimonials
             </span>
             <h2 className="text-3xl font-extrabold text-black sm:text-4xl">
-              Schools love StudentMS
+              Schools love EduPulse
             </h2>
           </Reveal>
 
@@ -999,7 +1001,7 @@ export default function LandingPage() {
                       <Star key={i} className="h-4 w-4 fill-current" />
                     ))}
                   </div>
-                  <p className="flex-1 text-sm leading-relaxed text-gray-700">"{text}"</p>
+                  <p className="flex-1 text-sm leading-relaxed text-gray-700">&quot;{text}&quot;</p>
                   <div className="flex items-center gap-3 border-t border-stroke pt-4">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                       {name[0]}
@@ -1028,14 +1030,18 @@ export default function LandingPage() {
             <div className="absolute right-[-40px] bottom-[-40px] h-56 w-56 animate-drift rounded-full bg-violet-300/20 blur-2xl" style={{ animationDelay: "1.5s" }} />
 
             <div className="relative z-10">
-              <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
-                <GraduationCap className="h-7 w-7 text-white" />
+              <div className="mb-4 inline-flex items-center justify-center">
+                <svg width="56" height="56" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="0" y="0" width="80" height="80" rx="20" fill="rgba(255,255,255,0.15)"/>
+                  <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#9FE1CB" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="48" cy="32" r="4" fill="#E1F5EE"/>
+                </svg>
               </div>
               <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
                 Ready to modernise your school?
               </h2>
               <p className="mt-4 text-white/70 max-w-lg mx-auto">
-                Join hundreds of institutions already using StudentMS. Request admin access today — setup takes less than 10 minutes.
+                Join hundreds of institutions already using EduPulse. Request admin access today — setup takes less than 10 minutes.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Link
@@ -1062,15 +1068,17 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-                <GraduationCap className="h-5 w-5 text-white" />
-              </div>
+              <svg width="36" height="36" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
+                <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
+              </svg>
               <span className="text-lg font-bold text-black">
-                Student<span className="text-primary">MS</span>
+                Edu<span style={{ color: "#1D9E75" }}>Pulse</span>
               </span>
             </div>
             <p className="text-xs text-body text-center">
-              © {new Date().getFullYear()} StudentMS. Built for schools that want to do more.
+              © {new Date().getFullYear()} EduPulse. Built for schools that want to do more.
             </p>
             <div className="flex gap-6">
               <Link href="/login" className="text-xs text-body hover:text-primary">Sign In</Link>

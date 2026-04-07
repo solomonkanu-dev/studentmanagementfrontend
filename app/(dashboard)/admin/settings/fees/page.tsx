@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Plus, Pencil, Trash2, Receipt, X } from "lucide-react";
 import type { FeeStructure, Class, AuthUser } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -31,12 +32,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function apiMsg(e: unknown, fallback: string) {
-  return (
-    (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback
-  );
-}
 
 function categoryLabel(f: FeeStructure): string {
   if (f.category === "class") {
@@ -99,14 +94,14 @@ export default function FeesParticularsPage() {
   const createMutation = useMutation({
     mutationFn: feesApi.createStructure,
     onSuccess: () => { invalidate(); closeModal(); },
-    onError: (e: unknown) => setApiError(apiMsg(e, "Failed to create fee structure")),
+    onError: (e: unknown) => setApiError(errMsg(e, "Failed to create fee structure")),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
       feesApi.updateStructure(id, payload),
     onSuccess: () => { invalidate(); closeModal(); },
-    onError: (e: unknown) => setApiError(apiMsg(e, "Failed to update fee structure")),
+    onError: (e: unknown) => setApiError(errMsg(e, "Failed to update fee structure")),
   });
 
   const deleteMutation = useMutation({

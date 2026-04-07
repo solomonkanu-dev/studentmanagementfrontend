@@ -142,9 +142,11 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
-export function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
+export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed }: HeaderProps) {
   const { user, updateUser } = useAuth();
   const pathname = usePathname();
   const [notifOpen, setNotifOpen] = useState(false);
@@ -179,6 +181,15 @@ export function Header({ sidebarOpen, setSidebarOpen }: HeaderProps) {
           aria-expanded={sidebarOpen}
           aria-label="Toggle sidebar"
           className="rounded-md p-1.5 text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white lg:hidden"
+        >
+          <Menu className="h-5 w-5" aria-hidden="true" />
+        </button>
+
+        {/* Collapse toggle — desktop only */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="hidden lg:flex rounded-md p-1.5 text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
         >
           <Menu className="h-5 w-5" aria-hidden="true" />
         </button>

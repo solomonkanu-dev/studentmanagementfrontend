@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { adminApi, type AcademicTerm } from "@/lib/api/admin";
 import { CalendarDays, Plus, Star, Pencil, Trash2, Check, BookOpen } from "lucide-react";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,12 +26,6 @@ function formatDate(iso: string): string {
     month: "short",
     year: "numeric",
   });
-}
-
-function errMsg(err: unknown, fallback: string): string {
-  return (
-    (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback
-  );
 }
 
 function toDateInput(iso: string): string {

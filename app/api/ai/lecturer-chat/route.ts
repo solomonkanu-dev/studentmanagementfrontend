@@ -106,6 +106,18 @@ const TOOLS: Anthropic.Tool[] = [
       "Get this lecturer's own employee attendance record — days present, absent, and their attendance percentage. Use this for questions about their own punctuality or attendance status.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
+  {
+    name: "get_my_timetable",
+    description:
+      "Get the timetables for all classes in this institution, including days of the week, time slots, subjects, and assigned lecturers. Use this for questions about the weekly class schedule, which periods this teacher is assigned to, or what subjects run at what times.",
+    input_schema: { type: "object" as const, properties: {}, required: [] },
+  },
+  {
+    name: "get_calendar_events",
+    description:
+      "Get the academic calendar events for this institution — holidays, exam dates, term start/end, and other school events. Use this for questions about upcoming events, when exams are scheduled, school holidays, or term dates.",
+    input_schema: { type: "object" as const, properties: {}, required: [] },
+  },
 ];
 
 // ─── Tool handlers ───────────────────────────────────────────────────────────
@@ -144,6 +156,10 @@ async function runTool(
       return callBackend(`/salary/lecturer/${lecturerId}`, token);
     case "get_my_attendance":
       return callBackend(`/attendance/employee/summary/${lecturerId}`, token);
+    case "get_my_timetable":
+      return callBackend("/timetable", token);
+    case "get_calendar_events":
+      return callBackend("/calendar", token);
     default:
       return { error: "Unknown tool" };
   }
@@ -152,16 +168,32 @@ async function runTool(
 // ─── System prompt ───────────────────────────────────────────────────────────
 
 function buildSystemPrompt(): string {
-  return `You are a teaching assistant embedded in a lecturer portal. Your job is to help lecturers quickly understand their workload, student attendance, assignments, and salary data.
+  return `You are a teaching intelligence assistant embedded in the teacher portal of StudentMS, a school management platform for Sierra Leone.
 
-Guidelines:
-- Always use your tools to fetch live data before answering data-related questions. Never guess or fabricate numbers.
-- Keep responses concise and professional — use bullet points or tables for structured data.
-- Only answer questions about this lecturer's own data: their subjects, classes, assignments, attendance, and salary.
-- Do not reveal raw internal IDs or sensitive technical fields.
-- Do not answer questions about other lecturers' data, student personal details, or topics outside your scope.
-- When referencing percentages or numbers, round to 1 decimal place.
-- Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
+Your job is to help teachers understand their classes, students, assignments, attendance, and salary through clear, well-structured reports.
+
+## Response format
+
+Structure responses like professional teaching reports:
+- Use **## Section Title** for major sections in detailed responses
+- Use **### Class / Subject** for per-class or per-subject breakdowns
+- Use **markdown tables** (| Column | Column |) for student lists, grade summaries, attendance records, or assignment tracking
+- Use **numbered lists** for ranked students or priority actions
+- Use **bullet points** for quick observations, highlights, or recommendations
+- Use **bold** for key figures, student names, and important values (e.g. **72.4% average**, **3 students at risk**)
+- Use **---** between major sections in longer reports
+- For short factual answers, respond conversationally without forcing structure
+- End reports with a **> Recommendation:** or **## Key Points** callout when useful
+
+## Data rules
+- Always call your tools to fetch live data. Never guess or fabricate numbers.
+- Only answer questions about this teacher's own classes, assignments, attendance, and salary data.
+- Do not reveal sensitive student details (phone numbers, home addresses, guardian info).
+- Do not answer questions about other teachers' data or topics outside your scope.
+- Round all percentages and decimals to 1 decimal place.
+- You have access to the class timetable and academic calendar in addition to subjects, assignments, attendance, and salary.
+
+Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
 }
 
 // ─── Agentic loop ────────────────────────────────────────────────────────────
@@ -179,7 +211,7 @@ async function runAgentLoop(
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: buildSystemPrompt(),
       tools: TOOLS,
       messages: loop,

@@ -14,6 +14,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import Link from "next/link";
+import { errMsg } from "@/lib/utils/errMsg";
 import {
   Plus,
   Search,
@@ -463,17 +464,13 @@ export default function LecturersListPage() {
         ? adminApi.suspendUser(userId)
         : adminApi.unsuspendUser(userId),
     onSuccess: () => { invalidateLecturers(); setSuspendTarget(null); setSuspendError(""); },
-    onError: (err: unknown) => setSuspendError(
-      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to update account status"
-    ),
+    onError: (err: unknown) => setSuspendError(errMsg(err, "Failed to update account status")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: adminApi.deleteUser,
     onSuccess: () => { invalidateLecturers(); setDeleteTarget(null); setDeleteError(""); },
-    onError: (err: unknown) => setDeleteError(
-      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to delete lecturer"
-    ),
+    onError: (err: unknown) => setDeleteError(errMsg(err, "Failed to delete lecturer")),
   });
 
   // ── Filtered list ──

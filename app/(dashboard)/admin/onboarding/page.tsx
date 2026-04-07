@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 import { classApi } from "@/lib/api/class";
 import { useAuth } from "@/context/AuthContext";
+import { errMsg } from "@/lib/utils/errMsg";
 import {
   GraduationCap,
   Building2,
@@ -295,7 +296,7 @@ function StepInstituteProfile({
 
       {mutation.isError && (
         <p className="rounded-xl bg-meta-1/10 px-4 py-2.5 text-xs text-meta-1">
-          {(mutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create school profile"}
+          {errMsg(mutation.error, "Failed to create school profile") }
         </p>
       )}
 
@@ -388,7 +389,7 @@ function StepCreateLecturer({
 
       {mutation.isError && (
         <p className="rounded-xl bg-meta-1/10 px-4 py-2.5 text-xs text-meta-1">
-          {(mutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create teacher"}
+          {errMsg(mutation.error, "Failed to create teacher") }
         </p>
       )}
 
@@ -482,7 +483,7 @@ function StepCreateClass({
 
       {mutation.isError && (
         <p className="rounded-xl bg-meta-1/10 px-4 py-2.5 text-xs text-meta-1">
-          {(mutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? `Failed to create ${classLabel.toLowerCase()}`}
+          {errMsg(mutation.error, `Failed to create ${classLabel.toLowerCase()}`)}
         </p>
       )}
 

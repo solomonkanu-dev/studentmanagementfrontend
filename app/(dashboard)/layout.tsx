@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/Header";
 import { StudentChatWidget } from "@/components/ui/StudentChatWidget";
 import { LecturerChatWidget } from "@/components/ui/LecturerChatWidget";
 import { AdminChatWidget } from "@/components/ui/AdminChatWidget";
+import { SocketProvider } from "@/context/SocketContext";
 import useColorMode from "@/hooks/useColorMode";
 
 export default function DashboardLayout({
@@ -18,6 +19,7 @@ export default function DashboardLayout({
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useColorMode();
 
@@ -55,10 +57,11 @@ export default function DashboardLayout({
   }
 
   return (
+    <SocketProvider>
     <div className="flex h-screen overflow-hidden bg-whiten dark:bg-boxdark-2">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} sidebarCollapsed={sidebarCollapsed} />
       <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
-        <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
         <main className="flex-1">
           <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
             {children}
@@ -77,5 +80,6 @@ export default function DashboardLayout({
         <AdminChatWidget token={localStorage.getItem("token") ?? ""} />
       )}
     </div>
+    </SocketProvider>
   );
 }

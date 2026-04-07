@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Zod schema for SMTP form ────────────────────────────────────────────────
 

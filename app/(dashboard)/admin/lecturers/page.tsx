@@ -47,7 +47,7 @@ export default function LecturersOverview() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <CardDataStats
-          title="Total Lecturers"
+          title="Total Teachers"
           total={String(total)}
           rate=""
           levelUp
@@ -84,7 +84,7 @@ export default function LecturersOverview() {
             {departments.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center">
                 <Users className="h-8 w-8 text-body" aria-hidden="true" />
-                <p className="text-sm text-body">No lecturers yet.</p>
+                <p className="text-sm text-body">No Teacher yet.</p>
               </div>
             ) : (
               <ul className="divide-y divide-stroke dark:divide-strokedark">
@@ -97,7 +97,7 @@ export default function LecturersOverview() {
                       {dept.name}
                     </span>
                     <Badge variant="default">
-                      {dept.count} lecturer{dept.count !== 1 ? "s" : ""}
+                      {dept.count} teacher{dept.count !== 1 ? "s" : ""}
                     </Badge>
                   </li>
                 ))}
@@ -111,7 +111,7 @@ export default function LecturersOverview() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-black dark:text-white">
-                Recent Lecturers
+                Recent Teachers
               </h2>
               <Link
                 href="/admin/lecturers/list"
@@ -126,7 +126,7 @@ export default function LecturersOverview() {
             {recent.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center">
                 <Users className="h-8 w-8 text-body" aria-hidden="true" />
-                <p className="text-sm text-body">No lecturers yet.</p>
+                <p className="text-sm text-body">No teachers yet.</p>
               </div>
             ) : (
               <ul className="divide-y divide-stroke dark:divide-strokedark">

@@ -9,6 +9,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
+import { errMsg } from "@/lib/utils/errMsg";
 import { subjectApi } from "@/lib/api/subject";
 import { assignmentApi, submissionApi } from "@/lib/api/assignment";
 import { classApi } from "@/lib/api/class";
@@ -90,6 +91,12 @@ function SubmissionPanel({
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["submissions", assignment._id] });
       setSuccessIds((prev) => new Set([...prev, vars.submissionId]));
+    },
+    onError: (err, vars) => {
+      setGradeErrors((prev) => ({
+        ...prev,
+        [vars.submissionId]: errMsg(err, "Failed to save grade"),
+      }));
     },
   });
 

@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
+import { errMsg } from "@/lib/utils/errMsg";
 import {
   Plus,
   CheckCircle,
@@ -122,11 +123,7 @@ export default function AdminSalaryPage() {
       reset();
       setFormError("");
     },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? "Failed to record salary";
-      setFormError(msg);
-    },
+    onError: (err: unknown) => setFormError(errMsg(err, "Failed to record salary")),
   });
 
   const markPaidMutation = useMutation({

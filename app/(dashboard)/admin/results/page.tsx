@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/Badge";
 import { FileText, Trophy, Medal } from "lucide-react";
 import Link from "next/link";
 import type { Class, Subject, Result, AuthUser } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 function gradeVariant(grade?: string): "success" | "info" | "warning" | "danger" | "default" {
   if (!grade) return "default";
@@ -66,7 +67,7 @@ export default function ResultsPage() {
       setFormError("");
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed";
+      const msg = errMsg(err, "Failed");
       setFormError(msg);
     },
   });

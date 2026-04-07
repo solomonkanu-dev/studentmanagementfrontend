@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { errMsg } from "@/lib/utils/errMsg";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -265,12 +266,7 @@ export default function InstitutePage() {
 
             {mutation.isError && (
               <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">
-                {(
-                  mutation.error as {
-                    response?: { data?: { message?: string } };
-                  }
-                )?.response?.data?.message ??
-                  `Failed to ${isEditing ? "update" : "create"} institute`}
+                {errMsg(mutation.error, `Failed to ${isEditing ? "update" : "create"} institute`)}
               </p>
             )}
 

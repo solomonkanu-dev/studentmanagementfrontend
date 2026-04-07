@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/Input";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { CreditCard, Pencil, Building2 } from "lucide-react";
 import type { Plan } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -25,10 +26,6 @@ const limitsSchema = z.object({
   description: z.string().optional(),
 });
 type LimitsFormValues = z.infer<typeof limitsSchema>;
-
-function errMsg(e: unknown, fallback: string) {
-  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-}
 
 // ─── Edit Plan Limits Modal ───────────────────────────────────────────────────
 

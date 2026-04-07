@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import {
   GraduationCap, Plus, Trash2, Pencil, Star, StarOff, X,
 } from "lucide-react";
+import { errMsg } from "@/lib/utils/errMsg";
 import type { GradingScale, GradeEntry } from "@/lib/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -27,10 +28,6 @@ const DEFAULT_GRADES: GradeEntry[] = [
   { grade: "D",  minScore: 60, maxScore: 69  },
   { grade: "F",  minScore: 0,  maxScore: 59  },
 ];
-
-function errMsg(e: unknown, fallback: string) {
-  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-}
 
 function gradeColor(grade: string): string {
   const g = grade.toUpperCase();

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useClassLabel } from "@/hooks/useClassLabel";
 import { announcementApi } from "@/lib/api/announcement";
+import { chatApi } from "@/lib/api/chat";
 import { subjectApi } from "@/lib/api/subject";
 import { assignmentApi, submissionApi } from "@/lib/api/assignment";
 import type { Subject, Assignment, Submission } from "@/lib/types";
@@ -36,6 +37,8 @@ import {
   CalendarDays,
   Sparkles,
   Heart,
+  TableProperties,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -90,6 +93,8 @@ const adminNav: NavItem[] = [
     ],
   },
   { label: "Parents", href: "/admin/parents", icon: Heart },
+  { label: "Timetable", href: "/admin/timetable", icon: TableProperties },
+  { label: "Academic Calendar", href: "/admin/academic-calendar", icon: CalendarDays },
   { label: "Promote Students", href: "/admin/promote", icon: GraduationCap },
   { label: "Assignments", href: "/admin/assignments", icon: ClipboardList },
   { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck },
@@ -99,6 +104,8 @@ const adminNav: NavItem[] = [
   { label: "Salary", href: "/admin/salary", icon: DollarSign },
   { label: "Institute", href: "/admin/institute", icon: Building2 },
   { label: "Theme", href: "/admin/theme", icon: Palette },
+  { label: "Messages", href: "/admin/messages", icon: MessageSquare },
+  { label: "AI Analytics", href: "/admin/ai-analytics", icon: Sparkles },
   { label: "Audit Logs", href: "/admin/audit-logs", icon: Activity },
   { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
   {
@@ -126,7 +133,10 @@ const lecturerNav: NavItem[] = [
   { label: "Attendance", href: "/lecturer/attendance", icon: CalendarCheck },
   { label: "Results", href: "/lecturer/results", icon: FileText },
   { label: "Promote Students", href: "/lecturer/promote", icon: GraduationCap },
+  { label: "Timetable", href: "/lecturer/timetable", icon: TableProperties },
+  { label: "Academic Calendar", href: "/lecturer/academic-calendar", icon: CalendarDays },
   { label: "Salary", href: "/lecturer/salary", icon: DollarSign },
+  { label: "Messages", href: "/lecturer/messages", icon: MessageSquare },
   { label: "Announcements", href: "/lecturer/announcements", icon: Megaphone },
 ];
 
@@ -139,6 +149,9 @@ const studentNav: NavItem[] = [
   { label: "Fees", href: "/student/fees", icon: CreditCard },
   { label: "Documents", href: "/student/documents", icon: FolderOpen },
   { label: "Notification Preferences", href: "/student/notification-preferences", icon: Settings },
+  { label: "Timetable", href: "/student/timetable", icon: TableProperties },
+  { label: "Academic Calendar", href: "/student/academic-calendar", icon: CalendarDays },
+  { label: "Messages", href: "/student/messages", icon: MessageSquare },
   { label: "Rules & Regulations", href: "/student/rules", icon: ScrollText },
   { label: "Announcements", href: "/student/announcements", icon: Megaphone },
 ];
@@ -148,6 +161,9 @@ const parentNav: NavItem[] = [
   { label: "Attendance", href: "/parent/attendance", icon: CalendarCheck },
   { label: "Results", href: "/parent/results", icon: FileText },
   { label: "Fees", href: "/parent/fees", icon: CreditCard },
+  { label: "Timetable", href: "/parent/timetable", icon: TableProperties },
+  { label: "Academic Calendar", href: "/parent/academic-calendar", icon: CalendarDays },
+  { label: "Messages", href: "/parent/messages", icon: MessageSquare },
   { label: "Announcements", href: "/parent/announcements", icon: Megaphone },
 ];
 
@@ -165,9 +181,10 @@ const superAdminNav: NavItem[] = [
 interface SidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  sidebarCollapsed: boolean;
 }
 
-export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
+export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: SidebarProps) {
   const { user, logout, isRole } = useAuth();
   const { plural: classesLabel } = useClassLabel();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -206,6 +223,12 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     refetchInterval: 60_000,
   });
   const unreadAnnouncements = (announcements as { isRead?: boolean }[]).filter((a) => !a.isRead).length;
+
+  const { data: unreadMessages = 0 } = useQuery({
+    queryKey: ["chat-unread-count"],
+    queryFn: chatApi.getUnreadCount,
+    refetchInterval: 8_000,
+  });
 
   // Student-only: pending assignments badge
   const isStudent = isRole("student");
@@ -313,17 +336,29 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
         id="sidebar"
         ref={sidebarRef}
         className={[
-          "fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-boxdark",
-          "transition-transform duration-300 ease-in-out",
+          "fixed left-0 top-0 z-30 flex h-screen flex-col bg-boxdark",
+          "transition-all duration-300 ease-in-out",
           "lg:static lg:translate-x-0",
+          sidebarCollapsed ? "lg:w-16" : "lg:w-64",
+          "w-64",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
         {/* Logo */}
-        <div className="flex h-14 items-center justify-between border-b border-strokedark px-5">
+        <div className={[
+          "flex h-14 items-center border-b border-strokedark px-3",
+          sidebarCollapsed ? "lg:justify-center" : "justify-between px-5",
+        ].join(" ")}>
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-base font-bold text-white">
-              Student<span className="text-bodydark">MS</span>
+            {/* Icon mark — always visible */}
+            <svg width="32" height="32" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <rect x="0" y="0" width="80" height="80" rx="20" fill="#1D9E75"/>
+              <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#E1F5EE" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
+            </svg>
+            {/* Wordmark — hidden when collapsed on desktop */}
+            <span className={["text-base font-semibold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
+              Edu<span style={{ color: "#5DCAA5" }}>Pulse</span>
             </span>
           </Link>
           <button
@@ -338,7 +373,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto no-scrollbar px-3 py-4">
+        <nav className={["flex-1 overflow-y-auto no-scrollbar py-4", sidebarCollapsed ? "lg:px-1 px-3" : "px-3"].join(" ")}>
           <ul className="space-y-0.5">
             {navItems.map((item) => {
               const { label, href, icon: Icon, children } = item;
@@ -351,22 +386,25 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                 return (
                   <li key={href}>
                     <button
-                      onClick={() => toggleGroup(href)}
+                      onClick={() => !sidebarCollapsed && toggleGroup(href)}
+                      title={sidebarCollapsed ? label : undefined}
                       className={[
-                        "flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                        "flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                        sidebarCollapsed ? "lg:justify-center lg:px-0" : "justify-between",
                         isChildActive
                           ? "bg-meta-4 text-white"
                           : "text-bodydark hover:bg-meta-4 hover:text-white",
                       ].join(" ")}
                     >
-                      <span className="flex items-center gap-3">
+                      <span className={["flex items-center gap-3", sidebarCollapsed ? "lg:gap-0" : ""].join(" ")}>
                         <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        {label}
+                        <span className={sidebarCollapsed ? "lg:hidden" : ""}>{label}</span>
                       </span>
                       <ChevronDown
                         className={[
                           "h-4 w-4 shrink-0 transition-transform duration-200",
                           isOpen ? "rotate-180" : "",
+                          sidebarCollapsed ? "lg:hidden" : "",
                         ].join(" ")}
                         aria-hidden="true"
                       />
@@ -376,8 +414,8 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                     <div
                       className="overflow-hidden transition-all duration-200"
                       style={{
-                        maxHeight: isOpen ? `${children.length * 40 + 8}px` : "0px",
-                        marginTop: isOpen ? "2px" : "0px",
+                        maxHeight: !sidebarCollapsed && isOpen ? `${children.length * 40 + 8}px` : "0px",
+                        marginTop: !sidebarCollapsed && isOpen ? "2px" : "0px",
                       }}
                     >
                       <ul className="space-y-0.5 pl-4">
@@ -417,28 +455,36 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
               const active = pathname === href;
               const isAnnouncements = href.endsWith("/announcements");
               const isAssignments = href.endsWith("/assignments");
+              const isMessages = href.endsWith("/messages");
               return (
                 <li key={href}>
                   <Link
                     href={href}
                     onClick={() => setSidebarOpen(false)}
+                    title={sidebarCollapsed ? label : undefined}
                     className={[
                       "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                      sidebarCollapsed ? "lg:justify-center lg:px-0 lg:gap-0" : "",
                       active
                         ? "bg-primary text-white"
                         : "text-bodydark hover:bg-meta-4 hover:text-white",
                     ].join(" ")}
                   >
                     <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className="flex-1">{label}</span>
+                    <span className={["flex-1", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>{label}</span>
                     {isAnnouncements && unreadAnnouncements > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-meta-1 px-1 text-[10px] font-bold text-white">
+                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-meta-1 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
                         {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
                       </span>
                     )}
                     {isAssignments && isStudent && pendingAssignments > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white">
+                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
                         {pendingAssignments > 99 ? "99+" : pendingAssignments}
+                      </span>
+                    )}
+                    {isMessages && (unreadMessages as number) > 0 && (
+                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
+                        {(unreadMessages as number) > 99 ? "99+" : unreadMessages}
                       </span>
                     )}
                   </Link>
@@ -450,7 +496,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
         {/* User footer */}
         <div className="border-t border-strokedark p-3">
-          <div className="flex items-center gap-3 rounded-md px-2 py-2">
+          <div className={["flex items-center gap-3 rounded-md px-2 py-2", sidebarCollapsed ? "lg:justify-center lg:px-0" : ""].join(" ")}>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white uppercase overflow-hidden">
               {user?.profilePhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -459,7 +505,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                 user?.fullName?.charAt(0) ?? "?"
               )}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className={["min-w-0 flex-1", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
               <p className="truncate text-xs font-semibold text-white">
                 {user?.fullName}
               </p>
@@ -469,7 +515,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
             </div>
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="shrink-0 rounded p-1 text-bodydark hover:text-white transition-colors"
+              className={["shrink-0 rounded p-1 text-bodydark hover:text-white transition-colors", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}
               aria-label="Logout"
               title="Logout"
             >

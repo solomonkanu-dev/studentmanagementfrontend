@@ -9,6 +9,7 @@ import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import type { DocStudent, DocInstitute } from "@/components/documents/DocumentsPanel";
 import CardDataStats from "@/components/ui/CardDataStats";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import {
   Table,
@@ -36,7 +37,13 @@ import {
   Heart,
   School,
   Users,
+  QrCode,
+  ShieldCheck,
+  ShieldOff,
+  Download,
+  RefreshCw,
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import type { AuthUser, Result, Subject, Submission, Assignment } from "@/lib/types";
 
 interface PageProps {
@@ -48,7 +55,7 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export default function StudentDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"overview" | "profile" | "documents">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "profile" | "documents" | "qr">("overview");
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: student, isLoading: loadingStudent } = useQuery({
@@ -193,7 +200,7 @@ export default function StudentDetailPage({ params }: PageProps) {
       {/* Tab navigation */}
       <div className="border-b border-stroke dark:border-strokedark">
         <nav className="-mb-px flex gap-6">
-          {(["overview", "profile", "documents"] as const).map((tab) => (
+          {(["overview", "profile", "documents", "qr"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -204,7 +211,7 @@ export default function StudentDetailPage({ params }: PageProps) {
                   : "text-body hover:text-black dark:hover:text-white",
               ].join(" ")}
             >
-              {tab}
+              {tab === "qr" ? "QR Code" : tab}
             </button>
           ))}
         </nav>
@@ -580,6 +587,10 @@ export default function StudentDetailPage({ params }: PageProps) {
         </div>
       )}
 
+      {activeTab === "qr" && (
+        <QRPanel studentId={id} studentName={student.fullName} />
+      )}
+
       {/* Edit Profile Modal */}
       {editOpen && student && (
         <EditProfileModal
@@ -815,6 +826,167 @@ function LegendRow({ color, label, value, total }: { color: string; label: strin
         <span className="text-xs text-body">{label}</span>
       </div>
       <span className="text-xs font-medium text-black dark:text-white">{value} ({pct}%)</span>
+    </div>
+  );
+}
+
+// ─── QR Panel ─────────────────────────────────────────────────────────────────
+
+function QRPanel({ studentId, studentName }: { studentId: string; studentName: string }) {
+  const queryClient = useQueryClient();
+
+  const { data: qrData, isLoading, refetch } = useQuery({
+    queryKey: ["student-qr", studentId],
+    queryFn: () => attendanceApi.getStudentQR(studentId),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (active: boolean) => attendanceApi.toggleStudentQR(studentId, active),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student-qr", studentId] });
+    },
+  });
+
+  const handlePrint = () => {
+    const svg = document.getElementById("student-qr-svg");
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    canvas.width = 300;
+    canvas.height = 300;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0, 300, 300);
+      const link = document.createElement("a");
+      link.download = `qr-${studentName.replace(/\s+/g, "-")}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-sm font-semibold text-black dark:text-white">QR Attendance Card</h2>
+        <p className="mt-0.5 text-xs text-body">
+          This QR code is unique to {studentName}. Print and attach to their student ID card.
+          Teachers scan it daily to mark attendance.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* QR Code display */}
+        <Card>
+          <CardContent>
+            <div className="flex flex-col items-center gap-4 py-4">
+              {qrData?.qrToken ? (
+                <div
+                  className={[
+                    "rounded-2xl border-4 p-5 transition-all",
+                    qrData.qrActive
+                      ? "border-primary bg-white"
+                      : "border-meta-1/40 bg-gray-50 opacity-50 grayscale",
+                  ].join(" ")}
+                >
+                  <QRCode
+                    id="student-qr-svg"
+                    value={qrData.qrToken}
+                    size={180}
+                    level="M"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-stroke">
+                  <QrCode className="h-12 w-12 text-body" />
+                </div>
+              )}
+
+              <div className="text-center">
+                <p className="text-base font-semibold text-black dark:text-white">{studentName}</p>
+                {qrData?.registrationNumber && (
+                  <p className="text-xs text-body">{qrData.registrationNumber}</p>
+                )}
+                <div className="mt-2">
+                  {qrData?.qrActive ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-meta-3/10 px-2 py-0.5 text-xs font-medium text-meta-3">
+                      <ShieldCheck className="h-3 w-3" /> Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-meta-1/10 px-2 py-0.5 text-xs font-medium text-meta-1">
+                      <ShieldOff className="h-3 w-3" /> Deactivated
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={handlePrint} disabled={!qrData?.qrActive}>
+                  <Download className="h-3.5 w-3.5" /> Download PNG
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => refetch()}>
+                  <RefreshCw className="h-3.5 w-3.5" /> Refresh
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Controls */}
+        <Card>
+          <CardHeader>
+            <h3 className="text-sm font-semibold text-black dark:text-white">QR Code Controls</h3>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="rounded-lg border border-stroke p-4 dark:border-strokedark">
+                <p className="text-xs font-medium text-black dark:text-white mb-1">Current Status</p>
+                <p className="text-xs text-body mb-3">
+                  {qrData?.qrActive
+                    ? "This student's QR card is active. Scanning will mark them present."
+                    : "This student's QR card is deactivated. Scanning will return an error to the teacher."}
+                </p>
+                {qrData?.qrActive ? (
+                  <Button
+                    size="sm"
+                    onClick={() => toggleMutation.mutate(false)}
+                    isLoading={toggleMutation.isPending}
+                    className="bg-meta-1 hover:bg-meta-1/90 text-white border-0"
+                  >
+                    <ShieldOff className="h-3.5 w-3.5" /> Deactivate QR Code
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => toggleMutation.mutate(true)}
+                    isLoading={toggleMutation.isPending}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" /> Activate QR Code
+                  </Button>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-stroke p-4 dark:border-strokedark text-xs text-body space-y-1.5">
+                <p className="font-medium text-black dark:text-white">How QR attendance works</p>
+                <p>• Each student has a unique, permanent QR code printed on their card.</p>
+                <p>• Teachers scan cards using the QR Scanner tab in the Attendance page.</p>
+                <p>• Scanned students are automatically marked <span className="text-meta-3 font-medium">present</span>.</p>
+                <p>• Unscanned students are marked <span className="text-meta-1 font-medium">absent</span> when the session is finalized (or auto at 5 PM).</p>
+                <p>• Deactivating a card prevents it from marking attendance until reactivated.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

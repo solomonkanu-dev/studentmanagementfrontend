@@ -19,12 +19,9 @@ import {
   PlayCircle,
 } from "lucide-react";
 import type { PendingAdmin } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function errMsg(e: unknown, fallback: string) {
-  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

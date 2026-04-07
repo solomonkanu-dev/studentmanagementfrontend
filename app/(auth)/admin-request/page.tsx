@@ -48,7 +48,7 @@ export default function AdminRequestPage() {
           <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
           <h2 className="mt-4 text-xl font-bold text-slate-900">Request submitted</h2>
           <p className="mt-2 text-sm text-slate-500">
-            Your admin request is pending approval from a super admin.
+            Your admin request is pending approval.
           </p>
           <Link
             href="/login"
@@ -67,7 +67,7 @@ export default function AdminRequestPage() {
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-slate-900">Request Admin Access</h1>
           <p className="mt-1.5 text-sm text-slate-500">
-            Create your admin account — a super admin will approve it
+            Create your admin account
           </p>
         </div>
 

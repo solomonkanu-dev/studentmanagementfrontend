@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
+import { errMsg } from "@/lib/utils/errMsg";
 import {
   Plus, Search, GraduationCap, Copy, CheckCircle2,
   Pencil, KeyRound, Eye, EyeOff, RefreshCw,
@@ -139,7 +140,7 @@ export default function StudentsListPage() {
       if (d.tempPassword) setTempPassword(d.tempPassword as string);
       else setShowCreate(false);
     },
-    onError: (e: unknown) => setCreateError(apiMsg(e, "Failed to create student")),
+    onError: (e: unknown) => setCreateError(errMsg(e, "Failed to create student")),
   });
 
   const updateMutation = useMutation({
@@ -149,14 +150,14 @@ export default function StudentsListPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-students"] });
       closeEdit();
     },
-    onError: (e: unknown) => setEditError(apiMsg(e, "Failed to update student")),
+    onError: (e: unknown) => setEditError(errMsg(e, "Failed to update student")),
   });
 
   const resetMutation = useMutation({
     mutationFn: ({ userId, password }: { userId: string; password: string }) =>
       adminApi.resetPassword(userId, { password }),
     onSuccess: () => setResetDone(true),
-    onError: (e: unknown) => setResetError(apiMsg(e, "Failed to reset password")),
+    onError: (e: unknown) => setResetError(errMsg(e, "Failed to reset password")),
   });
 
   const invalidateStudents = () => queryClient.invalidateQueries({ queryKey: ["admin-students"] });
@@ -167,13 +168,13 @@ export default function StudentsListPage() {
         ? adminApi.suspendUser(userId)
         : adminApi.unsuspendUser(userId),
     onSuccess: () => { invalidateStudents(); setSuspendTarget(null); setSuspendError(""); },
-    onError: (e: unknown) => setSuspendError(apiMsg(e, "Failed to update account status")),
+    onError: (e: unknown) => setSuspendError(errMsg(e, "Failed to update account status")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: adminApi.deleteUser,
     onSuccess: () => { invalidateStudents(); setDeleteTarget(null); setDeleteError(""); },
-    onError: (e: unknown) => setDeleteError(apiMsg(e, "Failed to delete student")),
+    onError: (e: unknown) => setDeleteError(errMsg(e, "Failed to delete student")),
   });
 
   const lifecycleMutation = useMutation({
@@ -184,7 +185,7 @@ export default function StudentsListPage() {
       setLifecycleTarget(null);
       setLifecycleError("");
     },
-    onError: (e: unknown) => setLifecycleError(apiMsg(e, "Failed to update lifecycle status")),
+    onError: (e: unknown) => setLifecycleError(errMsg(e, "Failed to update lifecycle status")),
   });
 
   // ─── Create form ─────────────────────────────────────────────────────────────
@@ -909,10 +910,6 @@ function SelectField({ label, name, register, options }: {
 
 function ErrorMsg({ msg }: { msg: string }) {
   return <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{msg}</p>;
-}
-
-function apiMsg(e: unknown, fallback: string) {
-  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 }
 
 function buildStudentProfile(v: CreateForm | EditForm) {

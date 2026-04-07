@@ -95,6 +95,18 @@ const TOOLS: Anthropic.Tool[] = [
       "Get the student's current class ranking — their position among all classmates based on total marks. Use this for questions about their rank, standing, position in class, or how they compare to peers.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
+  {
+    name: "get_my_timetable",
+    description:
+      "Get the class timetable for this institution — days of the week, time slots, subjects, and teachers per period. Use this for questions about the class schedule, what subject is on which day and time, or who teaches a particular period.",
+    input_schema: { type: "object" as const, properties: {}, required: [] },
+  },
+  {
+    name: "get_calendar_events",
+    description:
+      "Get the academic calendar events — upcoming holidays, exam dates, term start/end, and other school events. Use this for questions about when exams are, upcoming holidays, term dates, or school events.",
+    input_schema: { type: "object" as const, properties: {}, required: [] },
+  },
 ];
 
 // ─── Tool handlers ───────────────────────────────────────────────────────────
@@ -125,6 +137,10 @@ async function runTool(name: string, token: string): Promise<unknown> {
       return callBackend("/submission/me", token);
     case "get_ranking":
       return callBackend("/student/my-ranking", token);
+    case "get_my_timetable":
+      return callBackend("/timetable", token);
+    case "get_calendar_events":
+      return callBackend("/calendar", token);
     default:
       return { error: "Unknown tool" };
   }
@@ -133,16 +149,31 @@ async function runTool(name: string, token: string): Promise<unknown> {
 // ─── System prompt ───────────────────────────────────────────────────────────
 
 function buildSystemPrompt(): string {
-  return `You are an academic assistant embedded in a student management platform. Your job is to help students understand their academic data clearly and concisely.
+  return `You are an academic assistant embedded in the student portal of StudentMS, a school management platform for Sierra Leone.
 
-Guidelines:
-- Always use your tools to fetch live data before answering data-related questions. Never guess or make up values.
-- Keep responses short and friendly — use bullet points or tables when listing multiple items.
-- If a question is outside your scope (e.g. about other students, administrative actions, or topics unrelated to the student's academics), politely decline and explain what you can help with.
-- Do not reveal raw internal IDs, email addresses, phone numbers, or technical fields to the student.
-- When referencing percentages or numbers, round to 1 decimal place for readability.
-- Do not answer questions about other students' data, system internals, or anything unrelated to the student's own academics.
-- Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
+Your job is to help students understand their academic performance, fees, attendance, and assignments through clear, well-structured responses.
+
+## Response format
+
+Present information clearly, like a personal academic report:
+- Use **## Section Title** to separate different topics in detailed responses (e.g. ## Results, ## Attendance, ## Fees)
+- Use **markdown tables** (| Column | Column |) when showing subject-by-subject results, assignment lists, or fee breakdowns
+- Use **numbered lists** for ranked subjects, upcoming deadlines, or action items
+- Use **bullet points** for quick highlights or observations
+- Use **bold** for scores, grades, and important values (e.g. **94%**, **Grade A**, **NLe 20,000**)
+- Use **---** to separate sections in longer responses
+- Keep a friendly, encouraging tone — celebrate good performance, gently flag concerns
+- End with a **> Tip:** or **## Summary** when giving performance overviews
+
+## Data rules
+- Always call your tools to fetch live data. Never guess or fabricate values.
+- Only answer questions about this student's own academic data.
+- Do not reveal other students' data, internal IDs, email addresses, or phone numbers.
+- Round all percentages and decimals to 1 decimal place.
+- Politely decline questions outside your scope (other students, admin tasks, general knowledge).
+- You have access to the class timetable and academic calendar in addition to grades, attendance, fees, assignments, and rankings.
+
+Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
 }
 
 // ─── Agentic loop ────────────────────────────────────────────────────────────
@@ -159,7 +190,7 @@ async function runAgentLoop(
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: buildSystemPrompt(),
       tools: TOOLS,
       messages: loop,

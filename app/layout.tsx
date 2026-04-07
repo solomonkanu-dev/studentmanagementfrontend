@@ -16,8 +16,8 @@ const satoshi = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "StudentMS",
-  description: "Student Management System",
+  title: "EduPulse",
+  description: "Smart school management",
 };
 
 export default function RootLayout({

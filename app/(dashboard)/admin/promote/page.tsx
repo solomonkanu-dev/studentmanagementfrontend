@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { errMsg } from "@/lib/utils/errMsg";
 import { adminApi } from "@/lib/api/admin";
 import type { PromotionEligibilityEntry } from "@/lib/api/admin";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -410,7 +411,7 @@ export default function PromotePage() {
           {promoteMutation.isError && (
             <div className="flex items-center gap-2 rounded-xl border border-meta-1/30 bg-meta-1/10 px-4 py-3 text-sm text-meta-1">
               <AlertCircle className="h-4 w-4 shrink-0" />
-              {(promoteMutation.error as Error)?.message ?? "Promotion failed"}
+              {errMsg(promoteMutation.error, "Promotion failed")}
             </div>
           )}
 
