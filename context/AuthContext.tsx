@@ -28,6 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ⚠️  SECURITY NOTE — JWT stored in localStorage is readable by any XSS script.
+  //    To fully mitigate: (1) have the Express backend set an HttpOnly + Secure
+  //    cookie on login, (2) proxy all API calls through a Next.js Route Handler
+  //    so the token never touches client JS, (3) remove the manual Authorization
+  //    header in apiClient.ts. Until then, this is the attack surface.
   // Hydrate from localStorage on mount
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
