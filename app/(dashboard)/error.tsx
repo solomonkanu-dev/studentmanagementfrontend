@@ -25,7 +25,9 @@ export default function DashboardError({
           Something went wrong
         </h2>
         <p className="mt-1 text-sm text-body">
-          {error.message || "An unexpected error occurred. Please try again."}
+          {process.env.NODE_ENV === "development" && error.message
+            ? error.message
+            : "An unexpected error occurred. Please try again."}
         </p>
       </div>
       <button

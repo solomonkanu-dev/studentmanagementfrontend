@@ -27,7 +27,10 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     // Move focus into the container
     const container = ref.current;
     if (!container) return;
-    const first = container.querySelectorAll<HTMLElement>(FOCUSABLE)[0];
+    const focusableElements = Array.from(
+      container.querySelectorAll<HTMLElement>(FOCUSABLE)
+    ).filter((el) => !el.closest("[aria-hidden='true']"));
+    const first = focusableElements[0];
     first?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {

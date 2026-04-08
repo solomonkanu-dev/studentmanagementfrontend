@@ -94,10 +94,10 @@ function WelcomeBanner({ name }: { name: string }) {
   const firstName = name.split(" ")[0];
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-indigo-700 p-6 shadow-lg`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-linear-to-br from-primary to-indigo-700 p-6 shadow-lg`}>
       {/* Decorative blobs */}
-      <div className="pointer-events-none absolute right-[-40px] top-[-40px] h-48 w-48 rounded-full bg-white/5 blur-2xl" />
-      <div className="pointer-events-none absolute bottom-[-30px] left-[20%] h-40 w-40 rounded-full bg-white/5 blur-2xl" />
+      <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-7.5 left-[20%] h-40 w-40 rounded-full bg-white/5 blur-2xl" />
 
       <div className="relative flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         {/* Left — greeting */}
