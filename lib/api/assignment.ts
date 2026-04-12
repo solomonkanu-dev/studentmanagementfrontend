@@ -17,7 +17,11 @@ export const submissionApi = {
     const { data } = await apiClient.post("/submission/submit-assignment", payload);
     return data.data ?? data;
   },
-  grade: async (submissionId: string, payload: { grade: number; feedback?: string }): Promise<Submission> => {
+  resubmit: async (submissionId: string, payload: { content?: string; fileUrl?: string }): Promise<Submission> => {
+    const { data } = await apiClient.patch(`/submission/${submissionId}/resubmit`, payload);
+    return data.submission ?? data.data ?? data;
+  },
+  grade: async (submissionId: string, payload: { score: number; feedback?: string }): Promise<Submission> => {
     const { data } = await apiClient.patch(`/submission/${submissionId}/grade`, payload);
     return data.data ?? data;
   },

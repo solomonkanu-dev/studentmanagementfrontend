@@ -150,9 +150,13 @@ export interface Submission {
   student: string | AuthUser;
   fileUrl?: string;
   content?: string;
-  grade?: number;
+  score?: number | null;
+  /** @deprecated use score */
+  grade?: number | null;
   feedback?: string;
-  submittedAt: string;
+  status?: "pending" | "graded";
+  isLate?: boolean;
+  submittedAt?: string;
   gradedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -267,6 +271,7 @@ export interface Result {
   student: string | AuthUser;
   subject: string | Subject;
   class: string | Class;
+  term?: string | { _id: string; name: string; academicYear: string } | null;
   marksObtained: number;
   totalScore?: number;
   grade?: string;

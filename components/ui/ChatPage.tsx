@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -93,6 +92,8 @@ function Avatar({
   size?: "sm" | "md" | "lg";
   isGroup?: boolean;
 }) {
+  const [imgError, setImgError] = useState(false);
+
   const sizeClass =
     size === "sm"
       ? "h-8 w-8 text-xs"
@@ -114,13 +115,13 @@ function Avatar({
     <div
       className={`${sizeClass} shrink-0 rounded-full bg-primary overflow-hidden flex items-center justify-center font-bold uppercase text-white`}
     >
-      {photo ? (
-        <Image
+      {photo && !imgError ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={photo}
           alt={name}
-          width={44}
-          height={44}
           className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
         />
       ) : (
         name.charAt(0)

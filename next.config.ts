@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         hostname: process.env.CDN_HOSTNAME ?? "your-cdn.example.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
   },
 

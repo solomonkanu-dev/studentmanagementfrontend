@@ -10,10 +10,10 @@ import {
 } from "react";
 import type { AuthUser, Role } from "@/lib/types";
 import { authApi } from "@/lib/api/auth";
+import { tokenStore } from "@/lib/api/tokenStore";
 
 interface AuthContextValue {
   user: AuthUser | null;
-  token: string | null;
   isLoading: boolean;
   login: (email: string, password: string, asSuperAdmin?: boolean) => Promise<void>;
   logout: () => Promise<void>;
@@ -25,38 +25,35 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ⚠️  SECURITY NOTE — JWT stored in localStorage is readable by any XSS script.
-  //    To fully mitigate: (1) have the Express backend set an HttpOnly + Secure
-  //    cookie on login, (2) proxy all API calls through a Next.js Route Handler
-  //    so the token never touches client JS, (3) remove the manual Authorization
-  //    header in apiClient.ts. Until then, this is the attack surface.
-  // Hydrate from localStorage on mount
+  // Restore session from HttpOnly cookie on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-    setIsLoading(false);
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then(({ token, user: storedUser }: { token: string | null; user: AuthUser | null }) => {
+        if (token && storedUser) {
+          tokenStore.set(token);
+          setUser(storedUser);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(
     async (email: string, password: string, asSuperAdmin = false) => {
       const fn = asSuperAdmin ? authApi.superAdminLogin : authApi.login;
-      const response = await fn({ email, password });
-      const { token: newToken, user: newUser } = response;
-      localStorage.setItem("token", newToken);
-      localStorage.setItem("user", JSON.stringify(newUser));
-      setToken(newToken);
+      const { token: newToken, user: newUser } = await fn({ email, password });
+
+      // Persist token + user in HttpOnly cookies via the session route
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: newToken, user: newUser }),
+      });
+
+      tokenStore.set(newToken);
       setUser(newUser);
     },
     []
@@ -66,11 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.logout();
     } catch {
-      // Swallow — we still clear local state
+      // Swallow — still clear local state
     } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      setToken(null);
+      await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
+      tokenStore.clear();
       setUser(null);
     }
   }, []);
@@ -84,13 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...patch };
-      localStorage.setItem("user", JSON.stringify(updated));
+      // Refresh the user cookie with updated data (fire-and-forget)
+      fetch("/api/auth/session", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      }).catch(() => {});
       return updated;
     });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isRole, updateUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, isRole, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

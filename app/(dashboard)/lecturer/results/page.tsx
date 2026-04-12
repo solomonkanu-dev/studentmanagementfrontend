@@ -6,6 +6,7 @@ import { errMsg } from "@/lib/utils/errMsg";
 import { classApi } from "@/lib/api/class";
 import { subjectApi } from "@/lib/api/subject";
 import { adminApi } from "@/lib/api/admin";
+import type { AcademicTerm } from "@/lib/api/admin";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +44,7 @@ export default function LecturerResultsPage() {
 
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [selectedTermId, setSelectedTermId] = useState("");
   const [marks, setMarks] = useState<Record<string, string>>({});
   const [totals, setTotals] = useState<Record<string, string>>({});
   const [successIds, setSuccessIds] = useState<Set<string>>(new Set());
@@ -66,9 +68,18 @@ export default function LecturerResultsPage() {
     enabled: !!selectedClassId,
   });
 
+  const { data: terms = [] } = useQuery({
+    queryKey: ["terms"],
+    queryFn: adminApi.getTerms,
+  });
+
+  // Default to current term on first load
+  const currentTerm = (terms as AcademicTerm[]).find((t) => t.isCurrent);
+  const effectiveTermId = selectedTermId || currentTerm?._id || "";
+
   const { data: existingResults = [], isLoading: resultsLoading } = useQuery({
-    queryKey: ["class-results", selectedClassId],
-    queryFn: () => adminApi.getResultsByClass(selectedClassId),
+    queryKey: ["class-results", selectedClassId, effectiveTermId],
+    queryFn: () => adminApi.getResultsByClass(selectedClassId, effectiveTermId || undefined),
     enabled: !!selectedClassId,
   });
 
@@ -115,6 +126,7 @@ export default function LecturerResultsPage() {
         classId: selectedClassId,
         marksObtained,
         totalScore,
+        termId: effectiveTermId || undefined,
       }),
     onSuccess: (savedResult, vars) => {
       // Update the cache in-place — no refetch, no loading flash
@@ -197,7 +209,30 @@ export default function LecturerResultsPage() {
       {/* Filters */}
       <Card>
         <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end flex-wrap">
+            {/* Term selector */}
+            <div className="flex flex-col gap-1.5 flex-1 max-w-xs">
+              <label className="text-sm font-medium text-black dark:text-white">Term</label>
+              <select
+                value={selectedTermId}
+                onChange={(e) => {
+                  setSelectedTermId(e.target.value);
+                  setMarks({});
+                  setTotals({});
+                  setErrors({});
+                  setSuccessIds(new Set());
+                }}
+                className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+              >
+                <option value="">All Terms</option>
+                {(terms as AcademicTerm[]).map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} {t.isCurrent ? "(current)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Class selector */}
             <div className="flex flex-col gap-1.5 flex-1 max-w-xs">
               <label className="text-sm font-medium text-black dark:text-white">
@@ -295,6 +330,11 @@ export default function LecturerResultsPage() {
               />
               <h2 className="text-sm font-semibold text-black dark:text-white">
                 {classSubjects.find((s) => s._id === selectedSubjectId)?.name} — Assign Marks
+                {effectiveTermId && (
+                  <span className="ml-2 text-xs font-normal text-body">
+                    · {(terms as AcademicTerm[]).find((t) => t._id === effectiveTermId)?.name}
+                  </span>
+                )}
               </h2>
             </div>
           </CardHeader>

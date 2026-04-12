@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { Toaster } from "sonner";
 
 const satoshi = localFont({
   src: [
@@ -32,6 +33,7 @@ export default function RootLayout({
           <ThemeProvider>
             <AuthProvider>{children}</AuthProvider>
           </ThemeProvider>
+          <Toaster richColors position="top-right" closeButton />
         </QueryProvider>
       </body>
     </html>

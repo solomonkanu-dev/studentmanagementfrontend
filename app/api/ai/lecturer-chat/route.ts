@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
+import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -50,7 +51,7 @@ function getRoleFromToken(token: string): string | null {
 // ─── PII scrubber ─────────────────────────────────────────────────────────────
 
 const PII_FIELDS = new Set([
-  "_id", "__v", "id", "password", "token", "refreshToken",
+  "__v", "password", "token", "refreshToken",
   "email", "phoneNumber", "mobileNumber", "address", "dateOfBirth",
   "nationalId", "guardianPhone", "guardianEmail",
 ]);
@@ -73,19 +74,19 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: "get_my_subjects",
     description:
-      "Get the list of subjects this lecturer is assigned to teach, including subject name, class, and department. Use this for questions about their teaching load, which subjects or classes they handle, or their schedule.",
+      "Get the list of subjects this lecturer is assigned to teach, including subject name, class, and department.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
   {
     name: "get_my_assignments",
     description:
-      "Get all assignments created by this lecturer — title, subject, due date, total marks, and status (draft/published). Use this for questions about their assignments, deadlines, or how many assignments they have set.",
+      "Get all assignments created by this lecturer — title, subject, due date, total marks, and status.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
   {
     name: "get_class_attendance",
     description:
-      "Get attendance records for the classes this lecturer teaches — present, absent, and overall attendance rate by class and subject. Use this for questions about student attendance, which classes have poor attendance, or attendance trends.",
+      "Get attendance records for the classes this lecturer teaches — present, absent, and overall attendance rate by class.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -95,27 +96,36 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
-    name: "get_my_salary",
+    name: "get_class_results",
     description:
-      "Get this lecturer's salary records — salary amounts, payment status (paid/pending), and payment dates. Use this for questions about their pay, salary slips, or pending payments.",
+      "Get all student results for a specific class — student names, marks per subject, averages, and ranking. Use this to identify the weakest students, spot at-risk learners, and generate performance charts. Pass classId if available.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        classId: { type: "string", description: "Class ID to get results for (optional — uses teacher's primary class if omitted)" },
+        termId:  { type: "string", description: "Term ID to filter results (optional)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_my_salary",
+    description: "Get this lecturer's salary records — amounts, payment status, and dates.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
   {
     name: "get_my_attendance",
-    description:
-      "Get this lecturer's own employee attendance record — days present, absent, and their attendance percentage. Use this for questions about their own punctuality or attendance status.",
+    description: "Get this lecturer's own employee attendance record.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
   {
     name: "get_my_timetable",
-    description:
-      "Get the timetables for all classes in this institution, including days of the week, time slots, subjects, and assigned lecturers. Use this for questions about the weekly class schedule, which periods this teacher is assigned to, or what subjects run at what times.",
+    description: "Get the timetables for all classes in this institution.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
   {
     name: "get_calendar_events",
-    description:
-      "Get the academic calendar events for this institution — holidays, exam dates, term start/end, and other school events. Use this for questions about upcoming events, when exams are scheduled, school holidays, or term dates.",
+    description: "Get the academic calendar events — holidays, exam dates, term start/end.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
 ];
@@ -152,6 +162,14 @@ async function runTool(
       return callBackend("/attendance/report/class", token, {
         ...(input.classId ? { classId: input.classId } : {}),
       });
+    case "get_class_results":
+      return input.classId
+        ? callBackend(`/admin/results/class/${input.classId}`, token, {
+            ...(input.termId ? { termId: input.termId } : {}),
+          })
+        : callBackend("/lecturer/class-results", token, {
+            ...(input.termId ? { termId: input.termId } : {}),
+          });
     case "get_my_salary":
       return callBackend(`/salary/lecturer/${lecturerId}`, token);
     case "get_my_attendance":
@@ -165,33 +183,141 @@ async function runTool(
   }
 }
 
+// ─── Chart data builder ───────────────────────────────────────────────────────
+
+export interface ChartData {
+  type: "bar" | "donut" | "radialBar" | "area" | "line";
+  title: string;
+  series: unknown;
+  labels?: string[];
+  colors?: string[];
+  height?: number;
+}
+
+function buildChartData(rawResults: Map<string, unknown>): ChartData | null {
+  // Class results → sorted horizontal bar showing student performance
+  const classResults = rawResults.get("get_class_results");
+  if (classResults) {
+    const results: Array<Record<string, unknown>> = Array.isArray(classResults)
+      ? (classResults as Array<Record<string, unknown>>)
+      : Array.isArray((classResults as Record<string, unknown>)?.data)
+        ? ((classResults as Record<string, unknown>).data as Array<Record<string, unknown>>)
+        : [];
+
+    // Aggregate by student
+    const studentMap = new Map<string, { name: string; total: number; count: number }>();
+    for (const r of results) {
+      const studentObj = r.student as Record<string, unknown> | undefined;
+      const name = (studentObj?.fullName ?? studentObj?.name ?? "Student") as string;
+      const obtained = (r.marksObtained as number) ?? 0;
+      const total = (r.totalScore as number) ?? 100;
+      const pct = total > 0 ? Math.round((obtained / total) * 100) : 0;
+      if (!studentMap.has(name)) studentMap.set(name, { name, total: 0, count: 0 });
+      const entry = studentMap.get(name)!;
+      entry.total += pct;
+      entry.count += 1;
+    }
+
+    if (studentMap.size > 0) {
+      const entries = Array.from(studentMap.values())
+        .map((e) => ({ name: e.name, avg: Math.round(e.total / e.count) }))
+        .sort((a, b) => a.avg - b.avg) // sort ascending so weakest is at top
+        .slice(0, 15); // cap at 15 students for readability
+
+      return {
+        type: "bar",
+        title: "Student Performance (%)",
+        series: [{ name: "Average %", data: entries.map((e) => e.avg) }],
+        labels: entries.map((e) => e.name.split(" ")[0]), // first name only for space
+        colors: entries.map((e) => e.avg >= 70 ? "#10b981" : e.avg >= 50 ? "#f59e0b" : "#ef4444"),
+        height: Math.max(200, entries.length * 28),
+      };
+    }
+  }
+
+  // Class attendance → bar chart
+  const attData = rawResults.get("get_class_attendance");
+  if (attData) {
+    const records: Array<Record<string, unknown>> = Array.isArray(attData)
+      ? (attData as Array<Record<string, unknown>>)
+      : Array.isArray((attData as Record<string, unknown>)?.classes)
+        ? ((attData as Record<string, unknown>).classes as Array<Record<string, unknown>>)
+        : [];
+
+    if (records.length > 0) {
+      const labels = records.map((r) => {
+        const cls = r.class ?? r.className ?? r.name ?? "Class";
+        return typeof cls === "object" ? ((cls as Record<string, unknown>).name as string ?? "Class") : String(cls);
+      });
+      const rates = records.map((r) => {
+        const rate = r.attendanceRate ?? r.percentage ?? r.rate;
+        return typeof rate === "number" ? Math.round(rate) : 0;
+      });
+      if (rates.some((r) => r > 0)) {
+        return {
+          type: "bar",
+          title: "Class Attendance Rates (%)",
+          series: [{ name: "Attendance %", data: rates }],
+          labels,
+          colors: rates.map((r) => r >= 80 ? "#10b981" : r >= 60 ? "#f59e0b" : "#ef4444"),
+          height: 220,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 // ─── System prompt ───────────────────────────────────────────────────────────
 
 function buildSystemPrompt(): string {
   return `You are a teaching intelligence assistant embedded in the teacher portal of StudentMS, a school management platform for Sierra Leone.
 
-Your job is to help teachers understand their classes, students, assignments, attendance, and salary through clear, well-structured reports.
+Your role is to help teachers understand their classes deeply, identify struggling students early, and take targeted action to improve outcomes.
+
+## Core responsibilities
+
+### 1. Weakest student identification
+When showing class results:
+- Always sort students by performance and **explicitly name the bottom 3-5 students**
+- State each struggling student's exact average and which subjects they are failing
+- Use a dedicated "⚠️ Students Needing Attention" section
+- Example: "**Aminata Kamara** — 38% average. Failing Maths (29%) and Science (41%)."
+
+### 2. Class-wide patterns
+- Flag subjects where more than 30% of students are failing
+- Identify if there is a systemic issue (e.g. "7 out of 15 students scored below 50% in Physics")
+- Compare against class average to give context
+
+### 3. Intervention suggestions
+After identifying weak students, give specific, actionable recommendations:
+- "Consider a remedial session for [Subject] — most students scored below 50%"
+- "Aminata may benefit from peer tutoring with a stronger student in Maths"
+- "Review whether the Term 2 Physics syllabus was fully covered given the class average of 44%"
+
+### 4. Attendance impact
+- If a student has both low grades AND poor attendance, flag the correlation
+- "Foday's 31% attendance may be directly linked to his 42% academic average"
+
+### 5. Positive reinforcement
+- Highlight top performers: "Isata leads the class with 89% — excellent!"
+- Celebrate class-wide improvements between terms
 
 ## Response format
-
-Structure responses like professional teaching reports:
-- Use **## Section Title** for major sections in detailed responses
-- Use **### Class / Subject** for per-class or per-subject breakdowns
-- Use **markdown tables** (| Column | Column |) for student lists, grade summaries, attendance records, or assignment tracking
-- Use **numbered lists** for ranked students or priority actions
-- Use **bullet points** for quick observations, highlights, or recommendations
-- Use **bold** for key figures, student names, and important values (e.g. **72.4% average**, **3 students at risk**)
-- Use **---** between major sections in longer reports
-- For short factual answers, respond conversationally without forcing structure
-- End reports with a **> Recommendation:** or **## Key Points** callout when useful
+- Use **## Section Title** for major sections
+- Use **### Class / Subject** for per-class breakdowns
+- Use **markdown tables** for student performance lists
+- Use **> ⚠️ At Risk:** for students needing immediate attention
+- Use **> 💡 Suggestion:** for teaching recommendations
+- Use **> ✅ Top Performer:** to highlight strong students
+- End reports with a **> Key Actions:** callout
 
 ## Data rules
-- Always call your tools to fetch live data. Never guess or fabricate numbers.
-- Only answer questions about this teacher's own classes, assignments, attendance, and salary data.
-- Do not reveal sensitive student details (phone numbers, home addresses, guardian info).
-- Do not answer questions about other teachers' data or topics outside your scope.
-- Round all percentages and decimals to 1 decimal place.
-- You have access to the class timetable and academic calendar in addition to subjects, assignments, attendance, and salary.
+- Always fetch live data — never fabricate
+- Only answer about this teacher's own classes and data
+- Do not reveal contact details (phone, address) of students or guardians
+- Round all percentages to 1 decimal place
 
 Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
 }
@@ -204,8 +330,10 @@ async function runAgentLoop(
   messages: AnthropicMessage[],
   token: string,
   lecturerId: string
-): Promise<string> {
+): Promise<{ reply: string; toolsUsed: string[]; chartData: ChartData | null }> {
   const loop = [...messages];
+  const toolsUsed: string[] = [];
+  const rawResults = new Map<string, unknown>();
   const MAX_ITERATIONS = 6;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -219,9 +347,8 @@ async function runAgentLoop(
 
     if (response.stop_reason === "end_turn") {
       const textBlock = response.content.find((b) => b.type === "text");
-      return textBlock && textBlock.type === "text"
-        ? textBlock.text
-        : "I'm not sure how to answer that.";
+      const reply = textBlock?.type === "text" ? textBlock.text : "I'm not sure how to answer that.";
+      return { reply, toolsUsed: [...new Set(toolsUsed)], chartData: buildChartData(rawResults) };
     }
 
     if (response.stop_reason === "tool_use") {
@@ -233,12 +360,9 @@ async function runAgentLoop(
 
       const results = await Promise.all(
         toolUseBlocks.map(async (block) => {
-          const raw = await runTool(
-            block.name,
-            block.input as Record<string, unknown>,
-            token,
-            lecturerId
-          );
+          toolsUsed.push(block.name);
+          const raw = await runTool(block.name, block.input as Record<string, unknown>, token, lecturerId);
+          rawResults.set(block.name, raw);
           const safe = scrubPii(raw);
           return {
             type: "tool_result" as const,
@@ -255,34 +379,29 @@ async function runAgentLoop(
     break;
   }
 
-  return "I ran into an issue processing your request. Please try again.";
+  return {
+    reply: "I ran into an issue processing your request. Please try again.",
+    toolsUsed: [...new Set(toolsUsed)],
+    chartData: buildChartData(rawResults),
+  };
 }
 
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const jar = await cookies();
+  const token = jar.get("auth-token")?.value ?? null;
 
-  if (!token) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const role = getRoleFromToken(token);
-  if (role !== "lecturer") {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (role !== "lecturer") return Response.json({ error: "Forbidden" }, { status: 403 });
 
   const userId = getUserIdFromToken(token);
-  if (!userId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   if (isRateLimited(userId)) {
-    return Response.json(
-      { error: "Too many requests. Please wait a few minutes and try again." },
-      { status: 429 }
-    );
+    return Response.json({ error: "Too many requests. Please wait a few minutes." }, { status: 429 });
   }
 
   if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === "your_api_key_here") {
@@ -290,53 +409,33 @@ export async function POST(req: NextRequest) {
   }
 
   let body: { messages?: AnthropicMessage[] };
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: "Invalid request body" }, { status: 400 });
-  }
+  try { body = await req.json(); }
+  catch { return Response.json({ error: "Invalid request body" }, { status: 400 }); }
 
   const { messages } = body;
 
-  if (!Array.isArray(messages) || messages.length === 0) {
+  if (!Array.isArray(messages) || messages.length === 0)
     return Response.json({ error: "messages array is required" }, { status: 400 });
-  }
 
-  if (messages.length > MAX_MESSAGES) {
-    return Response.json(
-      { error: "Message history too long. Please start a new conversation." },
-      { status: 400 }
-    );
-  }
+  if (messages.length > MAX_MESSAGES)
+    return Response.json({ error: "Message history too long. Please start a new conversation." }, { status: 400 });
 
   for (const m of messages) {
-    if (m.role === "user" && typeof m.content === "string") {
-      if (m.content.length > MAX_MESSAGE_LENGTH) {
-        return Response.json(
-          { error: `Message too long. Keep messages under ${MAX_MESSAGE_LENGTH} characters.` },
-          { status: 400 }
-        );
-      }
-    }
+    if (m.role === "user" && typeof m.content === "string" && m.content.length > MAX_MESSAGE_LENGTH)
+      return Response.json({ error: `Message too long. Keep under ${MAX_MESSAGE_LENGTH} characters.` }, { status: 400 });
   }
 
   const safeMessages: AnthropicMessage[] = messages
     .filter((m) => m.role === "user" || m.role === "assistant")
-    .map((m) => ({
-      role: m.role,
-      content: typeof m.content === "string" ? m.content.trim() : m.content,
-    }));
+    .map((m) => ({ role: m.role, content: typeof m.content === "string" ? m.content.trim() : m.content }));
 
   console.log(`[lecturer-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
 
   try {
-    const reply = await runAgentLoop(safeMessages, token, userId);
-    return Response.json({ reply });
+    const { reply, toolsUsed, chartData } = await runAgentLoop(safeMessages, token, userId);
+    return Response.json({ reply, toolsUsed, chartData, queriedAt: new Date().toISOString() });
   } catch (err: unknown) {
     console.error("[lecturer-chat] error", { userId, error: err });
-    return Response.json(
-      { error: "Something went wrong. Please try again." },
-      { status: 500 }
-    );
+    return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }

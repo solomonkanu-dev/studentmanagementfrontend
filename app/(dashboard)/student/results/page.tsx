@@ -58,13 +58,13 @@ export default function StudentResultsPage() {
 
   const { data: results = [], isLoading } = useQuery({
     queryKey: ["my-results", activeClassId],
-    queryFn: () => studentApi.getMyResults(activeClassId),
+    queryFn: () => studentApi.getMyResults(activeClassId ? { classId: activeClassId } : undefined),
     enabled: promotionData !== undefined,
   });
 
   const { data: rankData } = useQuery({
     queryKey: ["my-ranking"],
-    queryFn: studentApi.getMyRanking,
+    queryFn: () => studentApi.getMyRanking(),
     enabled: !isViewingHistory,
   });
 

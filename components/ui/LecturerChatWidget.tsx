@@ -1,16 +1,26 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { MessageCircle, X, Send, Bot, User, Loader2, ChevronDown } from "lucide-react";
+
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+
+interface ChartData {
+  type: "bar" | "donut" | "radialBar" | "area" | "line";
+  title: string;
+  series: unknown;
+  labels?: string[];
+  colors?: string[];
+  height?: number;
+}
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-}
-
-interface LecturerChatWidgetProps {
-  token: string;
+  chartData?: ChartData | null;
+  toolsUsed?: string[];
 }
 
 function uid() {
@@ -24,7 +34,7 @@ const SUGGESTED_PROMPTS = [
   "Show me my salary records",
 ];
 
-export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
+export function LecturerChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -70,10 +80,7 @@ export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
       try {
         const res = await fetch("/api/ai/lecturer-chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: history }),
         });
 
@@ -85,7 +92,13 @@ export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
 
         setMessages((prev) => [
           ...prev,
-          { id: uid(), role: "assistant", content: json.reply },
+          {
+            id: uid(),
+            role: "assistant",
+            content: json.reply,
+            chartData: json.chartData ?? null,
+            toolsUsed: json.toolsUsed ?? [],
+          },
         ]);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Something went wrong.";
@@ -96,7 +109,7 @@ export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
         setLoading(false);
       }
     },
-    [loading, messages, token]
+    [loading, messages]
   );
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -162,35 +175,72 @@ export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={[
-                "flex gap-2",
-                msg.role === "user" ? "flex-row-reverse" : "flex-row",
-              ].join(" ")}
-            >
+            <div key={msg.id} className="flex flex-col gap-1">
               <div
                 className={[
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white",
-                  msg.role === "user" ? "bg-meta-5" : "bg-meta-3",
+                  "flex gap-2",
+                  msg.role === "user" ? "flex-row-reverse" : "flex-row",
                 ].join(" ")}
               >
-                {msg.role === "user" ? (
-                  <User className="h-3.5 w-3.5" aria-hidden="true" />
-                ) : (
-                  <Bot className="h-3.5 w-3.5" aria-hidden="true" />
-                )}
+                <div
+                  className={[
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white",
+                    msg.role === "user" ? "bg-meta-5" : "bg-meta-3",
+                  ].join(" ")}
+                >
+                  {msg.role === "user" ? (
+                    <User className="h-3.5 w-3.5" aria-hidden="true" />
+                  ) : (
+                    <Bot className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                </div>
+                <div
+                  className={[
+                    "max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                    msg.role === "user"
+                      ? "rounded-tr-sm bg-meta-5 text-white"
+                      : "rounded-tl-sm bg-whiter text-black dark:bg-meta-4 dark:text-white",
+                  ].join(" ")}
+                >
+                  <MessageContent content={msg.content} />
+                </div>
               </div>
-              <div
-                className={[
-                  "max-w-[75%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                  msg.role === "user"
-                    ? "rounded-tr-sm bg-meta-5 text-white"
-                    : "rounded-tl-sm bg-whiter text-black dark:bg-meta-4 dark:text-white",
-                ].join(" ")}
-              >
-                <MessageContent content={msg.content} />
-              </div>
+              {/* Chart card */}
+              {msg.role === "assistant" && msg.chartData && (
+                <div className="ml-9 rounded-xl border border-stroke bg-white p-3 dark:border-strokedark dark:bg-boxdark">
+                  <p className="mb-1 text-xs font-semibold text-black dark:text-white">{msg.chartData.title}</p>
+                  <ApexChart
+                    type={msg.chartData.type}
+                    height={msg.chartData.height ?? 200}
+                    series={msg.chartData.series as never}
+                    options={{
+                      chart: { toolbar: { show: false }, background: "transparent", animations: { enabled: true } },
+                      labels: msg.chartData.labels,
+                      colors: msg.chartData.colors,
+                      plotOptions: {
+                        bar: { horizontal: msg.chartData.type === "bar" && (msg.chartData.labels?.length ?? 0) > 4, borderRadius: 4, columnWidth: "55%" },
+                        radialBar: {
+                          hollow: { size: "50%" },
+                          dataLabels: { name: { show: true, fontSize: "11px" }, value: { fontSize: "18px", fontWeight: "bold", offsetY: 4 } },
+                        },
+                        pie: { donut: { size: "55%", labels: { show: true, total: { show: true, fontSize: "11px" } } } },
+                      },
+                      dataLabels: { enabled: msg.chartData.type === "donut" || msg.chartData.type === "radialBar" },
+                      legend: { show: msg.chartData.type === "donut", position: "bottom", fontSize: "10px" },
+                      xaxis: {
+                        categories: msg.chartData.labels,
+                        labels: { style: { colors: "#94a3b8", fontSize: "9px" } },
+                        axisBorder: { show: false },
+                        axisTicks: { show: false },
+                      },
+                      yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "9px" } } },
+                      tooltip: { enabled: true },
+                      grid: { borderColor: "#e2e8f040", strokeDashArray: 4 },
+                      theme: { mode: "light" },
+                    }}
+                  />
+                </div>
+              )}
             </div>
           ))}
 
