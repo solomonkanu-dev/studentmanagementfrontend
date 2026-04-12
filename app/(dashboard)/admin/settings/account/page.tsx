@@ -48,6 +48,7 @@ export default function AccountSettingsPage() {
 // ─── Profile section ──────────────────────────────────────────────────────────
 
 function ProfileSection({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
+  const { updateUser } = useAuth();
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -68,15 +69,7 @@ function ProfileSection({ user }: { user: ReturnType<typeof useAuth>["user"] }) 
     setErrorMsg("");
     try {
       await apiClient.patch("/admin/profile", values);
-      // Update stored user object
-      const stored = localStorage.getItem("user");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ ...parsed, ...values })
-        );
-      }
+      updateUser(values);
       setStatus("success");
       setTimeout(() => setStatus("idle"), 3000);
     } catch (e: unknown) {

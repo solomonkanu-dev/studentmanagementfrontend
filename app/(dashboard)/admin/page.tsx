@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
@@ -94,10 +94,10 @@ function WelcomeBanner({ name }: { name: string }) {
   const firstName = name.split(" ")[0];
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-indigo-700 p-6 shadow-lg`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-linear-to-br from-primary to-indigo-700 p-6 shadow-lg`}>
       {/* Decorative blobs */}
-      <div className="pointer-events-none absolute right-[-40px] top-[-40px] h-48 w-48 rounded-full bg-white/5 blur-2xl" />
-      <div className="pointer-events-none absolute bottom-[-30px] left-[20%] h-40 w-40 rounded-full bg-white/5 blur-2xl" />
+      <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-7.5 left-[20%] h-40 w-40 rounded-full bg-white/5 blur-2xl" />
 
       <div className="relative flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         {/* Left — greeting */}
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
   const trendSlice = [...(trend as FeeCollectionTrend[])].slice(-6);
 
   // ── ApexChart: Collection Trend (grouped column) ────────────────────────────
-  const trendChartOptions: ApexCharts.ApexOptions = {
+  const trendChartOptions: ApexCharts.ApexOptions = useMemo(() => ({
     chart: { type: "area", toolbar: { show: false }, background: "transparent" },
     stroke: { curve: "smooth", width: 2 },
     fill: { type: "gradient", gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
     legend: { position: "top", fontSize: "12px" },
     grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
     theme: { mode: "light" },
-  };
+  }), [trendSlice]); // eslint-disable-line react-hooks/exhaustive-deps
   const trendChartSeries = [
     { name: "Billed", data: trendSlice.map((t) => t.totalBilled) },
     { name: "Collected", data: trendSlice.map((t) => t.totalCollected) },
@@ -232,7 +232,7 @@ export default function AdminDashboard() {
   const donutColors = statusData.map((s) =>
     s.status === "paid" ? CHART_COLORS.success : s.status === "partial" ? CHART_COLORS.warning : CHART_COLORS.danger
   );
-  const donutOptions: ApexCharts.ApexOptions = {
+  const donutOptions: ApexCharts.ApexOptions = useMemo(() => ({
     chart: { type: "donut", background: "transparent" },
     labels: donutLabels,
     colors: donutColors,
@@ -250,11 +250,11 @@ export default function AdminDashboard() {
     } } } },
     tooltip: { y: { formatter: (v: number) => `${v} student${v !== 1 ? "s" : ""}` } },
     theme: { mode: "light" },
-  };
+  }), [feeByStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── ApexChart: Fee by Class horizontal bar ──────────────────────────────────
   const classBars = (feeByClass as FeeByClass[]).slice(0, 10);
-  const classBarOptions: ApexCharts.ApexOptions = {
+  const classBarOptions: ApexCharts.ApexOptions = useMemo(() => ({
     chart: { type: "bar", toolbar: { show: false }, background: "transparent" },
     plotOptions: { bar: { horizontal: true, barHeight: "55%", borderRadius: 4 } },
     dataLabels: { enabled: true, formatter: (v: number) => `${v}%`, style: { fontSize: "11px" } },
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
     },
     grid: { borderColor: "#e2e8f0", strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
     theme: { mode: "light" },
-  };
+  }), [classBars]); // eslint-disable-line react-hooks/exhaustive-deps
   const classBarSeries = [{ name: "Collection Rate", data: classBars.map((c) => c.collectionRate) }];
 
   return (

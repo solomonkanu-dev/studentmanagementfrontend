@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sparkles,
   Send,
@@ -12,10 +14,25 @@ import {
   Bot,
   User,
   Lightbulb,
+  TrendingUp,
+  DollarSign,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
+import { adminApi } from "@/lib/api/admin";
+
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+interface ChartData {
+  type: "bar" | "donut" | "radialBar" | "area" | "line";
+  title: string;
+  series: unknown;
+  labels?: string[];
+  colors?: string[];
+  height?: number;
+}
 
 interface QueryResult {
   id: string;
@@ -23,6 +40,7 @@ interface QueryResult {
   reply: string;
   toolsUsed: string[];
   queriedAt: string;
+  chartData?: ChartData | null;
   error?: string;
 }
 
@@ -56,6 +74,101 @@ const TOOL_LABELS: Record<string, string> = {
   get_class_rankings: "Class Rankings",
 };
 
+// ─── Quick Insights Dashboard ────────────────────────────────────────────────
+
+function QuickInsights() {
+  const { data: feeSummary, isLoading } = useQuery({
+    queryKey: ["fee-summary"],
+    queryFn: adminApi.getFeeSummary,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: feeByStatus = [] } = useQuery({
+    queryKey: ["fee-by-status"],
+    queryFn: adminApi.getFeeByStatus,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: collectionTrend = [] } = useQuery({
+    queryKey: ["fee-collection-trend"],
+    queryFn: adminApi.getFeeCollectionTrend,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const trendLabels = collectionTrend.map((t) => `${MONTH_NAMES[t.month - 1]} ${String(t.year).slice(2)}`);
+  const fmt = (n: number) => n >= 1_000_000 ? `NLe ${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `NLe ${(n/1_000).toFixed(1)}K` : `NLe ${n.toLocaleString()}`;
+
+  if (isLoading || !feeSummary) return null;
+
+  const rate = feeSummary.collectionRate ?? 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-primary" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-body">Quick Insights</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Collection Rate", value: `${rate}%`, color: rate >= 70 ? "text-meta-3" : rate >= 40 ? "text-meta-6" : "text-meta-1", icon: TrendingUp },
+          { label: "Collected", value: fmt(feeSummary.totalCollected), color: "text-meta-3", icon: DollarSign },
+          { label: "Outstanding", value: fmt(feeSummary.totalOutstanding), color: "text-meta-1", icon: AlertCircle },
+          { label: "Unpaid Students", value: String(feeSummary.unpaidCount), color: "text-meta-6", icon: AlertCircle },
+        ].map(({ label, value, color, icon: Icon }) => (
+          <div key={label} className="rounded-xl border border-stroke bg-white p-3 dark:border-strokedark dark:bg-boxdark">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-body truncate">{label}</p>
+              <Icon className={`h-4 w-4 ${color} shrink-0`} />
+            </div>
+            <p className={`mt-1 text-xl font-bold ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {feeByStatus.length > 0 && (
+          <div className="rounded-xl border border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
+            <p className="mb-1 text-sm font-semibold text-black dark:text-white">Fee Payment Status</p>
+            <ApexChart type="donut" height={220} series={feeByStatus.map((s) => s.count)}
+              options={{
+                labels: feeByStatus.map((s) => s.status.charAt(0).toUpperCase() + s.status.slice(1)),
+                colors: feeByStatus.map((s) => s.status === "paid" ? "#10b981" : s.status === "partial" ? "#f59e0b" : "#ef4444"),
+                legend: { position: "bottom", fontSize: "11px" },
+                dataLabels: { enabled: true, formatter: (v: number) => `${Math.round(v)}%` },
+                plotOptions: { pie: { donut: { size: "58%", labels: { show: true, total: { show: true, label: "Students", fontSize: "11px", fontWeight: "600" } } } } },
+                tooltip: { y: { formatter: (v: number) => `${v} students` } },
+                chart: { background: "transparent" }, theme: { mode: "light" },
+              }}
+            />
+          </div>
+        )}
+        {collectionTrend.length > 0 && (
+          <div className="rounded-xl border border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
+            <p className="mb-1 text-sm font-semibold text-black dark:text-white">Fee Collection Trend</p>
+            <ApexChart type="area" height={220}
+              series={[
+                { name: "Collected", data: collectionTrend.map((t) => t.totalCollected) },
+                { name: "Billed",    data: collectionTrend.map((t) => t.totalBilled) },
+              ]}
+              options={{
+                chart: { toolbar: { show: false }, background: "transparent" },
+                dataLabels: { enabled: false },
+                stroke: { curve: "smooth", width: 2 },
+                fill: { type: "gradient", gradient: { opacityFrom: 0.25, opacityTo: 0.02 } },
+                colors: ["#10b981", "#3c50e0"],
+                xaxis: { categories: trendLabels, labels: { style: { colors: "#94a3b8", fontSize: "10px" } }, axisBorder: { show: false }, axisTicks: { show: false } },
+                yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "10px" }, formatter: (v: number) => fmt(v) } },
+                tooltip: { shared: true, intersect: false, y: { formatter: (v: number) => fmt(v) } },
+                legend: { position: "top", fontSize: "11px" },
+                grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+                theme: { mode: "light" },
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function AdminAiAnalyticsPage() {
@@ -70,12 +183,6 @@ export default function AdminAiAnalyticsPage() {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [results]);
-
-  function getToken(): string {
-    return typeof window !== "undefined"
-      ? localStorage.getItem("token") ?? ""
-      : "";
-  }
 
   async function handleSubmit(questionOverride?: string) {
     const question = (questionOverride ?? query).trim();
@@ -95,10 +202,7 @@ export default function AdminAiAnalyticsPage() {
     try {
       const res = await fetch("/api/ai/admin-chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history }),
       });
 
@@ -115,6 +219,7 @@ export default function AdminAiAnalyticsPage() {
           question,
           reply: json.reply,
           toolsUsed: json.toolsUsed ?? [],
+          chartData: json.chartData ?? null,
           queriedAt: json.queriedAt ?? new Date().toISOString(),
         },
       ]);
@@ -155,10 +260,11 @@ export default function AdminAiAnalyticsPage() {
             AI Analytics
           </h1>
           <p className="text-sm text-body">
-            Ask questions about your school's fees, attendance, students, timetable, and more
+            Ask questions about your school&apos;s fees, attendance, students, timetable, and more
           </p>
         </div>
       </div>
+
 
       {/* Query input */}
       <Card>
@@ -308,6 +414,47 @@ function ResultCard({ result }: { result: QueryResult }) {
               )}
             </div>
 
+            {/* Chart */}
+            {!result.error && result.chartData && (
+              <div className="border-t border-stroke px-5 py-4 dark:border-strokedark">
+                <p className="mb-2 text-sm font-semibold text-black dark:text-white">{result.chartData.title}</p>
+                <ApexChart
+                  type={result.chartData.type}
+                  height={result.chartData.height ?? 280}
+                  series={result.chartData.series as never}
+                  options={{
+                    chart: { toolbar: { show: false }, background: "transparent" },
+                    labels: result.chartData.labels,
+                    colors: result.chartData.colors,
+                    plotOptions: {
+                      bar: {
+                        horizontal: result.chartData.type === "bar" && (result.chartData.labels?.length ?? 0) > 5,
+                        borderRadius: 4,
+                        columnWidth: "50%",
+                      },
+                      radialBar: {
+                        hollow: { size: "52%" },
+                        dataLabels: { name: { show: true }, value: { fontSize: "22px", fontWeight: "bold", offsetY: 8 } },
+                      },
+                      pie: { donut: { size: "58%", labels: { show: true, total: { show: true, fontWeight: "600" } } } },
+                    },
+                    dataLabels: { enabled: result.chartData.type === "donut" || result.chartData.type === "radialBar", formatter: (v: number) => `${Math.round(v)}%` },
+                    legend: { show: result.chartData.type === "donut", position: "bottom", fontSize: "12px" },
+                    xaxis: {
+                      categories: result.chartData.labels,
+                      labels: { style: { colors: "#94a3b8", fontSize: "11px" } },
+                      axisBorder: { show: false },
+                      axisTicks: { show: false },
+                    },
+                    yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "11px" } } },
+                    tooltip: { shared: true, intersect: false },
+                    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+                    theme: { mode: "light" },
+                  }}
+                />
+              </div>
+            )}
+
             {/* Footer */}
             {!result.error && (
               <div className="flex flex-wrap items-center gap-2 border-t border-stroke px-5 py-3 dark:border-strokedark">
@@ -376,6 +523,12 @@ function MarkdownContent({ content }: { content: string }) {
           <span className="shrink-0 font-medium text-primary">{num}.</span>
           <span>{formatInline(line.replace(/^\d+\.\s/, ""))}</span>
         </div>
+      );
+    } else if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote key={i} className="border-l-2 border-primary pl-3 text-sm italic text-body">
+          {formatInline(line.slice(2))}
+        </blockquote>
       );
     } else if (line.startsWith("|")) {
       const tableLines: string[] = [];

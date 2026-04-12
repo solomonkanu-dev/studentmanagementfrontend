@@ -220,6 +220,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
   const { data: announcements = [] } = useQuery({
     queryKey: ["announcements"],
     queryFn: announcementApi.getAll,
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
   const unreadAnnouncements = (announcements as { isRead?: boolean }[]).filter((a) => !a.isRead).length;
@@ -231,29 +232,37 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
   });
 
   // Student-only: pending assignments badge
+  // staleTime matches refetchInterval so navigation between pages doesn't
+  // re-fire the N subject-assignment requests on every mount.
+  const FIVE_MIN = 5 * 60_000;
   const isStudent = isRole("student");
   const { data: studentSubjects = [] } = useQuery({
     queryKey: ["student-subjects"],
     queryFn: subjectApi.getForStudent,
     enabled: isStudent,
-    refetchInterval: 300_000,
+    staleTime: FIVE_MIN,
+    refetchInterval: FIVE_MIN,
   });
+  const subjectIds = (studentSubjects as Subject[]).map((s) => s._id);
   const { data: mySubmissions = [] } = useQuery({
     queryKey: ["my-submissions"],
     queryFn: submissionApi.getMine,
     enabled: isStudent,
-    refetchInterval: 300_000,
+    staleTime: FIVE_MIN,
+    refetchInterval: FIVE_MIN,
   });
   const { data: allSubjectAssignments = [] } = useQuery({
-    queryKey: ["sidebar-student-assignments", (studentSubjects as Subject[]).map((s) => s._id)],
+    // Stable key: sorted ids so order changes don't invalidate cache
+    queryKey: ["sidebar-student-assignments", [...subjectIds].sort()],
     queryFn: async () => {
       const results = await Promise.all(
         (studentSubjects as Subject[]).map((s) => assignmentApi.getBySubject(s._id))
       );
       return results.flat() as Assignment[];
     },
-    enabled: isStudent && (studentSubjects as Subject[]).length > 0,
-    refetchInterval: 300_000,
+    enabled: isStudent && subjectIds.length > 0,
+    staleTime: FIVE_MIN,
+    refetchInterval: FIVE_MIN,
   });
   const submittedIds = new Set(
     (mySubmissions as Submission[]).map((s) =>

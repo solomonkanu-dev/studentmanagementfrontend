@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import {
   Monitor,
   Building2,
@@ -22,6 +23,9 @@ import {
 } from "lucide-react";
 import { monitorApi } from "@/lib/api/monitor";
 import type { InstituteDeepReport, GrowthPoint } from "@/lib/types";
+
+// ApexCharts — SSR-safe dynamic import
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -274,54 +278,100 @@ function OverviewTab() {
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Finance</p>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Fees block */}
+          {/* Fees block — radial gauge */}
           <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 dark:text-white">Fee Revenue</h3>
               <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                 {feeRate}% collected
               </span>
             </div>
-            <div className="mb-3 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Total Billed</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{fmt(d.fees.totalBilled)}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <ApexChart
+                  type="radialBar"
+                  height={160}
+                  series={[feeRate]}
+                  options={{
+                    chart: { background: "transparent" },
+                    plotOptions: {
+                      radialBar: {
+                        hollow: { size: "55%" },
+                        dataLabels: {
+                          name: { show: false },
+                          value: { fontSize: "22px", fontWeight: "bold", color: "#10b981", offsetY: 8 },
+                        },
+                        track: { background: "#f0fdf4" },
+                      },
+                    },
+                    colors: ["#10b981"],
+                    theme: { mode: "light" },
+                  }}
+                />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Collected</span>
-                <span className="font-semibold text-emerald-600">{fmt(d.fees.totalCollected)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Outstanding</span>
-                <span className="font-semibold text-red-500">{fmt(d.fees.totalOutstanding)}</span>
+              <div className="space-y-2 text-sm min-w-0 flex-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Billed</span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-xs">{fmt(d.fees.totalBilled)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Collected</span>
+                  <span className="font-semibold text-emerald-600 text-xs">{fmt(d.fees.totalCollected)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Outstanding</span>
+                  <span className="font-semibold text-red-500 text-xs">{fmt(d.fees.totalOutstanding)}</span>
+                </div>
               </div>
             </div>
-            <ProgressBar value={d.fees.totalCollected} max={d.fees.totalBilled} color="bg-emerald-500" />
           </div>
 
-          {/* Salaries block */}
+          {/* Salaries block — radial gauge */}
           <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 dark:text-white">Salary Expenditure</h3>
               <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
                 {pct(d.salaries.totalPaid, d.salaries.totalDisbursed)}% paid
               </span>
             </div>
-            <div className="mb-3 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Total Disbursed</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{fmt(d.salaries.totalDisbursed)}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <ApexChart
+                  type="radialBar"
+                  height={160}
+                  series={[pct(d.salaries.totalPaid, d.salaries.totalDisbursed)]}
+                  options={{
+                    chart: { background: "transparent" },
+                    plotOptions: {
+                      radialBar: {
+                        hollow: { size: "55%" },
+                        dataLabels: {
+                          name: { show: false },
+                          value: { fontSize: "22px", fontWeight: "bold", color: "#6366f1", offsetY: 8 },
+                        },
+                        track: { background: "#eef2ff" },
+                      },
+                    },
+                    colors: ["#6366f1"],
+                    theme: { mode: "light" },
+                  }}
+                />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Paid</span>
-                <span className="font-semibold text-emerald-600">{fmt(d.salaries.totalPaid)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Pending</span>
-                <span className="font-semibold text-amber-500">{fmt(d.salaries.totalPending)}</span>
+              <div className="space-y-2 text-sm min-w-0 flex-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Disbursed</span>
+                  <span className="font-semibold text-gray-900 dark:text-white text-xs">{fmt(d.salaries.totalDisbursed)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Paid</span>
+                  <span className="font-semibold text-emerald-600 text-xs">{fmt(d.salaries.totalPaid)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Pending</span>
+                  <span className="font-semibold text-amber-500 text-xs">{fmt(d.salaries.totalPending)}</span>
+                </div>
               </div>
             </div>
-            <ProgressBar value={d.salaries.totalPaid} max={d.salaries.totalDisbursed} color="bg-indigo-500" />
           </div>
         </div>
       </div>
@@ -464,32 +514,37 @@ function GrowthTab() {
         ))}
       </div>
 
-      {/* Bar chart */}
+      {/* ApexCharts area chart */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
         {merged.length === 0 ? (
           <p className="py-10 text-center text-sm text-gray-500">No registration data for this period</p>
         ) : (
-          <div className="flex items-end gap-3 overflow-x-auto pb-2" style={{ minHeight: 180 }}>
-            {merged.map((m) => (
-              <div key={m.label} className="flex shrink-0 flex-col items-center gap-1">
-                <div className="flex items-end gap-0.5" style={{ height: 140 }}>
-                  {SERIES.map((s) => {
-                    const val = (m as unknown as Record<string, number>)[s.label] ?? 0;
-                    const h = Math.max(4, (val / maxVal) * 140);
-                    return (
-                      <div
-                        key={s.label}
-                        title={`${s.label}: ${val}`}
-                        className={`w-4 rounded-t ${s.color} opacity-90 transition-all`}
-                        style={{ height: h }}
-                      />
-                    );
-                  })}
-                </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{m.label}</span>
-              </div>
-            ))}
-          </div>
+          <ApexChart
+            type="area"
+            height={260}
+            series={SERIES.map((s) => ({
+              name: s.label.charAt(0).toUpperCase() + s.label.slice(1),
+              data: merged.map((m) => (m as unknown as Record<string, number>)[s.label] ?? 0),
+            }))}
+            options={{
+              chart: { toolbar: { show: false }, background: "transparent", sparkline: { enabled: false } },
+              dataLabels: { enabled: false },
+              stroke: { curve: "smooth", width: 2 },
+              fill: { type: "gradient", gradient: { opacityFrom: 0.25, opacityTo: 0.02 } },
+              colors: ["#14b8a6", "#f97316", "#6366f1", "#ef4444"],
+              xaxis: {
+                categories: merged.map((m) => m.label),
+                labels: { style: { colors: "#94a3b8", fontSize: "11px" } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+              },
+              yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "11px" } }, min: 0 },
+              tooltip: { shared: true, intersect: false },
+              legend: { show: false },
+              grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+              theme: { mode: "light" },
+            }}
+          />
         )}
       </div>
 
@@ -550,49 +605,52 @@ function FeeRevenueTab() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* By Status */}
+        {/* By Status — donut chart */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-          <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">By Status</h3>
-          <div className="space-y-3">
-            {byStatus.map((s) => {
-              const color = s.status === "paid" ? "bg-emerald-500" : s.status === "partial" ? "bg-amber-400" : "bg-red-500";
-              const textColor = s.status === "paid" ? "text-emerald-600" : s.status === "partial" ? "text-amber-500" : "text-red-500";
-              return (
-                <div key={s.status} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className={`font-medium capitalize ${textColor}`}>{s.status}</span>
-                    <span className="text-gray-500">{s.count} records · {fmt(s.totalAmount)}</span>
-                  </div>
-                  <ProgressBar value={s.count} max={summary.totalRecords ?? 1} color={color} />
-                </div>
-              );
-            })}
-          </div>
+          <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Collection Status</h3>
+          <ApexChart
+            type="donut"
+            height={240}
+            series={byStatus.map((s) => s.count)}
+            options={{
+              labels: byStatus.map((s) => s.status.charAt(0).toUpperCase() + s.status.slice(1)),
+              colors: byStatus.map((s) => s.status === "paid" ? "#10b981" : s.status === "partial" ? "#f59e0b" : "#ef4444"),
+              legend: { position: "bottom", fontSize: "12px" },
+              dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
+              plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Total", fontSize: "12px" } } } } },
+              tooltip: { y: { formatter: (v: number) => `${v} records` } },
+              chart: { background: "transparent" },
+              theme: { mode: "light" },
+            }}
+          />
         </div>
 
-        {/* Top Institutes */}
+        {/* Top Institutes — horizontal bar */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-          <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Top Institutes by Collection</h3>
-          <div className="space-y-3">
-            {topInstitutes.map((inst, i) => {
-              const rate = pct(inst.totalCollected, inst.totalBilled);
-              return (
-                <div key={inst.instituteName} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-600 dark:bg-red-900/30">
-                        {i + 1}
-                      </span>
-                      <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[140px]">{inst.instituteName}</span>
-                    </div>
-                    <span className="font-semibold text-emerald-600">{fmt(inst.totalCollected)}</span>
-                  </div>
-                  <ProgressBar value={inst.totalCollected} max={inst.totalBilled || 1} color="bg-emerald-500" />
-                  <p className="text-xs text-gray-400">{rate}% collected · {fmt(inst.outstanding)} outstanding</p>
-                </div>
-              );
-            })}
-          </div>
+          <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Top Institutes by Collection</h3>
+          <ApexChart
+            type="bar"
+            height={240}
+            series={[
+              { name: "Collected", data: topInstitutes.map((i) => i.totalCollected) },
+              { name: "Outstanding", data: topInstitutes.map((i) => i.outstanding) },
+            ]}
+            options={{
+              chart: { toolbar: { show: false }, background: "transparent", stacked: false },
+              plotOptions: { bar: { horizontal: true, borderRadius: 4, dataLabels: { position: "top" } } },
+              colors: ["#10b981", "#ef4444"],
+              xaxis: {
+                categories: topInstitutes.map((i) => i.instituteName.length > 16 ? i.instituteName.slice(0, 16) + "…" : i.instituteName),
+                labels: { style: { colors: "#94a3b8", fontSize: "10px" }, formatter: (v: number) => fmt(v) },
+              },
+              yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "10px" } } },
+              tooltip: { y: { formatter: (v: number) => fmt(v) } },
+              legend: { position: "top", fontSize: "11px" },
+              dataLabels: { enabled: false },
+              grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+              theme: { mode: "light" },
+            }}
+          />
         </div>
       </div>
     </div>
@@ -623,48 +681,52 @@ function SalaryTab() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* By Status */}
+        {/* By Status — donut */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-          <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">By Payment Status</h3>
-          <div className="space-y-3">
-            {byStatus.map((s) => {
-              const color = s.status === "paid" ? "bg-emerald-500" : s.status === "pending" ? "bg-amber-400" : "bg-red-500";
-              const textColor = s.status === "paid" ? "text-emerald-600" : s.status === "pending" ? "text-amber-500" : "text-red-500";
-              return (
-                <div key={s.status} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className={`font-medium capitalize ${textColor}`}>{s.status}</span>
-                    <span className="text-gray-500">{s.count} · {fmt(s.totalAmount)}</span>
-                  </div>
-                  <ProgressBar value={s.count} max={summary.totalRecords ?? 1} color={color} />
-                </div>
-              );
-            })}
-          </div>
+          <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Payment Status</h3>
+          <ApexChart
+            type="donut"
+            height={240}
+            series={byStatus.map((s) => s.count)}
+            options={{
+              labels: byStatus.map((s) => s.status.charAt(0).toUpperCase() + s.status.slice(1)),
+              colors: byStatus.map((s) => s.status === "paid" ? "#10b981" : s.status === "pending" ? "#f59e0b" : "#ef4444"),
+              legend: { position: "bottom", fontSize: "12px" },
+              dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
+              plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Payments", fontSize: "12px" } } } } },
+              tooltip: { y: { formatter: (v: number) => `${v} payments` } },
+              chart: { background: "transparent" },
+              theme: { mode: "light" },
+            }}
+          />
         </div>
 
-        {/* By Institute */}
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-          <div className="border-b border-gray-200 px-5 py-3 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">By Institute</h3>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-            {byInstitute.map((inst) => (
-              <div key={inst.instituteName} className="flex items-center gap-4 px-5 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{inst.instituteName}</p>
-                  <p className="text-xs text-gray-400">{inst.staffCount} staff</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{fmt(inst.totalDisbursed)}</p>
-                  <div className="flex justify-end gap-2 text-xs">
-                    <span className="text-emerald-600">{fmt(inst.totalPaid)} paid</span>
-                    {inst.totalPending > 0 && <span className="text-amber-500">{fmt(inst.totalPending)} pending</span>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* By Institute — grouped bar */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Salary by Institute</h3>
+          <ApexChart
+            type="bar"
+            height={240}
+            series={[
+              { name: "Paid", data: byInstitute.map((i) => i.totalPaid) },
+              { name: "Pending", data: byInstitute.map((i) => i.totalPending) },
+            ]}
+            options={{
+              chart: { toolbar: { show: false }, background: "transparent", stacked: true },
+              plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
+              colors: ["#10b981", "#f59e0b"],
+              xaxis: {
+                categories: byInstitute.map((i) => i.instituteName.length > 16 ? i.instituteName.slice(0, 16) + "…" : i.instituteName),
+                labels: { style: { colors: "#94a3b8", fontSize: "10px" }, formatter: (v: number) => fmt(v) },
+              },
+              yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "10px" } } },
+              tooltip: { y: { formatter: (v: number) => fmt(v) } },
+              legend: { position: "top", fontSize: "11px" },
+              dataLabels: { enabled: false },
+              grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+              theme: { mode: "light" },
+            }}
+          />
         </div>
       </div>
     </div>

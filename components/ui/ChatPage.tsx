@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   chatApi,
@@ -91,6 +92,8 @@ function Avatar({
   size?: "sm" | "md" | "lg";
   isGroup?: boolean;
 }) {
+  const [imgError, setImgError] = useState(false);
+
   const sizeClass =
     size === "sm"
       ? "h-8 w-8 text-xs"
@@ -112,8 +115,14 @@ function Avatar({
     <div
       className={`${sizeClass} shrink-0 rounded-full bg-primary overflow-hidden flex items-center justify-center font-bold uppercase text-white`}
     >
-      {photo ? (
-        <img src={photo} alt={name} className="h-full w-full object-cover" />
+      {photo && !imgError ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photo}
+          alt={name}
+          className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
+        />
       ) : (
         name.charAt(0)
       )}
@@ -131,10 +140,18 @@ function NewConversationModal({
   onStart: (userId: string) => void;
 }) {
   const [search, setSearch] = useState("");
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["chat-contacts"],
     queryFn: chatApi.getContacts,
   });
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   const filtered = (contacts as ChatContact[]).filter(
     (c) =>
@@ -144,12 +161,23 @@ function NewConversationModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      aria-modal="true"
+      role="dialog"
+      aria-labelledby="new-msg-title"
+      onClick={onClose}
+    >
+      <div
+        ref={trapRef}
+        className="w-full max-w-md rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4 dark:border-strokedark">
-          <h3 className="text-base font-semibold text-black dark:text-white">New Message</h3>
+          <h3 id="new-msg-title" className="text-base font-semibold text-black dark:text-white">New Message</h3>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="rounded p-1 text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
           >
             ×
@@ -221,6 +249,14 @@ function NewGroupModal({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [contactSearch, setContactSearch] = useState("");
   const [error, setError] = useState("");
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   const { data: classes = [] } = useQuery({
     queryKey: ["lecturer-classes"],
@@ -242,6 +278,7 @@ function NewGroupModal({
   useEffect(() => {
     if (!selectedClass) return;
     const ids = (classStudents as { _id: string }[]).map((s) => s._id);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelected(new Set(ids));
   }, [classStudents, selectedClass]);
 
@@ -268,12 +305,23 @@ function NewGroupModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      aria-modal="true"
+      role="dialog"
+      aria-labelledby="new-group-title"
+      onClick={onClose}
+    >
+      <div
+        ref={trapRef}
+        className="w-full max-w-md rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4 dark:border-strokedark shrink-0">
-          <h3 className="text-base font-semibold text-black dark:text-white">New Group Chat</h3>
+          <h3 id="new-group-title" className="text-base font-semibold text-black dark:text-white">New Group Chat</h3>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="rounded p-1 text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
           >
             ×
@@ -876,14 +924,7 @@ export default function ChatPage() {
     return () => { socket.off("conversation_updated", onConversationUpdated); };
   }, [socket, queryClient]);
 
-  // Update active conversation data when conversations list refreshes
-  useEffect(() => {
-    if (!activeConversation) return;
-    const updated = (conversations as ChatConversation[]).find(
-      (c) => c._id === activeConversation._id
-    );
-    if (updated) setActiveConversation(updated);
-  }, [conversations]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   const startMutation = useMutation({
     mutationFn: chatApi.getOrCreateConversation,
@@ -915,7 +956,7 @@ export default function ChatPage() {
     <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
       {/* Conversation list — hidden on mobile when thread is open */}
       <div
-        className={`w-full flex-shrink-0 lg:w-80 xl:w-96 ${
+        className={`w-full shrink-0 lg:w-80 xl:w-96 ${
           mobileView === "thread" ? "hidden lg:flex" : "flex"
         } flex-col`}
       >

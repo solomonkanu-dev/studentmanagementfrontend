@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
+import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -279,6 +280,93 @@ Always structure responses like professional documents:
 Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
 }
 
+// ─── Chart data builder ───────────────────────────────────────────────────────
+
+interface ChartData {
+  type: "bar" | "donut" | "radialBar" | "area" | "line";
+  title: string;
+  series: unknown;
+  labels?: string[];
+  colors?: string[];
+  height?: number;
+}
+
+function buildChartData(rawResults: Map<string, unknown>): ChartData | null {
+  // Class rankings → horizontal bar
+  const rankings = rawResults.get("get_class_rankings");
+  if (rankings && Array.isArray(rankings) && (rankings as unknown[]).length > 0) {
+    const rows = (rankings as Array<Record<string, unknown>>)
+      .slice(0, 12)
+      .reverse(); // show top at right in horizontal bar
+    return {
+      type: "bar",
+      title: "Class Rankings",
+      series: [{ name: "Total Marks", data: rows.map((r) => (r.totalMarks ?? r.total ?? 0) as number) }],
+      labels: rows.map((r) => {
+        const s = r.student as Record<string, unknown> | undefined;
+        const name = (s?.fullName ?? s?.name ?? `#${r.rank}`) as string;
+        return name.split(" ")[0];
+      }),
+      colors: ["#3c50e0"],
+      height: 250,
+    };
+  }
+
+  // Fee summary → donut
+  const feeSummary = rawResults.get("get_fee_summary") as Record<string, unknown> | undefined;
+  if (feeSummary && !feeSummary.error) {
+    const paid    = (feeSummary.paidCount    ?? feeSummary.paid    ?? 0) as number;
+    const partial = (feeSummary.partialCount ?? feeSummary.partial ?? 0) as number;
+    const unpaid  = (feeSummary.unpaidCount  ?? feeSummary.unpaid  ?? 0) as number;
+    if (paid + partial + unpaid > 0) {
+      return {
+        type: "donut",
+        title: "Fee Collection Status",
+        series: [paid, partial, unpaid],
+        labels: ["Paid", "Partial", "Unpaid"],
+        colors: ["#10b981", "#f59e0b", "#ef4444"],
+        height: 220,
+      };
+    }
+  }
+
+  // Fee defaulters → bar showing balances
+  const defaulters = rawResults.get("get_fee_defaulters");
+  if (defaulters && Array.isArray(defaulters) && (defaulters as unknown[]).length > 0) {
+    const rows = (defaulters as Array<Record<string, unknown>>).slice(0, 10);
+    return {
+      type: "bar",
+      title: "Top Fee Defaulters (Outstanding Balance)",
+      series: [{ name: "Balance (NLe)", data: rows.map((r) => (r.balance ?? r.outstanding ?? 0) as number) }],
+      labels: rows.map((r) => {
+        const s = r.student as Record<string, unknown> | undefined;
+        const name = (s?.fullName ?? s?.name ?? "Student") as string;
+        return name.split(" ")[0];
+      }),
+      colors: ["#ef4444"],
+      height: 240,
+    };
+  }
+
+  // Attendance summary → donut
+  const att = rawResults.get("get_attendance_summary") as Record<string, unknown> | undefined;
+  if (att && !att.error) {
+    const rate = (att.overallRate ?? att.percentage ?? att.attendanceRate ?? 0) as number;
+    if (rate > 0) {
+      return {
+        type: "radialBar",
+        title: "Overall Attendance Rate",
+        series: [Math.round(rate)],
+        labels: ["Attendance"],
+        colors: [rate >= 80 ? "#10b981" : rate >= 60 ? "#f59e0b" : "#ef4444"],
+        height: 220,
+      };
+    }
+  }
+
+  return null;
+}
+
 // ─── Agentic loop ────────────────────────────────────────────────────────────
 
 type AnthropicMessage = Anthropic.MessageParam;
@@ -286,9 +374,10 @@ type AnthropicMessage = Anthropic.MessageParam;
 async function runAgentLoop(
   messages: AnthropicMessage[],
   token: string
-): Promise<{ reply: string; toolsUsed: string[] }> {
+): Promise<{ reply: string; toolsUsed: string[]; chartData: ChartData | null }> {
   const loop = [...messages];
   const toolsUsed: string[] = [];
+  const rawResults = new Map<string, unknown>();
   const MAX_ITERATIONS = 6;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -303,10 +392,9 @@ async function runAgentLoop(
     if (response.stop_reason === "end_turn") {
       const textBlock = response.content.find((b) => b.type === "text");
       return {
-        reply: textBlock && textBlock.type === "text"
-          ? textBlock.text
-          : "I'm not sure how to answer that.",
+        reply: textBlock?.type === "text" ? textBlock.text : "I'm not sure how to answer that.",
         toolsUsed: [...new Set(toolsUsed)],
+        chartData: buildChartData(rawResults),
       };
     }
 
@@ -320,11 +408,8 @@ async function runAgentLoop(
       const results = await Promise.all(
         toolUseBlocks.map(async (block) => {
           toolsUsed.push(block.name);
-          const raw = await runTool(
-            block.name,
-            block.input as Record<string, unknown>,
-            token
-          );
+          const raw = await runTool(block.name, block.input as Record<string, unknown>, token);
+          rawResults.set(block.name, raw);
           const safe = scrubPii(raw);
           return {
             type: "tool_result" as const,
@@ -344,14 +429,15 @@ async function runAgentLoop(
   return {
     reply: "I ran into an issue processing your request. Please try again.",
     toolsUsed: [...new Set(toolsUsed)],
+    chartData: buildChartData(rawResults),
   };
 }
 
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const jar = await cookies();
+  const token = jar.get("auth-token")?.value ?? null;
 
   if (!token) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -419,8 +505,8 @@ export async function POST(req: NextRequest) {
   console.log(`[admin-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
 
   try {
-    const { reply, toolsUsed } = await runAgentLoop(safeMessages, token);
-    return Response.json({ reply, toolsUsed, queriedAt: new Date().toISOString() });
+    const { reply, toolsUsed, chartData } = await runAgentLoop(safeMessages, token);
+    return Response.json({ reply, toolsUsed, chartData, queriedAt: new Date().toISOString() });
   } catch (err: unknown) {
     console.error("[admin-chat] error", { userId, error: err });
     return Response.json(

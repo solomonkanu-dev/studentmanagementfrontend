@@ -98,12 +98,14 @@ export const adminApi = {
   },
 
   // Results
-  getClassRankings: async (classId: string): Promise<{ rankings: Array<{ student: AuthUser; total: number; subjects: number; rank: number }>; total: number }> => {
-    const { data } = await apiClient.get(`/admin/results/class/${classId}/rankings`);
+  getClassRankings: async (classId: string, termId?: string): Promise<{ rankings: Array<{ student: AuthUser; total: number; subjects: number; rank: number }>; total: number }> => {
+    const qs = termId ? `?termId=${termId}` : "";
+    const { data } = await apiClient.get(`/admin/results/class/${classId}/rankings${qs}`);
     return data.data ?? data;
   },
-  getResultsByClass: async (classId: string): Promise<Result[]> => {
-    const { data } = await apiClient.get(`/admin/results/class/${classId}`);
+  getResultsByClass: async (classId: string, termId?: string): Promise<Result[]> => {
+    const qs = termId ? `?termId=${termId}` : "";
+    const { data } = await apiClient.get(`/admin/results/class/${classId}${qs}`);
     return data.data ?? data;
   },
   getResultsBySubject: async (subjectId: string): Promise<Result[]> => {

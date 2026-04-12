@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
+import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -275,12 +276,102 @@ Today's date: ${new Date().toLocaleDateString("en-US", {
 
 type AnthropicMessage = Anthropic.MessageParam;
 
+// ─── Chart data builder ───────────────────────────────────────────────────────
+
+interface ChartData {
+  type: "bar" | "donut" | "radialBar" | "area" | "line";
+  title: string;
+  series: unknown;
+  labels?: string[];
+  colors?: string[];
+  height?: number;
+}
+
+function buildChartData(rawResults: Map<string, unknown>): ChartData | null {
+  // Fee revenue → donut by status
+  const feeRevenue = rawResults.get("get_fee_revenue") as Record<string, unknown> | undefined;
+  if (feeRevenue && !feeRevenue.error) {
+    const byStatus = (feeRevenue.byStatus ?? []) as Array<Record<string, unknown>>;
+    if (byStatus.length > 0) {
+      return {
+        type: "donut",
+        title: "Platform Fee Status",
+        series: byStatus.map((s) => (s.count ?? 0) as number),
+        labels: byStatus.map((s) => String(s.status ?? "").charAt(0).toUpperCase() + String(s.status ?? "").slice(1)),
+        colors: byStatus.map((s) => String(s.status) === "paid" ? "#10b981" : String(s.status) === "partial" ? "#f59e0b" : "#ef4444"),
+        height: 230,
+      };
+    }
+  }
+
+  // Salary expenditure → donut by status
+  const salary = rawResults.get("get_salary_expenditure") as Record<string, unknown> | undefined;
+  if (salary && !salary.error) {
+    const byStatus = (salary.byStatus ?? []) as Array<Record<string, unknown>>;
+    if (byStatus.length > 0) {
+      return {
+        type: "donut",
+        title: "Salary Payment Status",
+        series: byStatus.map((s) => (s.count ?? 0) as number),
+        labels: byStatus.map((s) => String(s.status ?? "").charAt(0).toUpperCase() + String(s.status ?? "").slice(1)),
+        colors: byStatus.map((s) => String(s.status) === "paid" ? "#10b981" : "#f59e0b"),
+        height: 220,
+      };
+    }
+  }
+
+  // Growth trends → bar chart for students
+  const growth = rawResults.get("get_growth_trends") as Record<string, unknown> | undefined;
+  if (growth && !growth.error) {
+    const students = (growth.students ?? []) as Array<Record<string, unknown>>;
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    if (students.length > 0) {
+      return {
+        type: "bar",
+        title: "Student Enrollment Growth",
+        series: [{ name: "New Students", data: students.map((p) => (p.count ?? 0) as number) }],
+        labels: students.map((p) => `${MONTHS[((p.month as number) - 1) % 12]} ${String(p.year).slice(2)}`),
+        colors: ["#3c50e0"],
+        height: 240,
+      };
+    }
+  }
+
+  // Institute health → bar showing collection rates
+  const health = rawResults.get("get_institute_health");
+  if (health && Array.isArray(health) && (health as unknown[]).length > 0) {
+    const rows = (health as Array<Record<string, unknown>>).slice(0, 10);
+    return {
+      type: "bar",
+      title: "Fee Collection Rate by Institution (%)",
+      series: [{ name: "Collection Rate %", data: rows.map((r) => {
+        const fees = r.fees as Record<string, unknown> | undefined;
+        const billed = (fees?.totalBilled ?? 1) as number;
+        const collected = (fees?.totalCollected ?? 0) as number;
+        return billed > 0 ? Math.round((collected / billed) * 100) : 0;
+      })}],
+      labels: rows.map((r) => {
+        const inst = r.institute as Record<string, unknown> | undefined;
+        const name = (inst?.name ?? "School") as string;
+        return name.length > 16 ? name.slice(0, 16) + "…" : name;
+      }),
+      colors: ["#3c50e0"],
+      height: 260,
+    };
+  }
+
+  return null;
+}
+
+// ─── Agentic loop ────────────────────────────────────────────────────────────
+
 async function runAgentLoop(
   messages: AnthropicMessage[],
   token: string
-): Promise<{ reply: string; toolsUsed: string[] }> {
+): Promise<{ reply: string; toolsUsed: string[]; chartData: ChartData | null }> {
   const loop = [...messages];
   const toolsUsed: string[] = [];
+  const rawResults = new Map<string, unknown>();
   const MAX_ITERATIONS = 6;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -295,11 +386,9 @@ async function runAgentLoop(
     if (response.stop_reason === "end_turn") {
       const textBlock = response.content.find((b) => b.type === "text");
       return {
-        reply:
-          textBlock && textBlock.type === "text"
-            ? textBlock.text
-            : "I couldn't generate a response.",
+        reply: textBlock?.type === "text" ? textBlock.text : "I couldn't generate a response.",
         toolsUsed: [...new Set(toolsUsed)],
+        chartData: buildChartData(rawResults),
       };
     }
 
@@ -313,11 +402,8 @@ async function runAgentLoop(
       const results = await Promise.all(
         toolUseBlocks.map(async (block) => {
           toolsUsed.push(block.name);
-          const raw = await runTool(
-            block.name,
-            block.input as Record<string, unknown>,
-            token
-          );
+          const raw = await runTool(block.name, block.input as Record<string, unknown>, token);
+          rawResults.set(block.name, raw);
           const safe = scrubPii(raw);
           return {
             type: "tool_result" as const,
@@ -337,14 +423,15 @@ async function runAgentLoop(
   return {
     reply: "I ran into an issue processing your request. Please try again.",
     toolsUsed: [...new Set(toolsUsed)],
+    chartData: buildChartData(rawResults),
   };
 }
 
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const jar = await cookies();
+  const token = jar.get("auth-token")?.value ?? null;
 
   if (!token) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -419,10 +506,11 @@ export async function POST(req: NextRequest) {
   console.log(`[super-admin-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
 
   try {
-    const { reply, toolsUsed } = await runAgentLoop(safeMessages, token);
+    const { reply, toolsUsed, chartData } = await runAgentLoop(safeMessages, token);
     return Response.json({
       reply,
       toolsUsed,
+      chartData,
       queriedAt: new Date().toISOString(),
     });
   } catch (err: unknown) {
