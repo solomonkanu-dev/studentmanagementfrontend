@@ -36,16 +36,41 @@ type TabMode = "manual" | "qr";
 
 // ─── QR Scanner Component ─────────────────────────────────────────────────────
 
+// How long (ms) to ignore re-scans of the same QR token
+const TOKEN_COOLDOWN_MS = 5000;
+
+type ScanResult = { type: "success" | "error" | "duplicate"; name: string } | null;
+
 function QRScannerView({ classId, className }: { classId: string; className: string }) {
   const scannerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scannerInstanceRef = useRef<any>(null);
+  // Lock: true while an API call is in flight — drops all new decode callbacks
+  const scanLockRef = useRef(false);
+  // Per-token cooldown: token → timestamp of last successful scan
+  const lastScannedRef = useRef<Map<string, number>>(new Map());
+
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
-  const [scanLog, setScanLog] = useState<{ name: string; time: string; alreadyPresent: boolean }[]>([]);
+  const [scanResult, setScanResult] = useState<ScanResult>(null);
+  const [scanLog, setScanLog] = useState<{ name: string; time: string; duplicate: boolean }[]>([]);
   const [finalized, setFinalized] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: session, refetch: refetchSession } = useQuery({
+  // Auto-dismiss feedback after 3 seconds
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 3000);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
+  // Auto-clear scan overlay after 2 seconds
+  useEffect(() => {
+    if (!scanResult) return;
+    const t = setTimeout(() => setScanResult(null), 2000);
+    return () => clearTimeout(t);
+  }, [scanResult]);
+
+  const { data: session } = useQuery({
     queryKey: ["qr-session", classId],
     queryFn: () => attendanceApi.getQRSession(classId),
     refetchInterval: 8000,
@@ -56,12 +81,11 @@ function QRScannerView({ classId, className }: { classId: string; className: str
     onSuccess: (data) => {
       setFinalized(true);
       setFeedback({ type: "success", message: `Finalized — ${data.present} present, ${data.absent} absent` });
-      refetchSession();
+      queryClient.invalidateQueries({ queryKey: ["qr-session", classId] });
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
     },
     onError: (err: unknown) => {
-      const msg = errMsg(err, "Finalize failed");
-      setFeedback({ type: "error", message: msg });
+      setFeedback({ type: "error", message: errMsg(err, "Finalize failed") });
     },
   });
 
@@ -71,12 +95,9 @@ function QRScannerView({ classId, className }: { classId: string; className: str
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let html5Qrcode: any = null;
 
-    // Wipe any leftover DOM nodes from a previous mount before init
     const container = document.getElementById(CONTAINER_ID);
     if (container) container.innerHTML = "";
 
-    // Use Html5Qrcode (low-level) instead of Html5QrcodeScanner so we can
-    // call stop() which properly kills the camera stream before clearing.
     import("html5-qrcode").then(({ Html5Qrcode }) => {
       if (destroyed) return;
 
@@ -87,7 +108,6 @@ function QRScannerView({ classId, className }: { classId: string; className: str
         .then((cameras: { id: string; label: string }[]) => {
           if (destroyed || !cameras.length) return;
 
-          // Prefer back/environment camera on mobile; fall back to first
           const cam =
             cameras.find((c) => /back|rear|environment/i.test(c.label)) ??
             cameras[cameras.length - 1];
@@ -96,26 +116,41 @@ function QRScannerView({ classId, className }: { classId: string; className: str
             { deviceId: { exact: cam.id } },
             { fps: 10, qrbox: { width: 250, height: 250 } },
             async (decodedText: string) => {
+              // ── Lock: drop if another scan is in flight ──
+              if (scanLockRef.current) return;
+
+              // ── Per-token cooldown ──
+              const now = Date.now();
+              const lastScan = lastScannedRef.current.get(decodedText) ?? 0;
+              if (now - lastScan < TOKEN_COOLDOWN_MS) return;
+
+              scanLockRef.current = true;
+              lastScannedRef.current.set(decodedText, now);
+
               try {
                 const result = await attendanceApi.scanQR({ qrToken: decodedText, classId });
                 const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
                 if (result.alreadyPresent) {
-                  setFeedback({ type: "info", message: `${result.student.fullName} already present` });
+                  setFeedback({ type: "info", message: `${result.student.fullName} is already present` });
+                  setScanResult({ type: "duplicate", name: result.student.fullName });
+                  setScanLog((prev) => [{ name: result.student.fullName, time, duplicate: true }, ...prev]);
                 } else {
                   setFeedback({ type: "success", message: `✓ ${result.student.fullName} marked present` });
-                  setScanLog((prev) => [
-                    { name: result.student.fullName, time, alreadyPresent: false },
-                    ...prev,
-                  ]);
+                  setScanResult({ type: "success", name: result.student.fullName });
+                  setScanLog((prev) => [{ name: result.student.fullName, time, duplicate: false }, ...prev]);
+                  queryClient.invalidateQueries({ queryKey: ["qr-session", classId] });
                 }
-                refetchSession();
               } catch (err: unknown) {
-                const msg = errMsg(err, "Scan failed");
-                setFeedback({ type: "error", message: msg });
+                setScanResult({ type: "error", name: "" });
+                setFeedback({ type: "error", message: errMsg(err, "Scan failed") });
+                // On error reset cooldown so the same token can be retried
+                lastScannedRef.current.delete(decodedText);
+              } finally {
+                scanLockRef.current = false;
               }
             },
-            () => {} // ignore per-frame decode errors
+            () => {}
           );
         })
         .catch(() => {
@@ -127,8 +162,6 @@ function QRScannerView({ classId, className }: { classId: string; className: str
       destroyed = true;
       const instance = scannerInstanceRef.current;
       if (instance) {
-        // stop() releases the camera stream (turns off the camera light),
-        // then clear() removes the injected DOM elements.
         instance
           .stop()
           .catch(() => {})
@@ -145,6 +178,12 @@ function QRScannerView({ classId, className }: { classId: string; className: str
 
   const presentCount = session?.students.filter((s) => s.status === "present").length ?? 0;
   const absentCount = session?.students.filter((s) => s.status === null).length ?? 0;
+
+  const scannerBorderClass =
+    scanResult?.type === "success" ? "border-meta-3 border-2" :
+    scanResult?.type === "duplicate" ? "border-yellow-400 border-2" :
+    scanResult?.type === "error" ? "border-meta-1 border-2" :
+    "border-stroke dark:border-strokedark";
 
   return (
     <div className="space-y-5">
@@ -164,14 +203,14 @@ function QRScannerView({ classId, className }: { classId: string; className: str
         </div>
       </div>
 
-      {/* Feedback banner */}
+      {/* Feedback banner — auto-dismisses after 3s */}
       {feedback && (
         <div
           className={[
-            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm",
-            feedback.type === "success" ? "bg-meta-3/10 text-meta-3" :
-            feedback.type === "error" ? "bg-meta-1/10 text-meta-1" :
-            "bg-primary/10 text-primary",
+            "flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium",
+            feedback.type === "success" ? "bg-meta-3/15 text-meta-3" :
+            feedback.type === "error" ? "bg-meta-1/15 text-meta-1" :
+            "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
           ].join(" ")}
         >
           {feedback.type === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> :
@@ -185,7 +224,33 @@ function QRScannerView({ classId, className }: { classId: string; className: str
         {/* Camera scanner */}
         <div>
           <p className="mb-2 text-xs font-medium text-body">Point camera at student card</p>
-          <div id="qr-reader" ref={scannerRef} className="overflow-hidden rounded-xl border border-stroke dark:border-strokedark" />
+          {/* Border color changes on each scan result */}
+          <div className={`relative overflow-hidden rounded-xl border transition-colors duration-300 ${scannerBorderClass}`}>
+            <div id="qr-reader" ref={scannerRef} />
+            {/* Scan result overlay — fades out automatically */}
+            {scanResult && (
+              <div
+                className={[
+                  "absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl bg-opacity-80 transition-opacity",
+                  scanResult.type === "success" ? "bg-meta-3/80" :
+                  scanResult.type === "duplicate" ? "bg-yellow-500/80" :
+                  "bg-meta-1/80",
+                ].join(" ")}
+              >
+                {scanResult.type === "success" && <CheckCircle className="h-10 w-10 text-white" />}
+                {scanResult.type === "duplicate" && <AlertCircle className="h-10 w-10 text-white" />}
+                {scanResult.type === "error" && <XCircle className="h-10 w-10 text-white" />}
+                {scanResult.name && (
+                  <p className="text-sm font-bold text-white text-center px-4">
+                    {scanResult.type === "duplicate" ? "Already present" : scanResult.type === "success" ? "Marked present" : "Scan failed"}
+                  </p>
+                )}
+                {scanResult.name && (
+                  <p className="text-xs text-white/90 text-center px-4">{scanResult.name}</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right side: scan log + student list */}
@@ -196,10 +261,19 @@ function QRScannerView({ classId, className }: { classId: string; className: str
               <p className="mb-2 text-xs font-medium text-body">Recent scans</p>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {scanLog.map((entry, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg bg-meta-3/10 px-3 py-2 text-sm">
-                    <span className="flex items-center gap-2 font-medium text-meta-3">
-                      <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                  <div
+                    key={i}
+                    className={[
+                      "flex items-center justify-between rounded-lg px-3 py-2 text-sm",
+                      entry.duplicate ? "bg-yellow-50 dark:bg-yellow-900/20" : "bg-meta-3/10",
+                    ].join(" ")}
+                  >
+                    <span className={["flex items-center gap-2 font-medium", entry.duplicate ? "text-yellow-700 dark:text-yellow-400" : "text-meta-3"].join(" ")}>
+                      {entry.duplicate
+                        ? <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        : <CheckCircle className="h-3.5 w-3.5 shrink-0" />}
                       {entry.name}
+                      {entry.duplicate && <span className="text-[10px] font-normal opacity-75">(already present)</span>}
                     </span>
                     <span className="text-xs text-body">{entry.time}</span>
                   </div>
@@ -216,7 +290,12 @@ function QRScannerView({ classId, className }: { classId: string; className: str
                 {session.students.map((s: QRSessionStudent) => (
                   <div
                     key={s._id}
-                    className="flex items-center justify-between rounded px-3 py-2 text-sm border border-stroke dark:border-strokedark"
+                    className={[
+                      "flex items-center justify-between rounded px-3 py-2 text-sm border",
+                      s.status === "present"
+                        ? "border-meta-3/30 bg-meta-3/5 dark:border-meta-3/20"
+                        : "border-stroke dark:border-strokedark",
+                    ].join(" ")}
                   >
                     <span className="text-black dark:text-white">{s.fullName}</span>
                     {s.status === "present" ? (

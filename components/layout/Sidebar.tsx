@@ -9,6 +9,7 @@ import { announcementApi } from "@/lib/api/announcement";
 import { chatApi } from "@/lib/api/chat";
 import { subjectApi } from "@/lib/api/subject";
 import { assignmentApi, submissionApi } from "@/lib/api/assignment";
+import { superAdminApi } from "@/lib/api/superAdmin";
 import { useSocket } from "@/context/SocketContext";
 import type { Subject, Assignment, Submission } from "@/lib/types";
 import {
@@ -244,6 +245,29 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
     return () => { socket.off("new_message", onNewMessage); };
   }, [socket, queryClient]);
 
+  // Super-admin: pending admin requests badge
+  const isSuperAdmin = isRole("super_admin");
+  const { data: pendingAdmins = [] } = useQuery({
+    queryKey: ["pending-admins"],
+    queryFn: superAdminApi.getPendingAdmins,
+    enabled: isSuperAdmin,
+    staleTime: 60_000,
+  });
+  const pendingAdminCount = (pendingAdmins as { _id: string }[]).length;
+
+  // Real-time: increment badge and refresh list when a new admin registers
+  useEffect(() => {
+    if (!socket || !isSuperAdmin) return;
+    function onNewNotification(n: { type?: string }) {
+      if (n?.type === "new_admin_signup") {
+        queryClient.invalidateQueries({ queryKey: ["pending-admins"] });
+        queryClient.invalidateQueries({ queryKey: ["super-admins-all"] });
+      }
+    }
+    socket.on("new_notification", onNewNotification);
+    return () => { socket.off("new_notification", onNewNotification); };
+  }, [socket, isSuperAdmin, queryClient]);
+
   // Student-only: pending assignments badge
   // staleTime matches refetchInterval so navigation between pages doesn't
   // re-fire the N subject-assignment requests on every mount.
@@ -478,6 +502,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
               const isAnnouncements = href.endsWith("/announcements");
               const isAssignments = href.endsWith("/assignments");
               const isMessages = href.endsWith("/messages");
+              const isAdmins = href === "/super-admin/admins";
               return (
                 <li key={href}>
                   <Link
@@ -507,6 +532,11 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
                     {isMessages && (unreadMessages as number) > 0 && (
                       <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
                         {(unreadMessages as number) > 99 ? "99+" : unreadMessages}
+                      </span>
+                    )}
+                    {isAdmins && pendingAdminCount > 0 && (
+                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
+                        {pendingAdminCount > 99 ? "99+" : pendingAdminCount}
                       </span>
                     )}
                   </Link>

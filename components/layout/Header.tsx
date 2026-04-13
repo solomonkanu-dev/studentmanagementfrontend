@@ -172,8 +172,8 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
     function onNotification(n: Notification) {
       setNotifications((prev) => [n, ...prev]);
     }
-    socket.on("notification", onNotification);
-    return () => { socket.off("notification", onNotification); };
+    socket.on("new_notification", onNotification);
+    return () => { socket.off("new_notification", onNotification); };
   }, [socket]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
