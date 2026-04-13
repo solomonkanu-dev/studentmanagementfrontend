@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClassLabel } from "@/hooks/useClassLabel";
 import { announcementApi } from "@/lib/api/announcement";
 import { chatApi } from "@/lib/api/chat";
 import { subjectApi } from "@/lib/api/subject";
 import { assignmentApi, submissionApi } from "@/lib/api/assignment";
+import { useSocket } from "@/context/SocketContext";
 import type { Subject, Assignment, Submission } from "@/lib/types";
 import {
   LayoutDashboard,
@@ -170,6 +171,7 @@ const parentNav: NavItem[] = [
 const superAdminNav: NavItem[] = [
   { label: "Dashboard", href: "/super-admin", icon: LayoutDashboard },
   { label: "Admins", href: "/super-admin/admins", icon: ShieldCheck },
+  { label: "Institutes", href: "/super-admin/institutes", icon: Building2 },
   { label: "System Monitor", href: "/super-admin/monitor", icon: Monitor },
   { label: "AI Analytics", href: "/super-admin/ai-analytics", icon: Sparkles },
   { label: "Plans", href: "/super-admin/plans", icon: Layers },
@@ -186,6 +188,8 @@ interface SidebarProps {
 
 export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: SidebarProps) {
   const { user, logout, isRole } = useAuth();
+  const socket = useSocket();
+  const queryClient = useQueryClient();
   const { plural: classesLabel } = useClassLabel();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const pathname = usePathname();
@@ -221,15 +225,24 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
     queryKey: ["announcements"],
     queryFn: announcementApi.getAll,
     staleTime: 60_000,
-    refetchInterval: 60_000,
   });
   const unreadAnnouncements = (announcements as { isRead?: boolean }[]).filter((a) => !a.isRead).length;
 
   const { data: unreadMessages = 0 } = useQuery({
     queryKey: ["chat-unread-count"],
     queryFn: chatApi.getUnreadCount,
-    refetchInterval: 8_000,
+    staleTime: 60_000,
   });
+
+  // Increment unread message count when a new message arrives via socket
+  useEffect(() => {
+    if (!socket) return;
+    function onNewMessage() {
+      queryClient.setQueryData<number>(["chat-unread-count"], (prev = 0) => prev + 1);
+    }
+    socket.on("new_message", onNewMessage);
+    return () => { socket.off("new_message", onNewMessage); };
+  }, [socket, queryClient]);
 
   // Student-only: pending assignments badge
   // staleTime matches refetchInterval so navigation between pages doesn't

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import dynamic from "next/dynamic";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { subjectApi } from "@/lib/api/subject";
 import { classApi } from "@/lib/api/class";
@@ -14,6 +15,27 @@ import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
 import { BookOpen, School, ClipboardList, CalendarCheck } from "lucide-react";
 import type { Subject, AuthUser, Class, Assignment } from "@/lib/types";
 import { useClassLabel } from "@/hooks/useClassLabel";
+
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+
+// ─── Chart colours ────────────────────────────────────────────────────────────
+const C = {
+  primary: "#3c50e0",
+  indigo:  "#6366f1",
+  violet:  "#8b5cf6",
+  teal:    "#14b8a6",
+  amber:   "#f59e0b",
+  rose:    "#f43f5e",
+  sky:     "#0ea5e9",
+  emerald: "#10b981",
+};
+
+const baseChart: ApexCharts.ApexOptions = {
+  chart: { toolbar: { show: false }, fontFamily: "inherit", background: "transparent" },
+  dataLabels: { enabled: false },
+  grid: { borderColor: "rgba(100,116,139,.15)", strokeDashArray: 4 },
+  tooltip: { theme: "dark" },
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -77,7 +99,7 @@ export default function LecturerDashboard() {
     })),
   });
 
-  // Fetch today's attendance for every subject (attendance is per subject, not per class)
+  // Fetch today's attendance for every subject
   const attendanceQueries = useQueries({
     queries: (subjects as Subject[]).map((s) => {
       const classId =
@@ -154,6 +176,48 @@ export default function LecturerDashboard() {
     return result.slice(0, 8);
   }, [subjects, assignmentQueries]);
 
+  // ── Chart data ─────────────────────────────────────────────────────────────
+
+  // Assignments per subject (bar chart)
+  const assignmentsPerSubject = useMemo(() => {
+    return (subjects as Subject[]).map((s, i) => ({
+      name: s.name,
+      count: (assignmentQueries[i]?.data as Assignment[] | undefined)?.length ?? 0,
+    }));
+  }, [subjects, assignmentQueries]);
+
+  // Assignment status breakdown (donut)
+  const assignmentStatus = useMemo(() => {
+    const now = new Date();
+    let overdue = 0, active = 0, noDue = 0;
+    assignmentQueries.forEach((q) => {
+      const assignments = (q.data as Assignment[] | undefined) ?? [];
+      assignments.forEach((a) => {
+        if (!a.dueDate) noDue++;
+        else if (new Date(a.dueDate) < now) overdue++;
+        else active++;
+      });
+    });
+    return { overdue, active, noDue };
+  }, [assignmentQueries]);
+
+  // Students per class (bar chart)
+  const studentsPerClass = useMemo(() => {
+    return (classes as Class[]).map((c, i) => {
+      const raw = studentQueries[i]?.data;
+      const count = Array.isArray(raw) ? raw.length : 0;
+      return { name: c.name, count };
+    });
+  }, [classes, studentQueries]);
+
+  // Attendance per subject today (bar chart)
+  const attendancePerSubject = useMemo(() => {
+    return (subjects as Subject[]).map((s, i) => ({
+      name: s.name,
+      count: parseAttendanceCount(attendanceQueries[i]?.data),
+    }));
+  }, [subjects, attendanceQueries]);
+
   const isLoading = subjectsLoading || classesLoading;
 
   return (
@@ -185,8 +249,141 @@ export default function LecturerDashboard() {
         />
       </div>
 
+      {/* ── Charts Row 1: Assignments per Subject + Assignment Status ─────── */}
+      {assignmentsPerSubject.length > 0 && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          {/* Assignments per Subject — bar */}
+          <div className="xl:col-span-2">
+            <Card>
+              <CardHeader>
+                <h2 className="text-sm font-semibold text-black dark:text-white">
+                  Assignments per Subject
+                </h2>
+              </CardHeader>
+              <CardContent>
+                <ApexChart
+                  type="bar"
+                  height={220}
+                  series={[{ name: "Assignments", data: assignmentsPerSubject.map((s) => s.count) }]}
+                  options={{
+                    ...baseChart,
+                    colors: [C.primary],
+                    xaxis: {
+                      categories: assignmentsPerSubject.map((s) => s.name),
+                      labels: { style: { colors: "#94a3b8", fontSize: "11px" }, rotate: -20 },
+                    },
+                    yaxis: { labels: { style: { colors: "#94a3b8" } }, tickAmount: 3 },
+                    plotOptions: { bar: { borderRadius: 4, columnWidth: "50%" } },
+                    fill: { opacity: 0.9 },
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Assignment Status — donut */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-sm font-semibold text-black dark:text-white">
+                Assignment Status
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <ApexChart
+                type="donut"
+                height={220}
+                series={[assignmentStatus.active, assignmentStatus.overdue, assignmentStatus.noDue]}
+                options={{
+                  ...baseChart,
+                  colors: [C.emerald, C.rose, C.amber],
+                  labels: ["Active", "Overdue", "No Due Date"],
+                  legend: {
+                    position: "bottom",
+                    labels: { colors: "#94a3b8" },
+                    fontSize: "12px",
+                  },
+                  plotOptions: { pie: { donut: { size: "65%" } } },
+                  stroke: { width: 0 },
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* ── Today's Attendance ──────────────────────────────────────────────── */}
       <TodayAttendanceCard classes={classes as Class[]} subjects={subjects as Subject[]} />
+
+      {/* ── Charts Row 2: Students per Class + Attendance Today ───────────── */}
+      {studentsPerClass.length > 0 && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          {/* Students per Class — horizontal bar */}
+          <div className="xl:col-span-2">
+            <Card>
+              <CardHeader>
+                <h2 className="text-sm font-semibold text-black dark:text-white">
+                  Students per Class
+                </h2>
+              </CardHeader>
+              <CardContent>
+                <ApexChart
+                  type="bar"
+                  height={220}
+                  series={[{ name: "Students", data: studentsPerClass.map((c) => c.count) }]}
+                  options={{
+                    ...baseChart,
+                    colors: [C.violet],
+                    xaxis: {
+                      categories: studentsPerClass.map((c) => c.name),
+                      labels: { style: { colors: "#94a3b8", fontSize: "11px" } },
+                    },
+                    yaxis: { labels: { style: { colors: "#94a3b8" } }, tickAmount: 4 },
+                    plotOptions: {
+                      bar: { horizontal: true, borderRadius: 4, barHeight: "50%" },
+                    },
+                    fill: { opacity: 0.9 },
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Attendance per Subject Today — donut */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-sm font-semibold text-black dark:text-white">
+                Attendance Today
+              </h2>
+            </CardHeader>
+            <CardContent>
+              {attendancePerSubject.every((s) => s.count === 0) ? (
+                <div className="flex h-[220px] flex-col items-center justify-center gap-2 text-center">
+                  <CalendarCheck className="h-8 w-8 text-body" />
+                  <p className="text-sm text-body">No attendance marked yet today.</p>
+                </div>
+              ) : (
+                <ApexChart
+                  type="donut"
+                  height={220}
+                  series={attendancePerSubject.map((s) => s.count)}
+                  options={{
+                    ...baseChart,
+                    colors: [C.primary, C.teal, C.sky, C.indigo, C.violet, C.emerald],
+                    labels: attendancePerSubject.map((s) => s.name),
+                    legend: {
+                      position: "bottom",
+                      labels: { colors: "#94a3b8" },
+                      fontSize: "11px",
+                    },
+                    plotOptions: { pie: { donut: { size: "65%" } } },
+                    stroke: { width: 0 },
+                  }}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* ── Bottom two-column grid ──────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">

@@ -25,6 +25,8 @@ import {
   BookOpen,
   Users,
   FileText,
+  Download,
+  Paperclip,
 } from "lucide-react";
 import type { Subject, Assignment, Submission, AuthUser, Class } from "@/lib/types";
 
@@ -52,6 +54,15 @@ function formatDate(iso?: string): string {
 function isPastDue(iso?: string): boolean {
   if (!iso) return false;
   return new Date(iso) < new Date();
+}
+
+function fileName(url: string): string {
+  try {
+    const parts = new URL(url).pathname.split("/");
+    return decodeURIComponent(parts[parts.length - 1]) || "Download file";
+  } catch {
+    return "Download file";
+  }
 }
 
 // ─── Submission panel ─────────────────────────────────────────────────────────
@@ -87,7 +98,7 @@ function SubmissionPanel({
       submissionId: string;
       grade: number;
       feedback?: string;
-    }) => submissionApi.grade(submissionId, { grade, feedback }),
+    }) => submissionApi.grade(submissionId, { score: grade, feedback }),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["submissions", assignment._id] });
       setSuccessIds((prev) => new Set([...prev, vars.submissionId]));
@@ -167,7 +178,7 @@ function SubmissionPanel({
               const sub = submissionMap.get(student._id);
               const hasSubmitted = !!sub;
               const gradeInputId = sub?._id ?? `no-sub-${student._id}`;
-              const isGraded = sub?.grade !== undefined && sub.grade !== null;
+              const isGraded = sub?.score !== undefined && sub.score !== null;
               const isSuccess = sub ? successIds.has(sub._id) : false;
 
               return (
@@ -188,12 +199,40 @@ function SubmissionPanel({
                       {hasSubmitted ? "Submitted" : "Not Submitted"}
                     </Badge>
                     {isGraded && (
-                      <Badge variant="info">Grade: {sub.grade}</Badge>
+                      <Badge variant="info">Score: {sub!.score}</Badge>
                     )}
                   </div>
 
                   {hasSubmitted && (
-                    <div className="ml-12 space-y-2">
+                    <div className="ml-12 space-y-3">
+                      {/* Submission content & file */}
+                      {(sub?.content || sub?.fileUrl) && (
+                        <div className="space-y-1.5 rounded border border-stroke bg-meta-2 p-3 dark:border-strokedark dark:bg-meta-4">
+                          {sub?.content && (
+                            <p className="line-clamp-4 text-xs text-black dark:text-white whitespace-pre-wrap">
+                              {sub.content}
+                            </p>
+                          )}
+                          {sub?.fileUrl && (
+                            <a
+                              href={sub.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                            >
+                              <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                              {fileName(sub.fileUrl)}
+                            </a>
+                          )}
+                          {!sub?.content && !sub?.fileUrl && (
+                            <p className="flex items-center gap-1 text-xs text-body">
+                              <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                              No content preview available
+                            </p>
+                          )}
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <div className="flex-1 max-w-[120px]">
                           <Input

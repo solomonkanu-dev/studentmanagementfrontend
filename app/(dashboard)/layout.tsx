@@ -70,15 +70,9 @@ export default function DashboardLayout({
       </div>
 
       {/* AI chat widgets — role-scoped */}
-      {user.role === "student" && (
-        <StudentChatWidget token={localStorage.getItem("token") ?? ""} />
-      )}
-      {user.role === "lecturer" && (
-        <LecturerChatWidget token={localStorage.getItem("token") ?? ""} />
-      )}
-      {user.role === "admin" && (
-        <AdminChatWidget token={localStorage.getItem("token") ?? ""} />
-      )}
+      {user.role === "student" && <StudentChatWidget />}
+      {user.role === "lecturer" && <LecturerChatWidget />}
+      {user.role === "admin" && <AdminChatWidget />}
     </div>
     </SocketProvider>
   );

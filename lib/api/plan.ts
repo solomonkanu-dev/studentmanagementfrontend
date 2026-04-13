@@ -24,4 +24,8 @@ export const planApi = {
     const { data } = await apiClient.patch(`/plans/${planId}`, payload);
     return data.data ?? data;
   },
+  create: async (payload: { name: string; displayName?: string; description?: string; price?: number; limits: { maxStudents: number; maxLecturers: number; maxClasses: number } }): Promise<Plan> => {
+    const { data } = await apiClient.post("/plans", payload);
+    return data.data ?? data;
+  },
 };

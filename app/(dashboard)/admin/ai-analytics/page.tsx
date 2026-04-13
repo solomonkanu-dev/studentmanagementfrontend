@@ -71,12 +71,6 @@ export default function AdminAiAnalyticsPage() {
     }
   }, [results]);
 
-  function getToken(): string {
-    return typeof window !== "undefined"
-      ? localStorage.getItem("token") ?? ""
-      : "";
-  }
-
   async function handleSubmit(questionOverride?: string) {
     const question = (questionOverride ?? query).trim();
     if (!question || loading) return;
@@ -95,10 +89,7 @@ export default function AdminAiAnalyticsPage() {
     try {
       const res = await fetch("/api/ai/admin-chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: history }),
       });
 

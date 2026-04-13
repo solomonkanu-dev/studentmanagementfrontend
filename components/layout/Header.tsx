@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { Bell, Menu, CheckCheck, Trash2, Camera, Loader2 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { notificationApi } from "@/lib/api/notification";
 import { uploadApi } from "@/lib/api/upload";
 import DarkModeSwitcher from "@/components/ui/Header/DarkModeSwitcher";
@@ -15,39 +16,24 @@ function pageTitle(pathname: string): string {
   return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
 }
 
-function NotificationDropdown({ onClose }: { onClose: () => void }) {
-  const queryClient = useQueryClient();
+interface NotificationDropdownProps {
+  onClose: () => void;
+  notifications: Notification[];
+  isLoading: boolean;
+  onMarkOne: (id: string) => void;
+  onMarkAll: () => void;
+  onDelete: (id: string) => void;
+}
+
+function NotificationDropdown({
+  onClose,
+  notifications,
+  isLoading,
+  onMarkOne,
+  onMarkAll,
+  onDelete,
+}: NotificationDropdownProps) {
   const ref = useRef<HTMLDivElement>(null);
-
-  const { data = [], isLoading } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: notificationApi.getAll,
-  });
-  const notifications = data as Notification[];
-
-  const readAllMutation = useMutation({
-    mutationFn: notificationApi.readAll,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-count"] });
-    },
-  });
-
-  const readOneMutation = useMutation({
-    mutationFn: notificationApi.readOne,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-count"] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: notificationApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-count"] });
-    },
-  });
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -71,7 +57,7 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
         </span>
         {unreadCount > 0 && (
           <button
-            onClick={() => readAllMutation.mutate()}
+            onClick={onMarkAll}
             className="flex items-center gap-1 text-xs text-body hover:text-primary transition-colors"
           >
             <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />
@@ -115,7 +101,7 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
                 <div className="flex shrink-0 flex-col gap-1">
                   {!n.isRead && (
                     <button
-                      onClick={() => readOneMutation.mutate(n._id)}
+                      onClick={() => onMarkOne(n._id)}
                       className="rounded p-1 text-body hover:text-primary transition-colors"
                       aria-label="Mark as read"
                     >
@@ -123,7 +109,7 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
                     </button>
                   )}
                   <button
-                    onClick={() => deleteMutation.mutate(n._id)}
+                    onClick={() => onDelete(n._id)}
                     className="rounded p-1 text-body hover:text-meta-1 transition-colors"
                     aria-label="Delete notification"
                   >
@@ -148,12 +134,16 @@ interface HeaderProps {
 
 export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed }: HeaderProps) {
   const { user, updateUser } = useAuth();
+  const socket = useSocket();
   const pathname = usePathname();
   const [notifOpen, setNotifOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const initialFetchDone = useRef(false);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -165,11 +155,53 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ["notification-count"],
-    queryFn: notificationApi.getUnreadCount,
-    refetchInterval: 30_000, // poll every 30s
+  // One-time fetch when the user is available — no polling
+  useEffect(() => {
+    if (!user || initialFetchDone.current) return;
+    initialFetchDone.current = true;
+    setNotifLoading(true);
+    notificationApi.getAll()
+      .then((data) => setNotifications(data))
+      .catch(() => { /* notifications unavailable */ })
+      .finally(() => setNotifLoading(false));
+  }, [user]);
+
+  // Real-time: push new notifications from the socket
+  useEffect(() => {
+    if (!socket) return;
+    function onNotification(n: Notification) {
+      setNotifications((prev) => [n, ...prev]);
+    }
+    socket.on("notification", onNotification);
+    return () => { socket.off("notification", onNotification); };
+  }, [socket]);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const readAllMutation = useMutation({
+    mutationFn: notificationApi.readAll,
+    onSuccess: () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    },
   });
+
+  const readOneMutation = useMutation({
+    mutationFn: notificationApi.readOne,
+    onSuccess: (_, id) => {
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: notificationApi.delete,
+    onSuccess: (_, id) => {
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    },
+  });
+
+  const handleClose = useCallback(() => setNotifOpen(false), []);
 
   return (
     <header className="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-b border-stroke bg-white px-4 shadow-sm dark:border-strokedark dark:bg-boxdark md:px-6">
@@ -214,13 +246,22 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
             className="relative rounded-md p-1.5 text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
           >
             <Bell className="h-5 w-5" aria-hidden="true" />
-            {(unreadCount as number) > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-meta-1 text-[10px] font-bold text-white">
-                {(unreadCount as number) > 9 ? "9+" : (unreadCount as number)}
+                {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </button>
-          {notifOpen && <NotificationDropdown onClose={() => setNotifOpen(false)} />}
+          {notifOpen && (
+            <NotificationDropdown
+              onClose={handleClose}
+              notifications={notifications}
+              isLoading={notifLoading}
+              onMarkOne={(id) => readOneMutation.mutate(id)}
+              onMarkAll={() => readAllMutation.mutate()}
+              onDelete={(id) => deleteMutation.mutate(id)}
+            />
+          )}
         </div>
 
         {/* User avatar */}

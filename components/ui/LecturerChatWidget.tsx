@@ -9,9 +9,6 @@ interface Message {
   content: string;
 }
 
-interface LecturerChatWidgetProps {
-  token: string;
-}
 
 function uid() {
   return Math.random().toString(36).slice(2);
@@ -24,7 +21,7 @@ const SUGGESTED_PROMPTS = [
   "Show me my salary records",
 ];
 
-export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
+export function LecturerChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -70,10 +67,7 @@ export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
       try {
         const res = await fetch("/api/ai/lecturer-chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: history }),
         });
 
@@ -96,7 +90,7 @@ export function LecturerChatWidget({ token }: LecturerChatWidgetProps) {
         setLoading(false);
       }
     },
-    [loading, messages, token]
+    [loading, messages]
   );
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {

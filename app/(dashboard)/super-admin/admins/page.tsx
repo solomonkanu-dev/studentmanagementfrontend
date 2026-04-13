@@ -203,6 +203,7 @@ export default function AdminsPage() {
                 <tr>
                   <Th>Admin</Th>
                   <Th>Email</Th>
+                  <Th>Institute</Th>
                   <Th>Approved</Th>
                   <Th>Status</Th>
                   <Th>Joined</Th>
@@ -219,6 +220,9 @@ export default function AdminsPage() {
                       </div>
                     </Td>
                     <Td className="text-body">{admin.email}</Td>
+                    <Td className="text-xs text-body">
+                      {admin.institute ? admin.institute.name : <span className="italic opacity-50">No institute</span>}
+                    </Td>
                     <Td>
                       <Badge variant={admin.approved ? "success" : "warning"}>
                         {admin.approved ? "Approved" : "Pending"}

@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { systemConfigApi } from "@/lib/api/systemConfig";
-import { superAdminApi } from "@/lib/api/superAdmin";
+import { monitorApi } from "@/lib/api/monitor";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Shield, AlertTriangle, Globe, Building2 } from "lucide-react";
-import type { PendingAdmin } from "@/lib/types";
+import type { InstituteHealthReport } from "@/lib/types";
 import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Toggle Global Maintenance ────────────────────────────────────────────────
@@ -125,26 +125,24 @@ function GlobalMaintenanceCard() {
 
 function InstituteMaintenanceCard() {
   const queryClient = useQueryClient();
-  const [target, setTarget] = useState<{ adminId: string; name: string; enabled: boolean } | null>(null);
+  const [target, setTarget] = useState<{ instituteId: string; name: string } | null>(null);
   const [instMessage, setInstMessage] = useState("");
   const [error, setError] = useState("");
 
-  const { data: allAdmins = [], isLoading } = useQuery({
-    queryKey: ["all-admins"],
-    queryFn: superAdminApi.getAllAdmins,
+  const { data: institutes = [], isLoading } = useQuery<InstituteHealthReport[]>({
+    queryKey: ["monitor-institutes"],
+    queryFn: monitorApi.getInstitutes,
   });
-
-  const approved = (allAdmins as PendingAdmin[]).filter((a) => a.approved);
 
   const mutation = useMutation({
     mutationFn: () =>
       systemConfigApi.toggleInstituteMaintenance({
-        instituteId: target!.adminId,
-        enabled: target!.enabled,
+        instituteId: target!.instituteId,
+        enabled: true,
         message: instMessage || undefined,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["monitor-institutes"] });
       setTarget(null);
       setInstMessage("");
     },
@@ -165,27 +163,29 @@ function InstituteMaintenanceCard() {
             <div className="flex items-center justify-center py-10">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
             </div>
-          ) : approved.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-body">No approved institutes.</p>
+          ) : institutes.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-body">No institutes found.</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHead>
                   <tr>
-                    <Th>Admin / Institute</Th>
+                    <Th>Institute</Th>
+                    <Th>Students</Th>
                     <Th>Status</Th>
                     <Th>Action</Th>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {approved.map((a) => (
-                    <tr key={a._id}>
+                  {institutes.map((r) => (
+                    <tr key={r.institute.id}>
                       <Td>
                         <div>
-                          <p className="font-medium text-black dark:text-white">{a.fullName}</p>
-                          <p className="text-xs text-body">{a.email}</p>
+                          <p className="font-medium text-black dark:text-white">{r.institute.name}</p>
+                          {r.institute.email && <p className="text-xs text-body">{r.institute.email}</p>}
                         </div>
                       </Td>
+                      <Td className="text-sm text-body">{r.users.students}</Td>
                       <Td>
                         <Badge variant="success">Online</Badge>
                       </Td>
@@ -193,7 +193,7 @@ function InstituteMaintenanceCard() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => { setTarget({ adminId: a._id, name: a.fullName, enabled: true }); setError(""); }}
+                          onClick={() => { setTarget({ instituteId: r.institute.id, name: r.institute.name }); setError(""); }}
                         >
                           Set Maintenance
                         </Button>
@@ -208,7 +208,7 @@ function InstituteMaintenanceCard() {
       </Card>
 
       {target && (
-        <Modal open onClose={() => setTarget(null)} title={`Maintenance — ${target.name}`}>
+        <Modal open onClose={() => { setTarget(null); setError(""); }} title={`Maintenance — ${target.name}`}>
           <div className="space-y-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-black dark:text-white">Maintenance Message (optional)</label>
@@ -222,7 +222,7 @@ function InstituteMaintenanceCard() {
             </div>
             {error && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{error}</p>}
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setTarget(null)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => { setTarget(null); setError(""); }}>Cancel</Button>
               <Button variant="danger" onClick={() => { setError(""); mutation.mutate(); }} isLoading={mutation.isPending}>
                 Enable Maintenance
               </Button>

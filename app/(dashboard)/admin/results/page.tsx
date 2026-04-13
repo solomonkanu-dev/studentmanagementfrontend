@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { classApi } from "@/lib/api/class";
 import { adminApi } from "@/lib/api/admin";
 import { subjectApi } from "@/lib/api/subject";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -34,28 +33,31 @@ export default function ResultsPage() {
 
   // Results tab state
   const [resultsClass, setResultsClass] = useState("");
+  const [resultsTerm, setResultsTerm] = useState("");
 
   // Rankings tab state
   const [rankingsClass, setRankingsClass] = useState("");
+  const [rankingsTerm, setRankingsTerm] = useState("");
 
   // Assign marks modal state
   const [showAssign, setShowAssign] = useState(false);
   const [formError, setFormError] = useState("");
-  const [markForm, setMarkForm] = useState({ studentId: "", subjectId: "", classId: "", marks: "" });
+  const [markForm, setMarkForm] = useState({ studentId: "", subjectId: "", classId: "", marks: "", totalScore: "", termId: "" });
 
-  const { data: classes = [] } = useQuery({ queryKey: ["classes"], queryFn: classApi.getAll });
+  const { data: classes = [] } = useQuery({ queryKey: ["admin-classes"], queryFn: adminApi.getClasses });
   const { data: subjects = [] } = useQuery({ queryKey: ["subjects"], queryFn: subjectApi.getAll });
   const { data: students = [] } = useQuery({ queryKey: ["admin-students"], queryFn: adminApi.getStudents });
+  const { data: terms = [] } = useQuery({ queryKey: ["admin-terms"], queryFn: adminApi.getTerms });
 
   const { data: results = [], isLoading: resultsLoading } = useQuery({
-    queryKey: ["results-class", resultsClass],
-    queryFn: () => adminApi.getResultsByClass(resultsClass),
+    queryKey: ["results-class", resultsClass, resultsTerm],
+    queryFn: () => adminApi.getResultsByClass(resultsClass, resultsTerm || undefined),
     enabled: !!resultsClass,
   });
 
   const { data: rankingsData, isLoading: rankingsLoading } = useQuery({
-    queryKey: ["class-rankings", rankingsClass],
-    queryFn: () => adminApi.getClassRankings(rankingsClass),
+    queryKey: ["class-rankings", rankingsClass, rankingsTerm],
+    queryFn: () => adminApi.getClassRankings(rankingsClass, rankingsTerm || undefined),
     enabled: !!rankingsClass,
   });
 
@@ -63,7 +65,7 @@ export default function ResultsPage() {
     mutationFn: adminApi.assignMarks,
     onSuccess: () => {
       setShowAssign(false);
-      setMarkForm({ studentId: "", subjectId: "", classId: "", marks: "" });
+      setMarkForm({ studentId: "", subjectId: "", classId: "", marks: "", totalScore: "", termId: "" });
       setFormError("");
     },
     onError: (err: unknown) => {
@@ -97,7 +99,7 @@ export default function ResultsPage() {
             </button>
           ))}
         </div>
-        <Button onClick={() => { setShowAssign(true); setMarkForm({ studentId: "", subjectId: "", classId: "", marks: "" }); }}>
+        <Button onClick={() => { setShowAssign(true); setMarkForm({ studentId: "", subjectId: "", classId: "", marks: "", totalScore: "", termId: "" }); }}>
           Assign Marks
         </Button>
       </div>
@@ -105,7 +107,7 @@ export default function ResultsPage() {
       {/* ── Results tab ──────────────────────────────────────────────────── */}
       {tab === "results" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <label className="text-sm font-medium text-black dark:text-white">Class</label>
             <select
               value={resultsClass}
@@ -115,6 +117,17 @@ export default function ResultsPage() {
               <option value="">Select a class</option>
               {(classes as Class[]).map((c) => (
                 <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+            <label className="text-sm font-medium text-black dark:text-white">Term</label>
+            <select
+              value={resultsTerm}
+              onChange={(e) => setResultsTerm(e.target.value)}
+              className="h-9 w-48 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            >
+              <option value="">All terms</option>
+              {terms.map((t) => (
+                <option key={t._id} value={t._id}>{t.name} {t.isCurrent ? "(Current)" : ""}</option>
               ))}
             </select>
           </div>
@@ -174,7 +187,7 @@ export default function ResultsPage() {
       {/* ── Rankings tab ─────────────────────────────────────────────────── */}
       {tab === "rankings" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <label className="text-sm font-medium text-black dark:text-white">Class</label>
             <select
               value={rankingsClass}
@@ -184,6 +197,17 @@ export default function ResultsPage() {
               <option value="">Select a class</option>
               {(classes as Class[]).map((c) => (
                 <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+            <label className="text-sm font-medium text-black dark:text-white">Term</label>
+            <select
+              value={rankingsTerm}
+              onChange={(e) => setRankingsTerm(e.target.value)}
+              className="h-9 w-48 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            >
+              <option value="">All terms</option>
+              {terms.map((t) => (
+                <option key={t._id} value={t._id}>{t.name} {t.isCurrent ? "(Current)" : ""}</option>
               ))}
             </select>
           </div>
@@ -272,7 +296,7 @@ export default function ResultsPage() {
             <label className="text-sm font-medium text-black dark:text-white">Class</label>
             <select
               value={markForm.classId}
-              onChange={(e) => setMarkForm({ studentId: "", subjectId: "", classId: e.target.value, marks: "" })}
+              onChange={(e) => setMarkForm({ studentId: "", subjectId: "", classId: e.target.value, marks: "", totalScore: "", termId: "" })}
               className={selectCls}
             >
               <option value="">Select a class</option>
@@ -322,13 +346,35 @@ export default function ResultsPage() {
             </select>
           </div>
 
-          <Input
-            label="Marks"
-            type="number"
-            placeholder="85"
-            value={markForm.marks}
-            onChange={(e) => setMarkForm(f => ({ ...f, marks: e.target.value }))}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Marks Obtained"
+              type="number"
+              placeholder="85"
+              value={markForm.marks}
+              onChange={(e) => setMarkForm(f => ({ ...f, marks: e.target.value }))}
+            />
+            <Input
+              label="Total Score (optional)"
+              type="number"
+              placeholder="100"
+              value={markForm.totalScore}
+              onChange={(e) => setMarkForm(f => ({ ...f, totalScore: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">Term (optional)</label>
+            <select
+              value={markForm.termId}
+              onChange={(e) => setMarkForm(f => ({ ...f, termId: e.target.value }))}
+              className={selectCls}
+            >
+              <option value="">No term specified</option>
+              {terms.map((t) => (
+                <option key={t._id} value={t._id}>{t.name} {t.isCurrent ? "(Current)" : ""}</option>
+              ))}
+            </select>
+          </div>
           {formError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{formError}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowAssign(false)}>Cancel</Button>
@@ -336,12 +382,15 @@ export default function ResultsPage() {
               isLoading={assignMutation.isPending}
               onClick={() => {
                 setFormError("");
-                assignMutation.mutate({
+                const payload: Record<string, unknown> = {
                   studentId: markForm.studentId,
                   subjectId: markForm.subjectId,
                   classId: markForm.classId,
                   marksObtained: Number(markForm.marks),
-                });
+                };
+                if (markForm.totalScore) payload.totalScore = Number(markForm.totalScore);
+                if (markForm.termId) payload.termId = markForm.termId;
+                assignMutation.mutate(payload);
               }}
             >
               Assign

@@ -9,11 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import type { AuthUser, Role } from "@/lib/types";
-import { authApi } from "@/lib/api/auth";
+import { tokenStore } from "@/lib/api/tokenStore";
 
 interface AuthContextValue {
   user: AuthUser | null;
-  token: string | null;
   isLoading: boolean;
   login: (email: string, password: string, asSuperAdmin?: boolean) => Promise<void>;
   logout: () => Promise<void>;
@@ -25,38 +24,56 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ⚠️  SECURITY NOTE — JWT stored in localStorage is readable by any XSS script.
-  //    To fully mitigate: (1) have the Express backend set an HttpOnly + Secure
-  //    cookie on login, (2) proxy all API calls through a Next.js Route Handler
-  //    so the token never touches client JS, (3) remove the manual Authorization
-  //    header in apiClient.ts. Until then, this is the attack surface.
-  // Hydrate from localStorage on mount
+  // On mount: restore user from localStorage, then verify the session cookie
+  // via /api/auth/me which also returns the token to populate the in-memory store.
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
-    if (storedToken && storedUser) {
+    if (storedUser) {
       try {
-        setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch {
-        localStorage.removeItem("token");
         localStorage.removeItem("user");
       }
     }
-    setIsLoading(false);
+
+    fetch("/api/auth/me")
+      .then(async (res) => {
+        if (!res.ok) {
+          // Cookie expired or invalid — clear everything
+          tokenStore.clear();
+          localStorage.removeItem("user");
+          setUser(null);
+          return;
+        }
+        const { token } = await res.json();
+        tokenStore.set(token);
+      })
+      .catch(() => {
+        // Network error — keep whatever state we have and let API calls fail naturally
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const login = useCallback(
     async (email: string, password: string, asSuperAdmin = false) => {
-      const fn = asSuperAdmin ? authApi.superAdminLogin : authApi.login;
-      const response = await fn({ email, password });
-      const { token: newToken, user: newUser } = response;
-      localStorage.setItem("token", newToken);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, asSuperAdmin }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Login failed");
+      }
+
+      const { user: newUser, token } = await res.json();
+      tokenStore.set(token);
       localStorage.setItem("user", JSON.stringify(newUser));
-      setToken(newToken);
       setUser(newUser);
     },
     []
@@ -64,13 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await authApi.logout();
+      await fetch("/api/auth/logout", { method: "POST" });
     } catch {
-      // Swallow — we still clear local state
+      // Swallow — clear local state regardless
     } finally {
-      localStorage.removeItem("token");
+      tokenStore.clear();
       localStorage.removeItem("user");
-      setToken(null);
       setUser(null);
     }
   }, []);
@@ -90,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isRole, updateUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, isRole, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

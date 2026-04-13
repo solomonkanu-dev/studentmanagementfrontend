@@ -27,7 +27,7 @@ export default function StudentDashboard() {
         <StatCard label="Enrolled Subjects" value={subjects.length} icon={BookOpen} />
         <StatCard label="Submissions" value={submissions.length} icon={ClipboardList} />
         <StatCard label="Attendance" value={overallAttendance !== null ? `${overallAttendance}%` : "—"} icon={CalendarCheck} />
-        <StatCard label="Completed" value={submissions.filter((s: { grade?: number }) => s.grade !== undefined).length} icon={CheckCircle} />
+        <StatCard label="Completed" value={(submissions as import("@/lib/types").Submission[]).filter((s) => s.score !== undefined).length} icon={CheckCircle} />
       </div>
 
       <AcademicCalendarWidget />

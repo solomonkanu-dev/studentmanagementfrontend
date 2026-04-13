@@ -150,8 +150,10 @@ export interface Submission {
   student: string | AuthUser;
   fileUrl?: string;
   content?: string;
-  grade?: number;
+  score?: number;
   feedback?: string;
+  status?: "submitted" | "graded" | "resubmitted";
+  isLate?: boolean;
   submittedAt: string;
   gradedAt?: string;
   createdAt: string;
@@ -392,6 +394,7 @@ export interface PendingAdmin {
   email: string;
   approved: boolean;
   isActive: boolean;
+  institute?: { _id: string; name: string } | null;
   createdAt: string;
 }
 

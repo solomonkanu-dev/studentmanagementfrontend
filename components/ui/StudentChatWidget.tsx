@@ -9,9 +9,6 @@ interface Message {
   content: string;
 }
 
-interface StudentChatWidgetProps {
-  token: string;
-}
 
 function uid() {
   return Math.random().toString(36).slice(2);
@@ -24,7 +21,7 @@ const SUGGESTED_PROMPTS = [
   "What's my class ranking?",
 ];
 
-export function StudentChatWidget({ token }: StudentChatWidgetProps) {
+export function StudentChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -73,10 +70,7 @@ export function StudentChatWidget({ token }: StudentChatWidgetProps) {
       try {
         const res = await fetch("/api/ai/student-chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: history }),
         });
 
@@ -101,7 +95,7 @@ export function StudentChatWidget({ token }: StudentChatWidgetProps) {
         setLoading(false);
       }
     },
-    [loading, messages, token]
+    [loading, messages]
   );
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {

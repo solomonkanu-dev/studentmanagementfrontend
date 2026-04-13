@@ -1,9 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
+import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1";
+const BACKEND =
+  process.env.API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:5000/api/v1";
+
+const COOKIE_NAME = "auth_session";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -234,8 +240,8 @@ async function runAgentLoop(
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value ?? null;
 
   if (!token) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

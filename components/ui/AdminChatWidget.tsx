@@ -9,10 +9,6 @@ interface Message {
   content: string;
 }
 
-interface AdminChatWidgetProps {
-  token: string;
-}
-
 function uid() {
   return Math.random().toString(36).slice(2);
 }
@@ -24,7 +20,7 @@ const SUGGESTED_PROMPTS = [
   "How is student attendance this month?",
 ];
 
-export function AdminChatWidget({ token }: AdminChatWidgetProps) {
+export function AdminChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -70,10 +66,7 @@ export function AdminChatWidget({ token }: AdminChatWidgetProps) {
       try {
         const res = await fetch("/api/ai/admin-chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: history }),
         });
 
@@ -96,7 +89,7 @@ export function AdminChatWidget({ token }: AdminChatWidgetProps) {
         setLoading(false);
       }
     },
-    [loading, messages, token]
+    [loading, messages]
   );
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {

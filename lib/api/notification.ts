@@ -4,7 +4,8 @@ import type { Notification } from "../types";
 export const notificationApi = {
   getAll: async (): Promise<Notification[]> => {
     const { data } = await apiClient.get("/notifications");
-    return data.data ?? data;
+    const list = data.data ?? data;
+    return Array.isArray(list) ? list : [];
   },
   getUnreadCount: async (): Promise<number> => {
     const { data } = await apiClient.get("/notifications/unread-count");

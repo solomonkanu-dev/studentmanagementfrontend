@@ -66,8 +66,8 @@ export default function ClassesListPage() {
   const [formError, setFormError] = useState("");
 
   const { data: classes = [], isLoading } = useQuery({
-    queryKey: ["classes"],
-    queryFn: classApi.getAll,
+    queryKey: ["admin-classes"],
+    queryFn: adminApi.getClasses,
   });
 
   const { data: lecturers = [] } = useQuery({
@@ -83,7 +83,7 @@ export default function ClassesListPage() {
   const createMutation = useMutation({
     mutationFn: classApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-classes"] });
       setShowCreate(false);
       resetCreate();
     },
@@ -98,7 +98,7 @@ export default function ClassesListPage() {
   const assignMutation = useMutation({
     mutationFn: classApi.assignLecturer,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-classes"] });
       setShowAssign(false);
       resetAssign();
     },

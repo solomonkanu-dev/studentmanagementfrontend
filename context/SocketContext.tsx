@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
+import { tokenStore } from "@/lib/api/tokenStore";
 
 const SocketContext = createContext<Socket | null>(null);
 
@@ -19,8 +20,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = tokenStore.get();
     if (!token) return;
 
     // Strip /api/v1 to get the base server URL

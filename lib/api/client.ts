@@ -1,4 +1,5 @@
 import axios from "axios";
+import { tokenStore } from "./tokenStore";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1";
 
@@ -7,13 +8,11 @@ export const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach JWT on every request
+// Attach JWT on every request — reads from in-memory tokenStore, never localStorage
 apiClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  const token = tokenStore.get();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
@@ -39,7 +38,7 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
+        tokenStore.clear();
         localStorage.removeItem("user");
         window.location.href = "/login";
       }
