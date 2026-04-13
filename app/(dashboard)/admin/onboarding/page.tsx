@@ -32,7 +32,14 @@ const instituteSchema = z.object({
   phoneNumber: z.string().min(5, "Phone number is required"),
   targetLine:  z.string().min(3, "Tagline / motto is required"),
   email:       z.string().email("Must be a valid email").or(z.literal("")).optional(),
-  website:     z.string().url("Must be a valid URL").or(z.literal("")).optional(),
+  website:     z.preprocess(
+    (v) => {
+      if (typeof v !== "string" || v.trim() === "") return "";
+      const t = v.trim();
+      return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+    },
+    z.string().url("Must be a valid URL").or(z.literal("")).optional(),
+  ),
   country:     z.string().optional(),
 });
 type InstituteForm = z.infer<typeof instituteSchema>;
@@ -203,8 +210,8 @@ function StepSchoolType({
 
       {selected && (
         <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-          <strong>Selected:</strong> Throughout this system, "class" will be shown as{" "}
-          <strong>"{selected === "primary" ? "Class" : "Form"}"</strong> everywhere.
+          <strong>Selected:</strong> Throughout this system, &quot;class&quot; will be shown as{" "}
+          <strong>&quot;{selected === "primary" ? "Class" : "Form"}&quot;</strong> everywhere.
         </div>
       )}
 
@@ -406,7 +413,7 @@ function StepCreateLecturer({
         </button>
       </div>
       <button type="button" onClick={onNext} className="w-full text-center text-xs text-body underline hover:text-primary">
-        Skip — I'll add teachers later
+        Skip — I&apos;ll add teachers later
       </button>
     </form>
   );
@@ -500,7 +507,7 @@ function StepCreateClass({
         </button>
       </div>
       <button type="button" onClick={onNext} className="w-full text-center text-xs text-body underline hover:text-primary">
-        Skip — I'll add {classLabel.toLowerCase()}s later
+        Skip — I&apos;ll add {classLabel.toLowerCase()}s later
       </button>
     </form>
   );
@@ -530,9 +537,9 @@ function StepDone({
         <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-meta-3/10">
           <CheckCircle className="h-10 w-10 text-meta-3" />
         </div>
-        <h2 className="text-2xl font-bold text-black dark:text-white">You're all set! 🎉</h2>
+        <h2 className="text-2xl font-bold text-black dark:text-white">You&apos;re all set! 🎉</h2>
         <p className="mt-2 text-sm text-body max-w-sm mx-auto">
-          Your school is set up and ready. Here's what to do next to get fully operational.
+          Your school is set up and ready. Here&apos;s what to do next to get fully operational.
         </p>
       </div>
 
@@ -585,6 +592,7 @@ export default function OnboardingPage() {
   // Pre-fill schoolType once we know the institute
   useEffect(() => {
     if (fetchedInstitute?.schoolType) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSchoolType(fetchedInstitute.schoolType);
     }
   }, [fetchedInstitute]);
