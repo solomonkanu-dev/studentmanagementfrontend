@@ -13,7 +13,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**", // tighten this to your CDN domain in production
+        hostname: process.env.CDN_HOSTNAME ?? "your-cdn.example.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
         pathname: "/**",
       },
     ],

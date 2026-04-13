@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 import { salaryApi } from "@/lib/api/salary";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -10,15 +11,6 @@ import { Banknote, CheckCircle2, Clock, TrendingUp, Filter, XCircle } from "luci
 import type { Salary } from "@/lib/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getUser(): { _id: string; fullName: string } | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return JSON.parse(localStorage.getItem("user") ?? "null");
-  } catch {
-    return null;
-  }
-}
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -63,7 +55,7 @@ function StatPill({ icon, label, value, sub, color }: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LecturerSalaryPage() {
-  const user = getUser();
+  const { user } = useAuth();
   const [yearFilter, setYearFilter] = useState("all");
 
   const { data, isLoading } = useQuery({

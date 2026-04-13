@@ -9,6 +9,7 @@ import { StudentChatWidget } from "@/components/ui/StudentChatWidget";
 import { LecturerChatWidget } from "@/components/ui/LecturerChatWidget";
 import { AdminChatWidget } from "@/components/ui/AdminChatWidget";
 import { SocketProvider } from "@/context/SocketContext";
+import { DashboardErrorBoundary } from "@/components/ui/DashboardErrorBoundary";
 import useColorMode from "@/hooks/useColorMode";
 
 export default function DashboardLayout({
@@ -64,7 +65,9 @@ export default function DashboardLayout({
         <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
         <main className="flex-1">
           <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
-            {children}
+            <DashboardErrorBoundary>
+              {children}
+            </DashboardErrorBoundary>
           </div>
         </main>
       </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -93,6 +92,8 @@ function Avatar({
   size?: "sm" | "md" | "lg";
   isGroup?: boolean;
 }) {
+  const [imgError, setImgError] = useState(false);
+
   const sizeClass =
     size === "sm"
       ? "h-8 w-8 text-xs"
@@ -114,13 +115,13 @@ function Avatar({
     <div
       className={`${sizeClass} shrink-0 rounded-full bg-primary overflow-hidden flex items-center justify-center font-bold uppercase text-white`}
     >
-      {photo ? (
-        <Image
+      {photo && !imgError ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={photo}
           alt={name}
-          width={44}
-          height={44}
           className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
         />
       ) : (
         name.charAt(0)
@@ -277,6 +278,7 @@ function NewGroupModal({
   useEffect(() => {
     if (!selectedClass) return;
     const ids = (classStudents as { _id: string }[]).map((s) => s._id);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelected(new Set(ids));
   }, [classStudents, selectedClass]);
 
@@ -922,14 +924,7 @@ export default function ChatPage() {
     return () => { socket.off("conversation_updated", onConversationUpdated); };
   }, [socket, queryClient]);
 
-  // Update active conversation data when conversations list refreshes
-  useEffect(() => {
-    if (!activeConversation) return;
-    const updated = (conversations as ChatConversation[]).find(
-      (c) => c._id === activeConversation._id
-    );
-    if (updated) setActiveConversation(updated);
-  }, [conversations]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   const startMutation = useMutation({
     mutationFn: chatApi.getOrCreateConversation,
@@ -961,7 +956,7 @@ export default function ChatPage() {
     <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
       {/* Conversation list — hidden on mobile when thread is open */}
       <div
-        className={`w-full flex-shrink-0 lg:w-80 xl:w-96 ${
+        className={`w-full shrink-0 lg:w-80 xl:w-96 ${
           mobileView === "thread" ? "hidden lg:flex" : "flex"
         } flex-col`}
       >

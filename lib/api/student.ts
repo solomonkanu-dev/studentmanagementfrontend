@@ -13,13 +13,19 @@ export interface StudentFeeRecord {
   updatedAt: string;
 }
 
+export interface ReportCardTerm {
+  _id: string;
+  name: string;
+  academicYear: string;
+}
+
 export interface ReportCardData {
   student: {
     _id: string;
     fullName: string;
     email: string;
     profilePhoto?: string;
-    class: { _id: string; name: string } | null;
+    class: { _id: string; name: string; lecturer?: { _id: string; fullName: string } | null } | null;
     studentProfile: {
       registrationNumber?: string;
       admissionDate?: string;
@@ -27,10 +33,14 @@ export interface ReportCardData {
     };
   };
   institute: Institute | null;
+  /** All academic terms configured for this school (sorted by start date) */
+  terms: ReportCardTerm[];
   results: Array<{
     _id: string;
     subject: { _id: string; name: string; code?: string; totalMarks?: number } | null;
+    term: ReportCardTerm | null;
     marksObtained: number;
+    totalScore: number;
     grade?: string;
   }>;
   attendance: { total: number; present: number; percentage: number };
@@ -82,9 +92,12 @@ export const studentApi = {
     return arr[0] ?? null;
   },
 
-  getMyResults: async (classId?: string): Promise<Result[]> => {
-    const url = classId ? `/student/my-results?classId=${classId}` : "/student/my-results";
-    const { data } = await apiClient.get(url);
+  getMyResults: async (opts?: { classId?: string; termId?: string }): Promise<Result[]> => {
+    const params = new URLSearchParams();
+    if (opts?.classId) params.set("classId", opts.classId);
+    if (opts?.termId) params.set("termId", opts.termId);
+    const qs = params.toString() ? `?${params}` : "";
+    const { data } = await apiClient.get(`/student/my-results${qs}`);
     return Array.isArray(data) ? data : data.data ?? [];
   },
 
@@ -113,8 +126,9 @@ export const studentApi = {
     return data;
   },
 
-  getMyRanking: async (): Promise<{ rank: number | null; outOf: number; total: number }> => {
-    const { data } = await apiClient.get("/student/my-ranking");
+  getMyRanking: async (termId?: string): Promise<{ rank: number | null; outOf: number; total: number }> => {
+    const qs = termId ? `?termId=${termId}` : "";
+    const { data } = await apiClient.get(`/student/my-ranking${qs}`);
     return data.data ?? data;
   },
 

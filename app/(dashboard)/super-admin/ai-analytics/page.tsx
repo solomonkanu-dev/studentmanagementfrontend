@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sparkles,
   Send,
@@ -12,10 +14,26 @@ import {
   Bot,
   User,
   Lightbulb,
+  TrendingUp,
+  Building2,
+  GraduationCap,
+  DollarSign,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
+import { monitorApi } from "@/lib/api/monitor";
+
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+interface ChartData {
+  type: "bar" | "donut" | "radialBar" | "area" | "line";
+  title: string;
+  series: unknown[];
+  labels?: string[];
+  colors?: string[];
+  height?: number;
+}
 
 interface QueryResult {
   id: string;
@@ -23,6 +41,7 @@ interface QueryResult {
   reply: string;
   toolsUsed: string[];
   queriedAt: string;
+  chartData?: ChartData | null;
   error?: string;
 }
 
@@ -50,6 +69,133 @@ const TOOL_LABELS: Record<string, string> = {
   get_assignment_completion: "Assignment Completion",
   get_enrollment_trends: "Enrollment Trends",
 };
+
+// ─── Platform Quick Insights ─────────────────────────────────────────────────
+
+function PlatformInsights() {
+  const { data: overview, isLoading } = useQuery({
+    queryKey: ["monitor-overview"],
+    queryFn: monitorApi.getOverview,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: feeRevenue, isLoading: loadingFee } = useQuery({
+    queryKey: ["monitor-fee-revenue"],
+    queryFn: monitorApi.getFeeRevenue,
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: growth } = useQuery({
+    queryKey: ["monitor-growth", 6],
+    queryFn: () => monitorApi.getGrowth(6),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const fmt = (n: number) => {
+    if (n >= 1_000_000) return `NLe ${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `NLe ${(n / 1_000).toFixed(1)}K`;
+    return `NLe ${n.toLocaleString()}`;
+  };
+
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  if (isLoading || loadingFee) return null;
+  if (!overview) return null;
+
+  const feeRate = overview.fees.totalBilled > 0
+    ? Math.round((overview.fees.totalCollected / overview.fees.totalBilled) * 100)
+    : 0;
+
+  // Build student growth series from last 6 months
+  const studentGrowth = growth?.students ?? [];
+  const growthLabels = studentGrowth.map((p) => `${MONTH_NAMES[p.month - 1]} ${String(p.year).slice(2)}`);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-primary" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-body">Platform Insights</span>
+      </div>
+
+      {/* Stat row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Institutions", value: overview.institutes.total.toString(), sub: `${overview.institutes.active} active`, icon: Building2, color: "text-meta-7" },
+          { label: "Students", value: overview.students.total.toLocaleString(), sub: `${overview.students.active} active`, icon: GraduationCap, color: "text-meta-3" },
+          { label: "Fee Collected", value: fmt(overview.fees.totalCollected), sub: `${feeRate}% rate`, icon: DollarSign, color: "text-meta-3" },
+          { label: "Outstanding", value: fmt(overview.fees.totalOutstanding), sub: "platform-wide", icon: DollarSign, color: "text-meta-1" },
+        ].map(({ label, value, sub, icon: Icon, color }) => (
+          <div key={label} className="rounded-xl border border-stroke bg-white p-3 dark:border-strokedark dark:bg-boxdark">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-body truncate">{label}</p>
+              <Icon className={`h-4 w-4 ${color} shrink-0`} />
+            </div>
+            <p className={`mt-1 text-xl font-bold ${color}`}>{value}</p>
+            {sub && <p className="text-xs text-body">{sub}</p>}
+          </div>
+        ))}
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Fee status donut from feeRevenue */}
+        {feeRevenue && feeRevenue.byStatus.length > 0 && (
+          <div className="rounded-xl border border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
+            <p className="mb-1 text-sm font-semibold text-black dark:text-white">Platform Fee Status</p>
+            <ApexChart
+              type="donut"
+              height={220}
+              series={feeRevenue.byStatus.map((s) => s.count)}
+              options={{
+                labels: feeRevenue.byStatus.map((s) => s.status.charAt(0).toUpperCase() + s.status.slice(1)),
+                colors: feeRevenue.byStatus.map((s) => s.status === "paid" ? "#10b981" : s.status === "partial" ? "#f59e0b" : "#ef4444"),
+                legend: { position: "bottom", fontSize: "11px" },
+                dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
+                plotOptions: {
+                  pie: {
+                    donut: {
+                      size: "58%",
+                      labels: { show: true, total: { show: true, label: "Records", fontSize: "11px", fontWeight: "600" } },
+                    },
+                  },
+                },
+                tooltip: { y: { formatter: (v: number) => `${v} records · ${fmt(feeRevenue.byStatus.find(s => s.count === v)?.totalAmount ?? 0)}` } },
+                chart: { background: "transparent" },
+                theme: { mode: "light" },
+              }}
+            />
+          </div>
+        )}
+
+        {/* Student enrollment trend */}
+        {studentGrowth.length > 0 && (
+          <div className="rounded-xl border border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark">
+            <p className="mb-1 text-sm font-semibold text-black dark:text-white">Student Enrollment (6m)</p>
+            <ApexChart
+              type="bar"
+              height={220}
+              series={[{ name: "New Students", data: studentGrowth.map((p) => p.count) }]}
+              options={{
+                chart: { toolbar: { show: false }, background: "transparent" },
+                plotOptions: { bar: { borderRadius: 4, columnWidth: "55%" } },
+                colors: ["#3c50e0"],
+                dataLabels: { enabled: false },
+                xaxis: {
+                  categories: growthLabels,
+                  labels: { style: { colors: "#94a3b8", fontSize: "10px" } },
+                  axisBorder: { show: false },
+                  axisTicks: { show: false },
+                },
+                yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "10px" } } },
+                tooltip: { y: { formatter: (v: number) => `${v} new students` } },
+                grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+                theme: { mode: "light" },
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -105,6 +251,7 @@ export default function AiAnalyticsPage() {
           reply: json.reply,
           toolsUsed: json.toolsUsed ?? [],
           queriedAt: json.queriedAt ?? new Date().toISOString(),
+          chartData: json.chartData ?? null,
         },
       ]);
     } catch (err: unknown) {
@@ -149,6 +296,9 @@ export default function AiAnalyticsPage() {
           </p>
         </div>
       </div>
+
+      {/* Platform Quick Insights */}
+      <PlatformInsights />
 
       {/* Query input */}
       <Card>
@@ -298,6 +448,64 @@ function ResultCard({ result }: { result: QueryResult }) {
               )}
             </div>
 
+            {/* Chart */}
+            {!result.error && result.chartData && (
+              <div className="border-t border-stroke px-5 py-4 dark:border-strokedark">
+                <p className="mb-2 text-sm font-semibold text-black dark:text-white">
+                  {result.chartData.title}
+                </p>
+                <ApexChart
+                  type={result.chartData.type}
+                  height={result.chartData.height ?? 280}
+                  series={result.chartData.series as never}
+                  options={{
+                    chart: { toolbar: { show: false }, background: "transparent" },
+                    labels: result.chartData.labels,
+                    colors: result.chartData.colors,
+                    plotOptions: {
+                      bar: {
+                        horizontal: result.chartData.type === "bar" && (result.chartData.labels?.length ?? 0) > 5,
+                        borderRadius: 4,
+                        columnWidth: "50%",
+                      },
+                      radialBar: {
+                        hollow: { size: "52%" },
+                        dataLabels: {
+                          name: { show: true },
+                          value: { fontSize: "22px", fontWeight: "bold", offsetY: 8 },
+                        },
+                      },
+                      pie: {
+                        donut: {
+                          size: "58%",
+                          labels: { show: true, total: { show: true, fontWeight: "600" } },
+                        },
+                      },
+                    },
+                    dataLabels: {
+                      enabled: result.chartData.type === "donut" || result.chartData.type === "radialBar",
+                      formatter: (v: number) => `${Math.round(v)}%`,
+                    },
+                    legend: {
+                      show: result.chartData.type === "donut",
+                      position: "bottom",
+                      fontSize: "12px",
+                    },
+                    xaxis: {
+                      categories: result.chartData.labels,
+                      labels: { style: { colors: "#94a3b8", fontSize: "11px" } },
+                      axisBorder: { show: false },
+                      axisTicks: { show: false },
+                    },
+                    yaxis: { labels: { style: { colors: "#94a3b8", fontSize: "11px" } } },
+                    tooltip: { shared: true, intersect: false },
+                    grid: { borderColor: "#e2e8f0", strokeDashArray: 4 },
+                    theme: { mode: "light" },
+                  }}
+                />
+              </div>
+            )}
+
             {/* Footer — data sources + timestamp */}
             {!result.error && (
               <div className="flex flex-wrap items-center gap-2 border-t border-stroke px-5 py-3 dark:border-strokedark">
@@ -371,6 +579,14 @@ function MarkdownContent({ content }: { content: string }) {
           <span className="shrink-0 font-medium text-primary">{num}.</span>
           <span>{formatInline(line.replace(/^\d+\.\s/, ""))}</span>
         </div>
+      );
+    }
+    // Blockquote
+    else if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote key={i} className="border-l-2 border-primary pl-3 text-sm italic text-body">
+          {formatInline(line.slice(2))}
+        </blockquote>
       );
     }
     // Markdown table
