@@ -33,7 +33,7 @@ export default function DashboardLayout({
     if (user.role === "admin") {
       const inst = user.institute;
       const onboardingDone =
-        typeof inst === "object" ? inst.onboardingCompleted : false;
+        inst !== null && typeof inst === "object" ? inst.onboardingCompleted : false;
       const hasInstitute = !!inst;
       const isOnboardingRoute =
         typeof window !== "undefined" &&
