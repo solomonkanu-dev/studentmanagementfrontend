@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { QueryProvider } from "@/context/QueryProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next"
 
 const satoshi = localFont({
   src: [
@@ -31,7 +32,9 @@ export default function RootLayout({
       <body className="h-full">
         <QueryProvider>
           <ThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+            <Analytics />
+              {children}</AuthProvider>
           </ThemeProvider>
           <Toaster richColors position="top-right" closeButton />
         </QueryProvider>
