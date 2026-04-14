@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClassLabel } from "@/hooks/useClassLabel";
 import { announcementApi } from "@/lib/api/announcement";
@@ -104,6 +104,7 @@ const adminNav: NavItem[] = [
   { label: "Fees", href: "/admin/fees", icon: CreditCard },
   { label: "Terms", href: "/admin/terms", icon: CalendarDays },
   { label: "Salary", href: "/admin/salary", icon: DollarSign },
+  { label: "Plan & Billing", href: "/admin/plan", icon: CreditCard },
   { label: "Institute", href: "/admin/institute", icon: Building2 },
   { label: "Theme", href: "/admin/theme", icon: Palette },
   { label: "Messages", href: "/admin/messages", icon: MessageSquare },
@@ -196,8 +197,9 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLElement>(null);
 
-  // Build dynamic nav with the right class/form label
-  const dynamicAdminNav: NavItem[] = adminNav.map((item) =>
+  // Build dynamic nav with the right class/form label — memoized so the
+  // auto-open useEffect only fires when pathname truly changes, not on every render.
+  const dynamicAdminNav = useMemo<NavItem[]>(() => adminNav.map((item) =>
     item.href === "/admin/classes"
       ? {
           ...item,
@@ -207,20 +209,20 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
           ),
         }
       : item
-  );
-  const dynamicLecturerNav: NavItem[] = lecturerNav.map((item) =>
-    item.href === "/lecturer/classes" ? { ...item, label: `My ${classesLabel}` } : item
-  );
+  ), [classesLabel]);
 
-  const navItems = isRole("admin")
-    ? dynamicAdminNav
-    : isRole("lecturer")
-    ? dynamicLecturerNav
-    : isRole("student")
-    ? studentNav
-    : isRole("parent")
-    ? parentNav
-    : superAdminNav;
+  const dynamicLecturerNav = useMemo<NavItem[]>(() => lecturerNav.map((item) =>
+    item.href === "/lecturer/classes" ? { ...item, label: `My ${classesLabel}` } : item
+  ), [classesLabel]);
+
+  const role = user?.role;
+  const navItems = useMemo<NavItem[]>(() =>
+    role === "admin" ? dynamicAdminNav
+    : role === "lecturer" ? dynamicLecturerNav
+    : role === "student" ? studentNav
+    : role === "parent" ? parentNav
+    : superAdminNav,
+  [role, dynamicAdminNav, dynamicLecturerNav]);
 
   const { data: announcements = [] } = useQuery({
     queryKey: ["announcements"],

@@ -28,4 +28,16 @@ export const planApi = {
     const { data } = await apiClient.post("/plans", payload);
     return data.data ?? data;
   },
+  getAvailable: async (): Promise<Plan[]> => {
+    const { data } = await apiClient.get("/plans/available");
+    return data.data ?? data;
+  },
+  createCheckout: async (planId: string): Promise<{ checkoutUrl: string; sessionId: string }> => {
+    const { data } = await apiClient.post("/plans/checkout", { planId });
+    return data.data ?? data;
+  },
+  verifyPayment: async (sessionId: string): Promise<{ plan: Plan; planExpiry: string }> => {
+    const { data } = await apiClient.get(`/plans/verify/${sessionId}`);
+    return data.data ?? data;
+  },
 };
