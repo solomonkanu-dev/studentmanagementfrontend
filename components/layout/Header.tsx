@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, CheckCheck, Trash2, Camera, Loader2 } from "lucide-react";
+import { Bell, Menu, CheckCheck, Trash2, Camera, Loader2, LogOut } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
@@ -133,7 +133,8 @@ interface HeaderProps {
 }
 
 export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed }: HeaderProps) {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const socket = useSocket();
   const pathname = usePathname();
   const [notifOpen, setNotifOpen] = useState(false);
@@ -204,6 +205,7 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
   const handleClose = useCallback(() => setNotifOpen(false), []);
 
   return (
+    <>
     <header className="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-b border-stroke bg-white px-4 shadow-sm dark:border-strokedark dark:bg-boxdark md:px-6">
       <div className="flex items-center gap-3">
         {/* Hamburger — mobile only */}
@@ -311,6 +313,13 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
                 <Camera className="h-4 w-4 text-body" aria-hidden="true" />
                 {user?.profilePhoto ? "Change photo" : "Upload photo"}
               </button>
+              <button
+                onClick={() => { setAvatarOpen(false); setShowLogoutConfirm(true); }}
+                className="lg:hidden flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-meta-1 transition-colors hover:bg-whiter dark:hover:bg-meta-4 border-t border-stroke dark:border-strokedark"
+              >
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                Sign out
+              </button>
             </div>
           )}
 
@@ -338,5 +347,32 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
         </div>
       </div>
     </header>
+
+    {showLogoutConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 lg:hidden">
+        <div className="w-80 rounded-sm border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-meta-1/10">
+            <LogOut className="h-6 w-6 text-meta-1" aria-hidden="true" />
+          </div>
+          <h3 className="mb-1 text-base font-semibold text-black dark:text-white">Sign out?</h3>
+          <p className="mb-5 text-sm text-body">Are you sure you want to log out of your account?</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className="flex-1 rounded border border-stroke py-2 text-sm font-medium text-black transition-colors hover:bg-stroke dark:border-strokedark dark:text-white dark:hover:bg-meta-4"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => { setShowLogoutConfirm(false); logout(); }}
+              className="flex-1 rounded bg-meta-1 py-2 text-sm font-medium text-white transition-colors hover:bg-meta-1/90"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   );
 }
