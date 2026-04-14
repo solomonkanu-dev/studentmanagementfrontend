@@ -15,6 +15,8 @@ import {
   BarChart3,
   ClipboardList,
   Shield,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -157,6 +159,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -206,13 +209,38 @@ export default function LoginPage() {
               error={errors.email?.message}
               {...register("email")}
             />
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              error={errors.password?.message}
-              {...register("password")}
-            />
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-black dark:text-white">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  aria-invalid={errors.password ? true : undefined}
+                  className={[
+                    "h-9 w-full rounded border border-stroke bg-transparent px-3 pr-10 text-sm",
+                    "text-black placeholder:text-body",
+                    "outline-none transition focus:border-primary active:border-primary",
+                    "dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary",
+                    errors.password ? "!border-meta-1" : "",
+                  ].join(" ")}
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-body hover:text-black dark:hover:text-white transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p role="alert" className="text-xs text-meta-1">{errors.password.message}</p>
+              )}
+            </div>
 
             <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-body">
               <div className="relative">
