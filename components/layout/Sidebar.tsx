@@ -569,7 +569,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
             </div>
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className={["shrink-0 rounded p-1 text-bodydark hover:text-white transition-colors", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}
+              className="shrink-0 rounded p-1 text-bodydark hover:text-white transition-colors"
               aria-label="Logout"
               title="Logout"
             >

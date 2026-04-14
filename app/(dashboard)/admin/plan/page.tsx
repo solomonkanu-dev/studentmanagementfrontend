@@ -40,7 +40,8 @@ export default function PlanPage() {
 
   const checkout = useMutation({
     mutationFn: (planId: string) => planApi.createCheckout(planId),
-    onSuccess: ({ checkoutUrl }) => {
+    onSuccess: ({ checkoutUrl, sessionId }) => {
+      localStorage.setItem("monime_session_id", sessionId);
       window.location.href = checkoutUrl;
     },
   });

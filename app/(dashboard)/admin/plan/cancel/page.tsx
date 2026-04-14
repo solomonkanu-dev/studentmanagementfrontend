@@ -1,10 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { XCircle } from "lucide-react";
 
 export default function PlanCancelPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    localStorage.removeItem("monime_session_id");
+  }, []);
 
   return (
     <div className="min-h-[500px] flex items-center justify-center px-4">

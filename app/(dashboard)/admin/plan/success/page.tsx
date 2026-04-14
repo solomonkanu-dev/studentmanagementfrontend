@@ -1,30 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { planApi } from "@/lib/api/plan";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 export default function PlanSuccessPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const sessionId = searchParams.get("sessionId");
 
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [planName, setPlanName] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
+    const sessionId = localStorage.getItem("monime_session_id");
+
     if (!sessionId) {
-      setStatus("error");
       setErrorMsg("Missing session ID. Cannot verify payment.");
+      setStatus("error");
       return;
     }
 
     planApi.verifyPayment(sessionId)
       .then((result) => {
+        localStorage.removeItem("monime_session_id");
         setPlanName(result.plan?.displayName || result.plan?.name || "");
         setStatus("success");
         queryClient.invalidateQueries({ queryKey: ["my-plan"] });
@@ -34,7 +35,7 @@ export default function PlanSuccessPage() {
         setErrorMsg(err?.response?.data?.message || "Payment verification failed.");
         setStatus("error");
       });
-  }, [sessionId, queryClient, router]);
+  }, [queryClient, router]);
 
   return (
     <div className="min-h-[500px] flex items-center justify-center px-4">
