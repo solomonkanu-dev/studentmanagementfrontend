@@ -556,6 +556,13 @@ export interface InstitutePlan {
   plan: Plan;
   institute: string;
   assignedAt: string;
+  planExpiry?: string | null;
+  subscription?: { assignedAt: string; assignedBy?: string };
+  usage?: {
+    students: { current: number; max: number };
+    lecturers: { current: number; max: number };
+    classes: { current: number; max: number };
+  };
 }
 
 // ─── System Config ────────────────────────────────────────────────────────────
