@@ -35,10 +35,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       reconnectionDelay: 2000,
     });
 
+    s.on("connect_error", (err) => {
+      console.warn("[Socket] connect_error:", err.message);
+    });
+
     socketRef.current = s;
     setSocket(s);
 
     return () => {
+      s.off("connect_error");
       s.disconnect();
       socketRef.current = null;
     };

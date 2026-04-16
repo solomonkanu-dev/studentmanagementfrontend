@@ -697,7 +697,8 @@ function OnlineUsersCard() {
   const { data, isLoading } = useQuery<OnlineUsersData>({
     queryKey: ["online-users"],
     queryFn: monitorApi.getOnlineUsers,
-    staleTime: Infinity,   // socket keeps this fresh — no background polling
+    staleTime: Infinity,        // socket is the primary update path
+    refetchInterval: 30_000,    // polling fallback every 30 s
   });
 
   // Real-time updates via socket
@@ -706,10 +707,16 @@ function OnlineUsersCard() {
     const handler = (snapshot: OnlineUsersData) => {
       qc.setQueryData(["online-users"], snapshot);
     };
+    const onConnect = () => socket.emit("request_presence");
     socket.on("presence:update", handler);
-    // Ask the server for the latest snapshot now that the listener is ready
+    socket.on("connect", onConnect);
+    // Ask for the latest snapshot now that the listener is ready (works even
+    // if the socket is already connected and buffers the emit if not yet connected)
     socket.emit("request_presence");
-    return () => { socket.off("presence:update", handler); };
+    return () => {
+      socket.off("presence:update", handler);
+      socket.off("connect", onConnect);
+    };
   }, [socket, qc]);
 
   const counts = data?.counts ?? { student: 0, lecturer: 0, parent: 0, admin: 0 };
