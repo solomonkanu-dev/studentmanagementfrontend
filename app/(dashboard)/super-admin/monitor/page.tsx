@@ -707,6 +707,8 @@ function OnlineUsersCard() {
       qc.setQueryData(["online-users"], snapshot);
     };
     socket.on("presence:update", handler);
+    // Ask the server for the latest snapshot now that the listener is ready
+    socket.emit("request_presence");
     return () => { socket.off("presence:update", handler); };
   }, [socket, qc]);
 
