@@ -71,7 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(body.error ?? "Login failed");
       }
 
-      const { user: newUser, token } = await res.json();
+      const { user: rawUser, token } = await res.json();
+      // Super admin login returns { id } while regular users have { _id }.
+      // Normalise so all code can rely on _id.
+      const newUser: AuthUser = { ...rawUser, _id: rawUser._id ?? rawUser.id };
       tokenStore.set(token);
       localStorage.setItem("user", JSON.stringify(newUser));
       setUser(newUser);
