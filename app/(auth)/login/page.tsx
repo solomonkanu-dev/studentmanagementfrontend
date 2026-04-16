@@ -158,6 +158,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [errorType, setErrorType] = useState<"error" | "warning">("error");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -173,9 +174,10 @@ export default function LoginPage() {
       await login(values.email, values.password, isSuperAdmin);
       router.replace("/");
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Invalid credentials";
+      const msg = (err as Error)?.message ?? "Invalid credentials";
+      const isPending = msg.toLowerCase().includes("pending");
+      const isSuspended = msg.toLowerCase().includes("suspended");
+      setErrorType(isPending || isSuspended ? "warning" : "error");
       setError(msg);
     }
   };
@@ -270,7 +272,12 @@ export default function LoginPage() {
             </label>
 
             {error && (
-              <p className="rounded-lg border border-meta-1/20 bg-meta-1/8 px-4 py-2.5 text-xs text-meta-1">
+              <p className={[
+                "rounded-lg border px-4 py-2.5 text-xs",
+                errorType === "warning"
+                  ? "border-yellow-300/40 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
+                  : "border-meta-1/20 bg-meta-1/8 text-meta-1",
+              ].join(" ")}>
                 {error}
               </p>
             )}

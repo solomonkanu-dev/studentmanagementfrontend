@@ -376,11 +376,11 @@ function ResultCard({ result }: { result: QueryResult }) {
     <Card>
       <CardContent className="p-0">
         {/* Question row */}
-        <div className="flex items-start gap-3 border-b border-stroke px-5 py-4 dark:border-strokedark">
+        <div className="flex items-start gap-3 border-b border-stroke px-3 py-3 sm:px-5 sm:py-4 dark:border-strokedark">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white">
             <User className="h-3.5 w-3.5" aria-hidden="true" />
           </div>
-          <p className="flex-1 text-sm font-medium text-black dark:text-white">
+          <p className="flex-1 min-w-0 break-words text-sm font-medium text-black dark:text-white">
             {result.question}
           </p>
           <button
@@ -399,7 +399,7 @@ function ResultCard({ result }: { result: QueryResult }) {
         {!collapsed && (
           <>
             {/* Answer */}
-            <div className="px-5 py-4">
+            <div className="px-3 py-4 sm:px-5">
               {result.error ? (
                 <p className="text-sm text-meta-1">{result.error}</p>
               ) : (
@@ -407,7 +407,7 @@ function ResultCard({ result }: { result: QueryResult }) {
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-meta-3/20">
                     <Bot className="h-3.5 w-3.5 text-meta-3" aria-hidden="true" />
                   </div>
-                  <div className="flex-1 text-sm text-black dark:text-white">
+                  <div className="min-w-0 flex-1 overflow-hidden text-sm text-black dark:text-white">
                     <MarkdownContent content={result.reply} />
                   </div>
                 </div>
@@ -457,24 +457,26 @@ function ResultCard({ result }: { result: QueryResult }) {
 
             {/* Footer */}
             {!result.error && (
-              <div className="flex flex-wrap items-center gap-2 border-t border-stroke px-5 py-3 dark:border-strokedark">
-                <div className="flex items-center gap-1.5 text-body">
-                  <Database className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="text-xs">Sources:</span>
+              <div className="border-t border-stroke px-3 py-3 sm:px-5 dark:border-strokedark">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-body">
+                    <Database className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="text-xs">Sources:</span>
+                  </div>
+                  {result.toolsUsed.length > 0 ? (
+                    result.toolsUsed.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+                      >
+                        {TOOL_LABELS[t] ?? t}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-body italic">No external data needed</span>
+                  )}
                 </div>
-                {result.toolsUsed.length > 0 ? (
-                  result.toolsUsed.map((t) => (
-                    <span
-                      key={t}
-                      className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
-                    >
-                      {TOOL_LABELS[t] ?? t}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-body italic">No external data needed</span>
-                )}
-                <div className="ml-auto flex items-center gap-1 text-body">
+                <div className="mt-1.5 flex items-center gap-1 text-body">
                   <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="text-xs">{time}</span>
                 </div>
@@ -551,7 +553,7 @@ function MarkdownContent({ content }: { content: string }) {
     i++;
   }
 
-  return <div className="space-y-0.5">{elements}</div>;
+  return <div className="space-y-0.5 break-words">{elements}</div>;
 }
 
 function MarkdownTable({ lines }: { lines: string[] }) {

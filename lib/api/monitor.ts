@@ -8,6 +8,18 @@ import type {
   SalaryExpenditureReport,
 } from "../types";
 
+export interface OnlineAdmin {
+  userId: string;
+  fullName: string;
+  institute: { _id: string; name: string } | null;
+  connectedAt: string;
+}
+
+export interface OnlineUsersData {
+  counts: { student: number; lecturer: number; parent: number; admin: number };
+  admins: OnlineAdmin[];
+}
+
 const BASE = "/super-admin/monitor";
 
 export const monitorApi = {
@@ -39,5 +51,10 @@ export const monitorApi = {
   getSalaryExpenditure: async (): Promise<SalaryExpenditureReport> => {
     const { data } = await apiClient.get(`${BASE}/salary-expenditure`);
     return data.data ?? data;
+  },
+
+  getOnlineUsers: async (): Promise<OnlineUsersData> => {
+    const { data } = await apiClient.get(`${BASE}/online-users`);
+    return data;
   },
 };

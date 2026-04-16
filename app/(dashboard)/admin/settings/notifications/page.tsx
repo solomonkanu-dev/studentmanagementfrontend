@@ -2,9 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   notificationSettingsApi,
   type NotificationSettings,
@@ -19,8 +16,6 @@ import {
   Megaphone,
   ClipboardList,
   CalendarCheck,
-  Eye,
-  EyeOff,
   RefreshCw,
   Send,
   CheckCircle,
@@ -28,20 +23,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { errMsg } from "@/lib/utils/errMsg";
-
-// ─── Zod schema for SMTP form ────────────────────────────────────────────────
-
-const smtpSchema = z.object({
-  host:      z.string().min(1, "SMTP host is required"),
-  port:      z.coerce.number().int().min(1).max(65535),
-  secure:    z.boolean(),
-  user:      z.string().min(1, "Username is required"),
-  pass:      z.string().min(1, "Password is required"),
-  fromEmail: z.string().email("Must be a valid email"),
-  fromName:  z.string().min(1, "From name is required"),
-});
-type SmtpForm = z.infer<typeof smtpSchema>;
 
 // ─── Notification type metadata ──────────────────────────────────────────────
 
@@ -109,25 +90,25 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
-type Tab = "smtp" | "types" | "logs";
+type Tab = "types" | "logs";
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function NotificationsSettingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("smtp");
+  const [activeTab, setActiveTab] = useState<Tab>("types");
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black dark:text-white">Email Notifications</h1>
         <p className="mt-1 text-sm text-body">
-          Configure SMTP settings, manage notification types, and review delivery logs.
+          Manage email notification types and review delivery logs.
         </p>
       </div>
 
       {/* Tabs */}
       <div className="mb-6 flex gap-1 rounded-xl border border-stroke bg-white p-1 dark:border-strokedark dark:bg-boxdark">
-        {(["smtp", "types", "logs"] as Tab[]).map((tab) => (
+        {(["types", "logs"] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -138,25 +119,22 @@ export default function NotificationsSettingsPage() {
                 : "text-body hover:text-black dark:hover:text-white",
             ].join(" ")}
           >
-            {tab === "smtp" && "SMTP Setup"}
             {tab === "types" && "Notification Types"}
             {tab === "logs" && "Delivery Log"}
           </button>
         ))}
       </div>
 
-      {activeTab === "smtp"  && <SmtpTab />}
       {activeTab === "types" && <TypesTab />}
       {activeTab === "logs"  && <LogsTab />}
     </div>
   );
 }
 
-// ─── SMTP Setup tab ───────────────────────────────────────────────────────────
+// ─── Notification Types tab ───────────────────────────────────────────────────
 
-function SmtpTab() {
+function TypesTab() {
   const qc = useQueryClient();
-  const [showPass, setShowPass] = useState(false);
   const [testEmail, setTestEmail] = useState("");
   const [testMsg, setTestMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [testLoading, setTestLoading] = useState(false);
@@ -166,266 +144,8 @@ function SmtpTab() {
     queryFn: notificationSettingsApi.getSettings,
   });
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isDirty },
-  } = useForm<SmtpForm>({
-    resolver: zodResolver(smtpSchema) as Resolver<SmtpForm>,
-    values: settings
-      ? {
-          host:      settings.smtp.host,
-          port:      settings.smtp.port,
-          secure:    settings.smtp.secure,
-          user:      settings.smtp.user,
-          pass:      settings.smtp.pass,
-          fromEmail: settings.smtp.fromEmail,
-          fromName:  settings.smtp.fromName,
-        }
-      : undefined,
-  });
-
-  const secureValue = watch("secure");
-
-  const saveMutation = useMutation({
-    mutationFn: (smtp: SmtpForm) => notificationSettingsApi.updateSettings({ smtp }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notification-settings"] });
-    },
-  });
-
-  const onSubmit = handleSubmit((data: SmtpForm) => saveMutation.mutate(data));
-
-  const handleTestEmail = async () => {
-    if (!testEmail) return;
-    setTestLoading(true);
-    setTestMsg(null);
-    try {
-      const res = await notificationSettingsApi.sendTestEmail(testEmail);
-      setTestMsg({ ok: true, text: res.message });
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to send test email";
-      setTestMsg({ ok: false, text: msg });
-    } finally {
-      setTestLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-40 items-center justify-center text-body">
-        Loading settings...
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* SMTP form */}
-      <div className="rounded-xl border border-stroke bg-white p-6 dark:border-strokedark dark:bg-boxdark">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <Mail className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-black dark:text-white">SMTP Configuration</h2>
-            <p className="text-xs text-body">Credentials for outgoing email delivery.</p>
-          </div>
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Host */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                SMTP Host
-              </label>
-              <input
-                {...register("host")}
-                placeholder="smtp.gmail.com"
-                className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-              />
-              {errors.host && <p className="mt-1 text-xs text-meta-1">{errors.host.message}</p>}
-            </div>
-
-            {/* Port */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                Port
-              </label>
-              <input
-                {...register("port")}
-                type="number"
-                placeholder="587"
-                className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-              />
-              {errors.port && <p className="mt-1 text-xs text-meta-1">{errors.port.message}</p>}
-            </div>
-
-            {/* Username */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                Username
-              </label>
-              <input
-                {...register("user")}
-                placeholder="your@email.com"
-                className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-              />
-              {errors.user && <p className="mt-1 text-xs text-meta-1">{errors.user.message}</p>}
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                Password / App Password
-              </label>
-              <div className="relative">
-                <input
-                  {...register("pass")}
-                  type={showPass ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 pr-10 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-body hover:text-black dark:hover:text-white"
-                  tabIndex={-1}
-                >
-                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.pass && <p className="mt-1 text-xs text-meta-1">{errors.pass.message}</p>}
-            </div>
-
-            {/* From Email */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                From Email
-              </label>
-              <input
-                {...register("fromEmail")}
-                placeholder="noreply@yourinstitute.com"
-                className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-              />
-              {errors.fromEmail && <p className="mt-1 text-xs text-meta-1">{errors.fromEmail.message}</p>}
-            </div>
-
-            {/* From Name */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
-                From Name
-              </label>
-              <input
-                {...register("fromName")}
-                placeholder="My Institute"
-                className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-              />
-              {errors.fromName && <p className="mt-1 text-xs text-meta-1">{errors.fromName.message}</p>}
-            </div>
-          </div>
-
-          {/* Secure toggle */}
-          <div className="flex items-center gap-3">
-            <Toggle
-              checked={secureValue ?? false}
-              onChange={(v) => setValue("secure", v, { shouldDirty: true })}
-            />
-            <span className="text-sm text-black dark:text-white">
-              Use SSL/TLS (port 465)
-            </span>
-          </div>
-
-          {/* Save button */}
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saveMutation.isPending || !isDirty}
-              className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {saveMutation.isPending ? "Saving..." : "Save SMTP Settings"}
-            </button>
-            {saveMutation.isSuccess && (
-              <span className="flex items-center gap-1 text-sm text-meta-3">
-                <CheckCircle className="h-4 w-4" /> Saved
-              </span>
-            )}
-            {saveMutation.isError && (
-              <span className="flex items-center gap-1 text-sm text-meta-1">
-                <XCircle className="h-4 w-4" /> Failed to save
-              </span>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* Test email */}
-      <div className="rounded-xl border border-stroke bg-white p-6 dark:border-strokedark dark:bg-boxdark">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <Send className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-black dark:text-white">Send Test Email</h2>
-            <p className="text-xs text-body">Verify your SMTP configuration is working.</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            type="email"
-            value={testEmail}
-            onChange={(e) => setTestEmail(e.target.value)}
-            placeholder="test@example.com"
-            className="flex-1 rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
-          />
-          <button
-            type="button"
-            onClick={handleTestEmail}
-            disabled={testLoading || !testEmail}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            <Send className="h-4 w-4" />
-            {testLoading ? "Sending..." : "Send Test"}
-          </button>
-        </div>
-
-        {testMsg && (
-          <div
-            className={[
-              "mt-3 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm",
-              testMsg.ok
-                ? "bg-meta-3/10 text-meta-3"
-                : "bg-meta-1/10 text-meta-1",
-            ].join(" ")}
-          >
-            {testMsg.ok ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
-            {testMsg.text}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Notification Types tab ───────────────────────────────────────────────────
-
-function TypesTab() {
-  const qc = useQueryClient();
-
-  const { data: settings, isLoading } = useQuery<NotificationSettings>({
-    queryKey: ["notification-settings"],
-    queryFn: notificationSettingsApi.getSettings,
-  });
-
   const [localEnabled, setLocalEnabled] = useState<Record<string, boolean> | null>(null);
 
-  // Initialise from server data
   const enabledState = localEnabled ?? settings?.enabled ?? {};
 
   const saveMutation = useMutation({
@@ -443,6 +163,23 @@ function TypesTab() {
 
   const handleSave = () => {
     if (localEnabled) saveMutation.mutate(localEnabled);
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail) return;
+    setTestLoading(true);
+    setTestMsg(null);
+    try {
+      const res = await notificationSettingsApi.sendTestEmail(testEmail);
+      setTestMsg({ ok: true, text: res.message });
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Failed to send test email";
+      setTestMsg({ ok: false, text: msg });
+    } finally {
+      setTestLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -504,6 +241,52 @@ function TypesTab() {
             Preferences page. Critical notifications (Fee Payment, Results, Attendance Alert) cannot be opted out of.
           </p>
         </div>
+      </div>
+
+      {/* Test email */}
+      <div className="rounded-xl border border-stroke bg-white p-6 dark:border-strokedark dark:bg-boxdark">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <Send className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-black dark:text-white">Send Test Email</h2>
+            <p className="text-xs text-body">Verify Resend email delivery is working.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <input
+            type="email"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            placeholder="test@example.com"
+            className="flex-1 rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+          />
+          <button
+            type="button"
+            onClick={handleTestEmail}
+            disabled={testLoading || !testEmail}
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+            {testLoading ? "Sending..." : "Send Test"}
+          </button>
+        </div>
+
+        {testMsg && (
+          <div
+            className={[
+              "mt-3 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm",
+              testMsg.ok
+                ? "bg-meta-3/10 text-meta-3"
+                : "bg-meta-1/10 text-meta-1",
+            ].join(" ")}
+          >
+            {testMsg.ok ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+            {testMsg.text}
+          </div>
+        )}
       </div>
     </div>
   );
