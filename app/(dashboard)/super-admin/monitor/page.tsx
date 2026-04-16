@@ -694,11 +694,12 @@ function OnlineUsersCard() {
   const qc = useQueryClient();
   const socket = useSocket();
 
-  const { data, isLoading } = useQuery<OnlineUsersData>({
+  const { data, isLoading, isError } = useQuery<OnlineUsersData>({
     queryKey: ["online-users"],
     queryFn: monitorApi.getOnlineUsers,
     staleTime: Infinity,        // socket is the primary update path
     refetchInterval: 30_000,    // polling fallback every 30 s
+    retry: 1,
   });
 
   // Real-time updates via socket
@@ -750,6 +751,8 @@ function OnlineUsersCard() {
           </span>
           {isLoading ? (
             <span className="text-xs text-gray-400">Loading…</span>
+          ) : isError ? (
+            <span className="text-xs text-red-500">API error — check console</span>
           ) : (
             <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{total} online</span>
           )}

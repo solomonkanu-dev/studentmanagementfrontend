@@ -28,6 +28,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1";
     const serverUrl = apiUrl.replace(/\/api\/v1\/?$/, "");
 
+    console.log("[Socket] connecting to:", serverUrl);
+
     const s = io(serverUrl, {
       auth: { token },
       transports: ["websocket", "polling"],
@@ -35,6 +37,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       reconnectionDelay: 2000,
     });
 
+    s.on("connect", () => console.log("[Socket] connected ✓"));
     s.on("connect_error", (err) => {
       console.warn("[Socket] connect_error:", err.message);
     });
@@ -43,6 +46,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     setSocket(s);
 
     return () => {
+      s.off("connect");
       s.off("connect_error");
       s.disconnect();
       socketRef.current = null;
