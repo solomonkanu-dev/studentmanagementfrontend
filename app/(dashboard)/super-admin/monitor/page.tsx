@@ -245,9 +245,10 @@ function OverviewTab() {
   });
 
   if (isLoading) return <Loader />;
+  if (!data) return <p className="py-10 text-center text-sm text-gray-500">No overview data available.</p>;
 
-  const d = data!;
-  const feeRate = pct(d.fees.totalCollected, d.fees.totalBilled);
+  const d = data;
+  const feeRate = pct(d.fees?.totalCollected ?? 0, d.fees?.totalBilled ?? 0);
 
   return (
     <div className="space-y-6">
@@ -288,18 +289,18 @@ function OverviewTab() {
             <div className="mb-3 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Total Billed</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{fmt(d.fees.totalBilled)}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{fmt(d.fees?.totalBilled ?? 0)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Collected</span>
-                <span className="font-semibold text-emerald-600">{fmt(d.fees.totalCollected)}</span>
+                <span className="font-semibold text-emerald-600">{fmt(d.fees?.totalCollected ?? 0)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Outstanding</span>
-                <span className="font-semibold text-red-500">{fmt(d.fees.totalOutstanding)}</span>
+                <span className="font-semibold text-red-500">{fmt(d.fees?.totalOutstanding ?? 0)}</span>
               </div>
             </div>
-            <ProgressBar value={d.fees.totalCollected} max={d.fees.totalBilled} color="bg-emerald-500" />
+            <ProgressBar value={d.fees?.totalCollected ?? 0} max={d.fees?.totalBilled ?? 0} color="bg-emerald-500" />
           </div>
 
           {/* Salaries block */}
@@ -307,24 +308,24 @@ function OverviewTab() {
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 dark:text-white">Salary Expenditure</h3>
               <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-                {pct(d.salaries.totalPaid, d.salaries.totalDisbursed)}% paid
+                {pct(d.salaries?.totalPaid ?? 0, d.salaries?.totalDisbursed ?? 0)}% paid
               </span>
             </div>
             <div className="mb-3 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Total Disbursed</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{fmt(d.salaries.totalDisbursed)}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{fmt(d.salaries?.totalDisbursed ?? 0)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Paid</span>
-                <span className="font-semibold text-emerald-600">{fmt(d.salaries.totalPaid)}</span>
+                <span className="font-semibold text-emerald-600">{fmt(d.salaries?.totalPaid ?? 0)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Pending</span>
-                <span className="font-semibold text-amber-500">{fmt(d.salaries.totalPending)}</span>
+                <span className="font-semibold text-amber-500">{fmt(d.salaries?.totalPending ?? 0)}</span>
               </div>
             </div>
-            <ProgressBar value={d.salaries.totalPaid} max={d.salaries.totalDisbursed} color="bg-indigo-500" />
+            <ProgressBar value={d.salaries?.totalPaid ?? 0} max={d.salaries?.totalDisbursed ?? 0} color="bg-indigo-500" />
           </div>
         </div>
       </div>
@@ -696,8 +697,7 @@ function OnlineUsersCard() {
   const { data, isLoading } = useQuery<OnlineUsersData>({
     queryKey: ["online-users"],
     queryFn: monitorApi.getOnlineUsers,
-    refetchInterval: 30_000,
-    staleTime: 10_000,
+    staleTime: Infinity,   // socket keeps this fresh — no background polling
   });
 
   // Real-time updates via socket
