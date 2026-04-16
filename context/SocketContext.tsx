@@ -23,10 +23,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const token = tokenStore.get();
     if (!token) return;
 
-    // Strip /api/v1 to get the base server URL
+    // Derive the socket server URL from the API base URL.
+    // We use URL.origin (protocol + host only) so the path never leaks through
+    // as a Socket.io namespace — which causes "Invalid namespace" errors.
     const apiUrl =
       process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1";
-    const serverUrl = apiUrl.replace(/\/api\/v1\/?$/, "");
+    const serverUrl = new URL(apiUrl).origin;
 
     console.log("[Socket] connecting to:", serverUrl);
 
