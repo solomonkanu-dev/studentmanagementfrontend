@@ -165,8 +165,8 @@ export const adminApi = {
   },
 
   // Report Card
-  getReportCard: async (studentId: string) => {
-    const { data } = await apiClient.get(`/admin/report-card/${studentId}`);
+  getReportCard: async (studentId: string, termId?: string) => {
+    const { data } = await apiClient.get(`/admin/report-card/${studentId}`, { params: termId ? { termId } : undefined });
     return data;
   },
 

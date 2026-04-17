@@ -11,10 +11,11 @@ import type { ReportCardData } from "@/lib/api/student";
 export default function AdminReportCardPage() {
   const params = useSearchParams();
   const studentId = params.get("studentId") ?? "";
+  const termId = params.get("termId") ?? undefined;
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["admin-report-card", studentId],
-    queryFn: () => adminApi.getReportCard(studentId),
+    queryKey: ["admin-report-card", studentId, termId],
+    queryFn: () => adminApi.getReportCard(studentId, termId),
     enabled: !!studentId,
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 import { subjectApi } from "@/lib/api/subject";
@@ -34,6 +34,7 @@ export default function ResultsPage() {
   // Results tab state
   const [resultsClass, setResultsClass] = useState("");
   const [resultsTerm, setResultsTerm] = useState("");
+  const [resultsStudent, setResultsStudent] = useState("");
 
   // Rankings tab state
   const [rankingsClass, setRankingsClass] = useState("");
@@ -48,6 +49,15 @@ export default function ResultsPage() {
   const { data: subjects = [] } = useQuery({ queryKey: ["subjects"], queryFn: subjectApi.getAll });
   const { data: students = [] } = useQuery({ queryKey: ["admin-students"], queryFn: adminApi.getStudents });
   const { data: terms = [] } = useQuery({ queryKey: ["admin-terms"], queryFn: adminApi.getTerms });
+
+  // Pre-select current term once terms load
+  useEffect(() => {
+    const current = terms.find((t) => t.isCurrent);
+    if (current) {
+      if (!resultsTerm) setResultsTerm(current._id);
+      if (!rankingsTerm) setRankingsTerm(current._id);
+    }
+  }, [terms]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: results = [], isLoading: resultsLoading } = useQuery({
     queryKey: ["results-class", resultsClass, resultsTerm],
@@ -111,7 +121,7 @@ export default function ResultsPage() {
             <label className="text-sm font-medium text-black dark:text-white">Class</label>
             <select
               value={resultsClass}
-              onChange={(e) => setResultsClass(e.target.value)}
+              onChange={(e) => { setResultsClass(e.target.value); setResultsStudent(""); }}
               className="h-9 w-56 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
             >
               <option value="">Select a class</option>
@@ -129,6 +139,23 @@ export default function ResultsPage() {
               {terms.map((t) => (
                 <option key={t._id} value={t._id}>{t.name} {t.isCurrent ? "(Current)" : ""}</option>
               ))}
+            </select>
+            <label className="text-sm font-medium text-black dark:text-white">Student</label>
+            <select
+              value={resultsStudent}
+              onChange={(e) => setResultsStudent(e.target.value)}
+              disabled={!resultsClass}
+              className="h-9 w-52 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-50 dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            >
+              <option value="">All students</option>
+              {(students as AuthUser[])
+                .filter((s) => {
+                  const cId = typeof s.class === "object" && s.class ? (s.class as { _id: string })._id : s.class;
+                  return cId === resultsClass;
+                })
+                .map((s) => (
+                  <option key={s._id} value={s._id}>{s.fullName}</option>
+                ))}
             </select>
           </div>
 
@@ -156,7 +183,13 @@ export default function ResultsPage() {
                   {results.length === 0 ? (
                     <tr><Td colSpan={5} className="py-10 text-center text-body">No results found.</Td></tr>
                   ) : (
-                    results.map((r: Result) => {
+                    (results as Result[])
+                      .filter((r) => {
+                        if (!resultsStudent) return true;
+                        const sid = typeof r.student === "object" ? (r.student as AuthUser)._id : r.student;
+                        return sid === resultsStudent;
+                      })
+                      .map((r: Result) => {
                       const studentId = typeof r.student === "object" ? (r.student as AuthUser)._id : r.student;
                       return (
                         <tr key={r._id} className="hover:bg-whiter transition-colors dark:hover:bg-meta-4">
@@ -166,7 +199,7 @@ export default function ResultsPage() {
                           <Td><Badge variant={gradeVariant(r.grade)}>{r.grade ?? "—"}</Badge></Td>
                           <Td>
                             <Link
-                              href={`/admin/results/report-card?studentId=${studentId}`}
+                              href={`/admin/results/report-card?studentId=${studentId}${resultsTerm ? `&termId=${resultsTerm}` : ""}`}
                               className="flex items-center gap-1 text-xs text-primary hover:underline"
                             >
                               <FileText className="h-3.5 w-3.5" />
@@ -271,7 +304,7 @@ export default function ResultsPage() {
                           <Td className="text-body">{entry.subjects}</Td>
                           <Td>
                             <Link
-                              href={`/admin/results/report-card?studentId=${studentId}`}
+                              href={`/admin/results/report-card?studentId=${studentId}${rankingsTerm ? `&termId=${rankingsTerm}` : ""}`}
                               className="flex items-center gap-1 text-xs text-primary hover:underline"
                             >
                               <FileText className="h-3.5 w-3.5" />

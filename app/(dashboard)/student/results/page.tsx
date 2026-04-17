@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { studentApi } from "@/lib/api/student";
+import { termApi } from "@/lib/api/term";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { FileText, Printer, Trophy, History } from "lucide-react";
 import Link from "next/link";
 import type { Result, Subject } from "@/lib/types";
+import type { AcademicTerm } from "@/lib/api/term";
 
 function ordinal(n: number | null): string {
   if (n === null) return "—";
@@ -28,11 +30,23 @@ function gradeVariant(grade?: string): "success" | "info" | "warning" | "danger"
 
 export default function StudentResultsPage() {
   const [selectedClassId, setSelectedClassId] = useState<string | undefined>(undefined);
+  const [selectedTermId, setSelectedTermId]   = useState<string | undefined>(undefined);
 
   const { data: promotionData } = useQuery({
     queryKey: ["my-promotion-history"],
     queryFn: studentApi.getMyPromotionHistory,
   });
+
+  const { data: terms = [] } = useQuery({
+    queryKey: ["student-terms"],
+    queryFn: termApi.getAll,
+  });
+
+  // Pre-select current term once terms load
+  useEffect(() => {
+    const current = (terms as AcademicTerm[]).find((t) => t.isCurrent);
+    if (current && !selectedTermId) setSelectedTermId(current._id);
+  }, [terms, selectedTermId]);
 
   // Build selectable class list: current first, then historical
   const classOptions = (() => {
@@ -54,23 +68,36 @@ export default function StudentResultsPage() {
 
   const activeClassId = selectedClassId ?? promotionData?.currentClass?._id;
   const activeClassName = classOptions.find((c) => c._id === activeClassId)?.name;
+  const activeTerm = (terms as AcademicTerm[]).find((t) => t._id === selectedTermId);
   const isViewingHistory = !!activeClassId && activeClassId !== promotionData?.currentClass?._id;
 
   const { data: results = [], isLoading } = useQuery({
-    queryKey: ["my-results", activeClassId],
-    queryFn: () => studentApi.getMyResults(activeClassId ? { classId: activeClassId } : undefined),
+    queryKey: ["my-results", activeClassId, selectedTermId],
+    queryFn: () => studentApi.getMyResults({
+      ...(activeClassId ? { classId: activeClassId } : {}),
+      ...(selectedTermId ? { termId: selectedTermId } : {}),
+    }),
     enabled: promotionData !== undefined,
   });
 
   const { data: rankData } = useQuery({
-    queryKey: ["my-ranking"],
-    queryFn: () => studentApi.getMyRanking(),
+    queryKey: ["my-ranking", selectedTermId],
+    queryFn: () => studentApi.getMyRanking(selectedTermId),
     enabled: !isViewingHistory,
   });
 
+  // Build report card URL with both class and term
+  const reportCardHref = (() => {
+    const params = new URLSearchParams();
+    if (isViewingHistory && activeClassId) params.set("classId", activeClassId);
+    if (selectedTermId) params.set("termId", selectedTermId);
+    const qs = params.toString();
+    return `/student/results/report-card${qs ? `?${qs}` : ""}`;
+  })();
+
   return (
     <div className="space-y-4">
-      {/* Class picker — only rendered when student has promotion history */}
+      {/* Class picker — only when student has promotion history */}
       {classOptions.length > 1 && (
         <div className="flex items-center gap-2 flex-wrap rounded-xl border border-stroke bg-white px-4 py-3 dark:border-strokedark dark:bg-boxdark">
           <History className="h-4 w-4 text-body shrink-0" />
@@ -88,6 +115,33 @@ export default function StudentResultsPage() {
             >
               {c.name}
               {c.isCurrent && (
+                <span className="ml-1.5 rounded-full bg-meta-3/20 px-1.5 py-0.5 text-[10px] text-meta-3">
+                  current
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Term selector */}
+      {(terms as AcademicTerm[]).length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap rounded-xl border border-stroke bg-white px-4 py-3 dark:border-strokedark dark:bg-boxdark">
+          <FileText className="h-4 w-4 text-body shrink-0" />
+          <span className="text-xs text-body">Term:</span>
+          {(terms as AcademicTerm[]).map((t) => (
+            <button
+              key={t._id}
+              onClick={() => setSelectedTermId(t._id)}
+              className={[
+                "rounded-lg border px-3 py-1 text-xs font-medium transition-colors",
+                selectedTermId === t._id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-stroke text-body hover:border-primary dark:border-strokedark",
+              ].join(" ")}
+            >
+              {t.name}
+              {t.isCurrent && (
                 <span className="ml-1.5 rounded-full bg-meta-3/20 px-1.5 py-0.5 text-[10px] text-meta-3">
                   current
                 </span>
@@ -123,6 +177,9 @@ export default function StudentResultsPage() {
             <p className="mt-0.5 text-lg font-bold text-black dark:text-white">
               {ordinal(rankData.rank)} out of {rankData.outOf} students
             </p>
+            {activeTerm && (
+              <p className="text-xs text-body">{activeTerm.name} · {activeTerm.academicYear}</p>
+            )}
           </div>
           <div className="ml-auto text-right">
             <p className="text-xs text-body">Total Marks</p>
@@ -134,18 +191,21 @@ export default function StudentResultsPage() {
       <Card>
         <div className="flex items-center gap-2 border-b border-stroke px-5 py-4 dark:border-strokedark">
           <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
-          <h2 className="text-sm font-semibold text-black dark:text-white">
-            {activeClassName ? `Results — ${activeClassName}` : "My Results"}
-          </h2>
+          <div>
+            <h2 className="text-sm font-semibold text-black dark:text-white">
+              {activeClassName ? `Results — ${activeClassName}` : "My Results"}
+            </h2>
+            {activeTerm && (
+              <p className="text-xs text-body">{activeTerm.name} · {activeTerm.academicYear}</p>
+            )}
+          </div>
           {(results as Result[]).length > 0 && (
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               {(results as Result[]).length} subject{(results as Result[]).length !== 1 ? "s" : ""}
             </span>
           )}
           <Link
-            href={isViewingHistory && activeClassId
-              ? `/student/results/report-card?classId=${activeClassId}`
-              : "/student/results/report-card"}
+            href={reportCardHref}
             className={[
               "ml-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
               isViewingHistory
@@ -154,7 +214,7 @@ export default function StudentResultsPage() {
             ].join(" ")}
           >
             <Printer className="h-3.5 w-3.5" />
-            {isViewingHistory ? "Archived Report Card" : "Download Report Card"}
+            {isViewingHistory ? "Archived Report Card" : "View Report Card"}
           </Link>
         </div>
         <CardContent>
@@ -168,8 +228,8 @@ export default function StudentResultsPage() {
               <p className="text-sm font-medium text-black dark:text-white">No results yet</p>
               <p className="text-xs text-body">
                 {isViewingHistory
-                  ? "No results were recorded for this class."
-                  : "Your results will appear here once marks are assigned."}
+                  ? "No results were recorded for this class and term."
+                  : "Your results will appear here once the admin publishes them."}
               </p>
             </div>
           ) : (
@@ -208,6 +268,21 @@ export default function StudentResultsPage() {
                     );
                   })}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-stroke dark:border-strokedark">
+                    <td colSpan={2} className="py-3 text-xs font-semibold uppercase tracking-wider text-body">Total</td>
+                    <td className="py-3 text-center font-bold text-black dark:text-white">
+                      {(results as Result[]).reduce((s, r) => s + r.marksObtained, 0)}
+                    </td>
+                    <td className="py-3 text-center text-body">
+                      {(results as Result[]).reduce((s, r) => {
+                        const sub = r.subject as Subject & { totalMarks?: number };
+                        return s + (sub?.totalMarks ?? 100);
+                      }, 0)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
