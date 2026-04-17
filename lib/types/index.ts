@@ -277,6 +277,20 @@ export interface Result {
   createdAt: string;
 }
 
+// ─── Academic Term ────────────────────────────────────────────────────────────
+
+export interface AcademicTerm {
+  _id: string;
+  name: string;
+  type: "term" | "semester";
+  academicYear: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  institute: string;
+  createdAt: string;
+}
+
 // ─── Exam ─────────────────────────────────────────────────────────────────────
 
 export interface Exam {
