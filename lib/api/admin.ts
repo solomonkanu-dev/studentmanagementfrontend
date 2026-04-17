@@ -117,6 +117,21 @@ export const adminApi = {
     return data.data ?? data;
   },
 
+  publishResults: async (classId: string, termId: string) => {
+    const { data } = await apiClient.patch("/admin/results/publish", { classId, termId });
+    return data;
+  },
+
+  unpublishResults: async (classId: string, termId: string) => {
+    const { data } = await apiClient.patch("/admin/results/unpublish", { classId, termId });
+    return data;
+  },
+
+  getResultPublishStatus: async (classId: string, termId: string): Promise<{ total: number; published: number; unpublished: number }> => {
+    const { data } = await apiClient.get("/admin/results/publish-status", { params: { classId, termId } });
+    return data.data ?? data;
+  },
+
   // Assignments
   getAssignments: async () => {
     const { data } = await apiClient.get("/admin/assignments");

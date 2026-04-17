@@ -41,6 +41,7 @@ import {
   Heart,
   TableProperties,
   MessageSquare,
+  ClipboardCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -101,6 +102,7 @@ const adminNav: NavItem[] = [
   { label: "Assignments", href: "/admin/assignments", icon: ClipboardList },
   { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck },
   { label: "Results", href: "/admin/results", icon: FileText },
+  { label: "Exams", href: "/admin/exams", icon: ClipboardCheck },
   { label: "Fees", href: "/admin/fees", icon: CreditCard },
   { label: "Terms", href: "/admin/terms", icon: CalendarDays },
   { label: "Salary", href: "/admin/salary", icon: DollarSign },
@@ -135,6 +137,7 @@ const lecturerNav: NavItem[] = [
   { label: "Assignments", href: "/lecturer/assignments", icon: ClipboardList },
   { label: "Attendance", href: "/lecturer/attendance", icon: CalendarCheck },
   { label: "Results", href: "/lecturer/results", icon: FileText },
+  { label: "Exams", href: "/lecturer/exams", icon: ClipboardCheck },
   { label: "Promote Students", href: "/lecturer/promote", icon: GraduationCap },
   { label: "Timetable", href: "/lecturer/timetable", icon: TableProperties },
   { label: "Academic Calendar", href: "/lecturer/academic-calendar", icon: CalendarDays },
@@ -149,6 +152,7 @@ const studentNav: NavItem[] = [
   { label: "Assignments", href: "/student/assignments", icon: ClipboardList },
   { label: "Attendance", href: "/student/attendance", icon: CalendarCheck },
   { label: "Results", href: "/student/results", icon: FileText },
+  { label: "Exams", href: "/student/exams", icon: ClipboardCheck },
   { label: "Fees", href: "/student/fees", icon: CreditCard },
   { label: "Documents", href: "/student/documents", icon: FolderOpen },
   { label: "Notification Preferences", href: "/student/notification-preferences", icon: Settings },

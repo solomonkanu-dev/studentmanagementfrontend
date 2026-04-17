@@ -273,7 +273,30 @@ export interface Result {
   totalScore?: number;
   grade?: string;
   institute: string;
+  isPublished: boolean;
   createdAt: string;
+}
+
+// ─── Exam ─────────────────────────────────────────────────────────────────────
+
+export interface Exam {
+  _id: string;
+  title: string;
+  subject: string | Subject;
+  class: string | Class;
+  term: string | AcademicTerm;
+  institute: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  examType: "written" | "oral" | "practical" | "test";
+  totalMarks: number;
+  venue: string;
+  instructions: string;
+  status: "upcoming" | "ongoing" | "completed";
+  createdBy: string | AuthUser;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
@@ -640,6 +663,33 @@ export interface ApiResponse<T> {
   success: boolean;
   message?: string;
   data: T;
+}
+
+// ─── Online User Reports ──────────────────────────────────────────────────────
+
+export interface DailyOnlineEntry {
+  date: string;
+  dayOfWeek: number;  // 0 = Sun … 6 = Sat
+  peakCounts: { student: number; lecturer: number; parent: number; admin: number };
+  peakTotal: number;
+  avgTotal: number;
+  snapshotsTaken: number;
+}
+
+export interface OnlineUserReport {
+  _id: string;
+  weekStart: string;
+  weekEnd: string;
+  days: DailyOnlineEntry[];
+  isComplete: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OnlineReportListResponse {
+  success: boolean;
+  data: OnlineUserReport[];
+  pagination: { page: number; limit: number; total: number; pages: number };
 }
 
 export interface PaginatedResponse<T> {

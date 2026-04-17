@@ -6,6 +6,8 @@ import type {
   GrowthTrends,
   FeeRevenueReport,
   SalaryExpenditureReport,
+  OnlineUserReport,
+  OnlineReportListResponse,
 } from "../types";
 
 export interface OnlineAdmin {
@@ -56,5 +58,15 @@ export const monitorApi = {
   getOnlineUsers: async (): Promise<OnlineUsersData> => {
     const { data } = await apiClient.get(`${BASE}/online-users`);
     return data;
+  },
+
+  getOnlineReports: async (page = 1): Promise<OnlineReportListResponse> => {
+    const { data } = await apiClient.get(`${BASE}/online-reports`, { params: { page, limit: 10 } });
+    return data;
+  },
+
+  getOnlineReport: async (id: string): Promise<OnlineUserReport> => {
+    const { data } = await apiClient.get(`${BASE}/online-reports/${id}`);
+    return data.data ?? data;
   },
 };
