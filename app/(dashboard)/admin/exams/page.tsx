@@ -196,7 +196,7 @@ function ExamScheduleTab() {
                   <Th>Type</Th>
                   <Th>Venue</Th>
                   <Th>Status</Th>
-                  <Th></Th>
+                  <Th>{""}</Th>
                 </tr>
               </TableHead>
               <TableBody>
