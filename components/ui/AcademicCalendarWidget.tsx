@@ -76,6 +76,8 @@ export default function AcademicCalendarWidget() {
   const [year, setYear]   = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0-based
 
+  const todayStr = today.toISOString().slice(0, 10);
+
   const { data: events = [] } = useQuery({
     queryKey: ["calendar-events"],
     queryFn: calendarApi.getAll,
@@ -94,13 +96,14 @@ export default function AcademicCalendarWidget() {
     return map;
   }, [events]);
 
-  // Events in the current visible month
+  // Events in the current visible month, excluding those whose end date has already passed
   const monthEvents = useMemo(() => {
     const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
     const seen = new Set<string>();
     const out: CalendarEvent[] = [];
     for (const ev of events as CalendarEvent[]) {
       if (seen.has(ev._id)) continue;
+      if (ev.endDate < todayStr) continue; // skip past events
       const start = ev.startDate.slice(0, 7);
       const end   = ev.endDate.slice(0, 7);
       if (start <= prefix && end >= prefix) {
@@ -109,14 +112,12 @@ export default function AcademicCalendarWidget() {
       }
     }
     return out.sort((a, b) => a.startDate.localeCompare(b.startDate));
-  }, [events, year, month]);
+  }, [events, year, month, todayStr]);
 
   // Build the grid
   const firstDay    = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = mondayFirst(firstDay); // blank cells before day 1
-
-  const todayStr = today.toISOString().slice(0, 10);
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }

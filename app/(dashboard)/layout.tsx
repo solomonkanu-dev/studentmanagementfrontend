@@ -11,6 +11,9 @@ import { AdminChatWidget } from "@/components/ui/AdminChatWidget";
 import { SocketProvider } from "@/context/SocketContext";
 import { DashboardErrorBoundary } from "@/components/ui/DashboardErrorBoundary";
 import useColorMode from "@/hooks/useColorMode";
+import { IntroTour } from "@/components/intro/IntroTour";
+import { PageTitleProvider } from "@/context/PageTitleContext";
+import "intro.js/introjs.css";
 
 export default function DashboardLayout({
   children,
@@ -58,6 +61,7 @@ export default function DashboardLayout({
   }
 
   return (
+    <PageTitleProvider>
     <SocketProvider>
     <div className="flex h-screen overflow-hidden bg-whiten dark:bg-boxdark-2">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} sidebarCollapsed={sidebarCollapsed} />
@@ -76,7 +80,10 @@ export default function DashboardLayout({
       {user.role === "student" && <StudentChatWidget />}
       {user.role === "lecturer" && <LecturerChatWidget />}
       {user.role === "admin" && <AdminChatWidget />}
+
+      <IntroTour />
     </div>
     </SocketProvider>
+    </PageTitleProvider>
   );
 }

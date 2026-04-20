@@ -49,6 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const { token } = await res.json();
         tokenStore.set(token);
+
+        // Refresh user from backend so fields like institute.logo are always current
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1";
+        return fetch(`${BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then(async (r) => {
+          if (!r.ok) return;
+          const fresh = await r.json();
+          const freshUser: AuthUser = { ...fresh, _id: fresh._id ?? fresh.id };
+          localStorage.setItem("user", JSON.stringify(freshUser));
+          setUser(freshUser);
+        }).catch(() => { /* keep existing state */ });
       })
       .catch(() => {
         // Network error — keep whatever state we have and let API calls fail naturally

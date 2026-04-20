@@ -12,7 +12,7 @@ export interface AuthUser {
   lifecycleStatus?: "active" | "graduated" | "transferred" | "withdrawn";
   lifecycleNote?: string;
   lifecycleUpdatedAt?: string;
-  institute?: string | { _id: string; name: string; schoolType?: SchoolType; onboardingCompleted?: boolean };
+  institute?: string | { _id: string; name: string; logo?: string; schoolType?: SchoolType; onboardingCompleted?: boolean };
   class?: string;
   profilePhoto?: string;
   studentProfile?: StudentProfile;
@@ -197,6 +197,7 @@ export interface FeeStructure {
   totalAmount: number;
   instituteId: string;
   createdBy?: string;
+  isAssigned?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -502,6 +503,8 @@ export interface AuditLog {
   entity?: string;
   entityId?: string;
   description?: string;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
   ipAddress?: string;
   userAgent?: string;
   method?: string;

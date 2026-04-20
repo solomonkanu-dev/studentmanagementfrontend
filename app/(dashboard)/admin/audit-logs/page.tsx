@@ -80,6 +80,39 @@ function useDebounce<T>(value: T, delay = 400): T {
   return debounced;
 }
 
+// ─── Delta Row ─────────────────────────────────────────────────────────────────
+
+function DeltaRow({ before, after }: { before?: Record<string, unknown> | null; after?: Record<string, unknown> | null }) {
+  const [open, setOpen] = useState(false);
+  const keys = Array.from(new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]));
+  if (keys.length === 0) return null;
+  return (
+    <div className="mt-1.5">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="text-[11px] text-indigo-500 hover:underline"
+      >
+        {open ? "hide changes" : `${keys.length} field${keys.length > 1 ? "s" : ""} changed`}
+      </button>
+      {open && (
+        <div className="mt-1 flex flex-wrap gap-x-5 gap-y-0.5">
+          {keys.map((k) => (
+            <span key={k} className="font-mono text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{k}:</span>{" "}
+              {before?.[k] !== undefined && (
+                <span className="text-red-500 line-through mr-1">{String(before[k])}</span>
+              )}
+              {after?.[k] !== undefined && (
+                <span className="text-emerald-600 dark:text-emerald-400">{String(after[k])}</span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Activity Item ─────────────────────────────────────────────────────────────
 
 function ActivityItem({ log }: { log: AuditLog }) {
@@ -156,6 +189,9 @@ function ActivityItem({ log }: { log: AuditLog }) {
             </span>
           )}
         </div>
+        {(log.before || log.after) && (
+          <DeltaRow before={log.before} after={log.after} />
+        )}
       </div>
 
       {/* Time */}

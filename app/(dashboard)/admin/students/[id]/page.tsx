@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
@@ -45,6 +45,8 @@ import {
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import type { AuthUser, Result, Subject, Submission, Assignment } from "@/lib/types";
+import { errMsg } from "@/lib/utils/errMsg";
+import { usePageTitle } from "@/context/PageTitleContext";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -55,13 +57,19 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export default function StudentDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const queryClient = useQueryClient();
+  const { setTitle } = usePageTitle();
   const [activeTab, setActiveTab] = useState<"overview" | "profile" | "documents" | "qr">("overview");
   const [editOpen, setEditOpen] = useState(false);
 
-  const { data: student, isLoading: loadingStudent } = useQuery({
+  const { data: student, isLoading: loadingStudent, isError: studentError, error: studentFetchError, refetch: refetchStudent } = useQuery({
     queryKey: ["admin-student", id],
     queryFn: () => adminApi.getStudent(id),
   });
+
+  useEffect(() => {
+    if (student?.fullName) setTitle(student.fullName);
+    return () => setTitle(null);
+  }, [student?.fullName, setTitle]);
 
   const { data: attendanceSummary } = useQuery({
     queryKey: ["student-attendance", id],
@@ -150,14 +158,30 @@ export default function StudentDetailPage({ params }: PageProps) {
     );
   }
 
-  if (!student) {
+  if (studentError || !student) {
+    const errMessage = errMsg(studentFetchError, "Student not found.");
     return (
       <div className="flex flex-col items-center gap-3 py-20">
         <GraduationCap className="h-10 w-10 text-body" aria-hidden="true" />
-        <p className="text-sm text-body">Student not found.</p>
-        <Link href="/admin/students" className="text-xs text-primary hover:underline">
-          Back to overview
-        </Link>
+        <p className="text-sm font-medium text-body">{errMessage}</p>
+        {studentError && (
+          <p className="text-xs text-body opacity-60">
+            ID: <code className="font-mono">{id}</code>
+          </p>
+        )}
+        <div className="flex items-center gap-3 mt-1">
+          {studentError && (
+            <button
+              onClick={() => refetchStudent()}
+              className="text-xs text-primary hover:underline"
+            >
+              Retry
+            </button>
+          )}
+          <Link href="/admin/students" className="text-xs text-primary hover:underline">
+            Back to overview
+          </Link>
+        </div>
       </div>
     );
   }

@@ -23,6 +23,10 @@ export const classApi = {
     const { data } = await apiClient.post("/class/add-student", payload);
     return data.data ?? data;
   },
+  update: async (classId: string, payload: { name?: string; lecturerId?: string }): Promise<Class> => {
+    const { data } = await apiClient.patch(`/class/${classId}`, payload);
+    return data.class ?? data.data ?? data;
+  },
   assignLecturer: async (payload: { classId: string; lecturerId: string }) => {
     const { data } = await apiClient.patch("/class/assign-lecturer", payload);
     return data.data ?? data;

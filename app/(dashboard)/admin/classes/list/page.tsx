@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
-import { Plus, Search, School, Users } from "lucide-react";
+import { Plus, Search, School, Users, Pencil } from "lucide-react";
 import type { Class, AuthUser } from "@/lib/types";
 import { useClassLabel } from "@/hooks/useClassLabel";
 import { errMsg } from "@/lib/utils/errMsg";
@@ -51,6 +51,12 @@ const createSchema = z.object({
 });
 type CreateForm = z.infer<typeof createSchema>;
 
+const editSchema = z.object({
+  name: z.string().min(1, "Class name is required"),
+  lecturerId: z.string().min(1, "Select a lecturer"),
+});
+type EditForm = z.infer<typeof editSchema>;
+
 const assignSchema = z.object({
   classId: z.string().min(1, "Select a class"),
   lecturerId: z.string().min(1, "Select a lecturer"),
@@ -63,7 +69,9 @@ export default function ClassesListPage() {
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
+  const [editTarget, setEditTarget] = useState<Class | null>(null);
   const [formError, setFormError] = useState("");
+  const [editError, setEditError] = useState("");
 
   const { data: classes = [], isLoading } = useQuery({
     queryKey: ["admin-classes"],
@@ -110,6 +118,18 @@ export default function ClassesListPage() {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name?: string; lecturerId?: string } }) =>
+      classApi.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-classes"] });
+      closeEdit();
+    },
+    onError: (err: unknown) => {
+      setEditError(errMsg(err, "Failed to update class"));
+    },
+  });
+
   const {
     register: registerCreate,
     handleSubmit: handleCreate,
@@ -123,6 +143,26 @@ export default function ClassesListPage() {
     reset: resetAssign,
     formState: { errors: assignErrors },
   } = useForm<AssignForm>({ resolver: zodResolver(assignSchema) });
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
+  } = useForm<EditForm>({ resolver: zodResolver(editSchema) });
+
+  const openEdit = (c: Class) => {
+    setEditTarget(c);
+    setEditError("");
+    const currentLecturerId = typeof c.lecturer === "string" ? c.lecturer : (c.lecturer as AuthUser | undefined)?._id ?? "";
+    resetEdit({ name: c.name, lecturerId: currentLecturerId });
+  };
+
+  const closeEdit = () => {
+    setEditTarget(null);
+    setEditError("");
+    resetEdit();
+  };
 
   const filtered = classes.filter((c: Class) =>
     c.name.toLowerCase().includes(search.toLowerCase())
@@ -211,6 +251,7 @@ export default function ClassesListPage() {
                 <Th>Female</Th>
                 <Th>Ratio</Th>
                 <Th>Created</Th>
+                <Th>{""}</Th>
               </tr>
             </TableHead>
             <TableBody>
@@ -253,6 +294,16 @@ export default function ClassesListPage() {
                         month: "short",
                         year: "numeric",
                       })}
+                    </Td>
+                    <Td>
+                      <button
+                        type="button"
+                        title="Edit class"
+                        onClick={() => openEdit(c)}
+                        className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary dark:hover:bg-meta-4"
+                      >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
                     </Td>
                   </tr>
                 );
@@ -301,6 +352,47 @@ export default function ClassesListPage() {
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button type="submit" isLoading={createMutation.isPending}>Create</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Edit class modal ──────────────────────────────────────────────────── */}
+      <Modal open={editTarget !== null} onClose={closeEdit} title="Edit Class">
+        <form
+          onSubmit={handleEdit((values) => {
+            if (!editTarget) return;
+            setEditError("");
+            editMutation.mutate({ id: editTarget._id, payload: values });
+          })}
+          className="space-y-4"
+        >
+          <Input
+            label={`${classLabel} Name`}
+            placeholder="e.g. Year 1 - Science"
+            error={editErrors.name?.message}
+            {...registerEdit("name")}
+          />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">Lecturer</label>
+            <select
+              className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+              {...registerEdit("lecturerId")}
+            >
+              <option value="">Select a lecturer</option>
+              {(lecturers as AuthUser[]).map((l) => (
+                <option key={l._id} value={l._id}>{l.fullName}</option>
+              ))}
+            </select>
+            {editErrors.lecturerId && (
+              <p className="text-xs text-meta-1">{editErrors.lecturerId.message}</p>
+            )}
+          </div>
+          {editError && (
+            <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{editError}</p>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={closeEdit}>Cancel</Button>
+            <Button type="submit" isLoading={editMutation.isPending}>Save Changes</Button>
           </div>
         </form>
       </Modal>

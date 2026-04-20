@@ -107,6 +107,9 @@ function CreateStructureModal({
   onCreated: () => void;
 }) {
   const [error, setError] = useState("");
+  const [autoAssign, setAutoAssign] = useState(false);
+  const [assignProgress, setAssignProgress] = useState<{ processed: number; total: number } | null>(null);
+  const [assignResult, setAssignResult] = useState<{ assigned: number; skipped: number } | null>(null);
 
   const {
     register,
@@ -123,18 +126,49 @@ function CreateStructureModal({
   const { fields, append, remove } = useFieldArray({ control, name: "particulars" });
   const category = watch("category");
 
+  const runAutoAssign = async (studentList: AuthUser[]) => {
+    if (studentList.length === 0) return;
+    setAssignProgress({ processed: 0, total: studentList.length });
+    let assigned = 0; let skipped = 0;
+    for (const student of studentList) {
+      try {
+        await adminApi.assignFeeToStudent({ studentId: student._id });
+        assigned++;
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 409) skipped++;
+      }
+      setAssignProgress({ processed: assigned + skipped, total: studentList.length });
+    }
+    setAssignProgress(null);
+    setAssignResult({ assigned, skipped });
+  };
+
   const mutation = useMutation({
     mutationFn: feesApi.createStructure,
-    onSuccess: () => {
+    onSuccess: async () => {
       onCreated();
-      reset();
       setError("");
-      onClose();
+      if (autoAssign && category === "all") {
+        await runAutoAssign(students);
+        // modal stays open to show result
+      } else {
+        reset();
+        setAutoAssign(false);
+        onClose();
+      }
     },
     onError: (err: unknown) => setError(errMsg(err, "Failed to create fee structure")),
   });
 
-  const handleClose = () => { reset(); setError(""); onClose(); };
+  const handleClose = () => {
+    reset();
+    setError("");
+    setAutoAssign(false);
+    setAssignProgress(null);
+    setAssignResult(null);
+    onClose();
+  };
 
   return (
     <Modal open={open} onClose={handleClose} title="Create Fee Structure">
@@ -231,10 +265,55 @@ function CreateStructureModal({
           )}
         </div>
 
+        {category === "all" && !assignResult && (
+          <label className="flex cursor-pointer items-center gap-2 rounded-md border border-stroke px-3 py-2.5 hover:bg-meta-2 dark:border-strokedark dark:hover:bg-meta-4">
+            <input
+              type="checkbox"
+              checked={autoAssign}
+              onChange={(e) => setAutoAssign(e.target.checked)}
+              className="h-4 w-4 accent-primary"
+            />
+            <span className="text-sm text-black dark:text-white">
+              Assign to all students immediately
+              <span className="ml-1 text-xs text-body">({students.length} student{students.length !== 1 ? "s" : ""})</span>
+            </span>
+          </label>
+        )}
+
+        {assignProgress && (
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs text-body">
+              <span>Assigning fees…</span>
+              <span>{assignProgress.processed} / {assignProgress.total}</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-stroke dark:bg-strokedark">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${(assignProgress.processed / assignProgress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {assignResult && (
+          <div className="rounded-md bg-meta-3/10 px-3 py-2 text-xs text-meta-3 space-y-0.5">
+            <p>Created and assigned to {assignResult.assigned} student{assignResult.assigned !== 1 ? "s" : ""}.</p>
+            {assignResult.skipped > 0 && (
+              <p className="text-body">{assignResult.skipped} already had fees assigned (skipped).</p>
+            )}
+          </div>
+        )}
+
         {error && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
-          <Button type="submit" isLoading={mutation.isPending}>Create</Button>
+          <Button type="button" variant="secondary" onClick={handleClose}>
+            {assignResult ? "Close" : "Cancel"}
+          </Button>
+          {!assignResult && (
+            <Button type="submit" isLoading={mutation.isPending || !!assignProgress}>
+              {autoAssign && category === "all" ? "Create & Assign" : "Create"}
+            </Button>
+          )}
         </div>
       </form>
     </Modal>
@@ -248,11 +327,13 @@ function AssignClassModal({
   onClose,
   classes,
   structures,
+  onAssigned,
 }: {
   open: boolean;
   onClose: () => void;
   classes: Class[];
   structures: FeeStructure[];
+  onAssigned?: () => void;
 }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -264,7 +345,14 @@ function AssignClassModal({
 
   const mutation = useMutation({
     mutationFn: adminApi.assignFeeToClass,
-    onSuccess: () => { setSuccess("Fees assigned to class successfully."); setError(""); reset(); },
+    onSuccess: (res: unknown) => {
+      const r = res as { assigned?: number; skipped?: number };
+      const msg = `Assigned to ${r.assigned ?? 0} student${(r.assigned ?? 0) !== 1 ? "s" : ""}${(r.skipped ?? 0) > 0 ? `, ${r.skipped} already had fees (skipped)` : ""}.`;
+      setSuccess(msg);
+      setError("");
+      reset();
+      onAssigned?.();
+    },
     onError: (err: unknown) => { setError(errMsg(err, "Failed to assign fees to class")); setSuccess(""); },
   });
 
@@ -339,32 +427,36 @@ function AssignAllStudentsModal({
   open,
   onClose,
   students,
+  onAssigned,
 }: {
   open: boolean;
   onClose: () => void;
   students: AuthUser[];
+  onAssigned?: () => void;
 }) {
   const [error, setError] = useState("");
   const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
-  const [result, setResult] = useState<{ assigned: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<{ assigned: number; skipped: number; failed: number } | null>(null);
 
   const handleAssign = async () => {
     setError(""); setResult(null);
     if (students.length === 0) { setError("No students found."); return; }
     setProgress({ processed: 0, total: students.length });
-    let assigned = 0; let skipped = 0;
+    let assigned = 0; let skipped = 0; let failed = 0;
     for (const student of students) {
       try {
         await adminApi.assignFeeToStudent({ studentId: student._id });
         assigned++;
       } catch (err: unknown) {
         const status = (err as { response?: { status?: number } })?.response?.status;
-        if (status === 409) skipped++; // already assigned — skip silently
+        if (status === 409) skipped++; // already assigned
+        else failed++;               // no structure, no class, etc.
       }
-      setProgress({ processed: assigned + skipped, total: students.length });
+      setProgress({ processed: assigned + skipped + failed, total: students.length });
     }
     setProgress(null);
-    setResult({ assigned, skipped });
+    setResult({ assigned, skipped, failed });
+    if (assigned > 0) onAssigned?.();
   };
 
   const handleClose = () => { setError(""); setProgress(null); setResult(null); onClose(); };
@@ -397,6 +489,9 @@ function AssignAllStudentsModal({
             {result.skipped > 0 && (
               <p className="text-body">{result.skipped} already had fees assigned (skipped).</p>
             )}
+            {result.failed > 0 && (
+              <p className="text-meta-1">{result.failed} failed — these students may have no class or no applicable fee structure.</p>
+            )}
           </div>
         )}
         {error && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{error}</p>}
@@ -424,10 +519,12 @@ function AssignStudentModal({
   open,
   onClose,
   students,
+  onAssigned,
 }: {
   open: boolean;
   onClose: () => void;
   students: AuthUser[];
+  onAssigned?: () => void;
 }) {
   const [studentId, setStudentId] = useState("");
   const [structures, setStructures] = useState<FeeStructureOption[]>([]);
@@ -470,7 +567,7 @@ function AssignStudentModal({
 
   const mutation = useMutation({
     mutationFn: () => adminApi.assignFeeToStudent({ studentId, selectedParticulars }),
-    onSuccess: () => { setSuccess("Fees assigned successfully."); setError(""); },
+    onSuccess: () => { setSuccess("Fees assigned successfully."); setError(""); onAssigned?.(); },
     onError: (err: unknown) => { setError(errMsg(err, "Failed to assign fees")); setSuccess(""); },
   });
 
@@ -686,11 +783,12 @@ const STATUS_BADGE: Record<string, "success" | "warning" | "danger" | "default">
   unpaid: "danger",
 };
 
-function StudentPaymentsTab() {
+function StudentPaymentsTab({ classes }: { classes: Class[] }) {
   const queryClient = useQueryClient();
   const [selectedFee, setSelectedFee] = useState<AdminStudentFeeRecord | null>(null);
   const [showRecordPayment, setShowRecordPayment] = useState(false);
   const [showHistory, setShowHistory] = useState<string | null>(null);
+  const [classFilter, setClassFilter] = useState("");
 
   const { data: feeRecords = [], isLoading } = useQuery({
     queryKey: ["admin-student-fees"],
@@ -703,7 +801,13 @@ function StudentPaymentsTab() {
     enabled: !!showHistory,
   });
 
-  const records = feeRecords as AdminStudentFeeRecord[];
+  const allRecords = feeRecords as AdminStudentFeeRecord[];
+  const records = classFilter
+    ? allRecords.filter((r) => {
+        const classId = typeof r.class === "object" && r.class ? r.class._id : r.class;
+        return classId === classFilter;
+      })
+    : allRecords;
   const paymentList = payments as FeePayment[];
 
   const handlePaymentRecorded = () => {
@@ -723,11 +827,35 @@ function StudentPaymentsTab() {
     <div className="space-y-6">
       {/* All fee records table */}
       <Card>
+        <div className="border-b border-stroke px-5 py-3 dark:border-strokedark">
+          <div className="flex items-center gap-3">
+            <label className="shrink-0 text-xs font-medium text-black dark:text-white">Filter by class</label>
+            <select
+              value={classFilter}
+              onChange={(e) => { setClassFilter(e.target.value); setShowHistory(null); setSelectedFee(null); }}
+              className="h-8 rounded border border-stroke bg-transparent px-2 text-xs text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
+            >
+              <option value="">All classes</option>
+              {classes.map((c) => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+            {classFilter && (
+              <span className="text-xs text-body">
+                {records.length} student{records.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        </div>
         {records.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <Receipt className="h-8 w-8 text-body" aria-hidden="true" />
-            <p className="text-sm font-medium text-black dark:text-white">No fee records yet</p>
-            <p className="text-xs text-body">Assign fees to students first using the Fee Structures tab.</p>
+            <p className="text-sm font-medium text-black dark:text-white">
+              {classFilter ? "No fee records for this class" : "No fee records yet"}
+            </p>
+            <p className="text-xs text-body">
+              {classFilter ? "Try a different class or clear the filter." : "Assign fees to students first using the Fee Structures tab."}
+            </p>
           </div>
         ) : (
           <Table>
@@ -890,6 +1018,7 @@ export default function FeesPage() {
   const [showAssignClass, setShowAssignClass] = useState(false);
   const [showAssignAll, setShowAssignAll] = useState(false);
   const [showAssignStudent, setShowAssignStudent] = useState(false);
+  const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
 
   const { data: structures = [], isLoading } = useQuery({
     queryKey: ["fee-structures"],
@@ -910,6 +1039,11 @@ export default function FeesPage() {
     mutationFn: feesApi.deleteStructure,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fee-structures"] }),
   });
+
+  const allStructures = structures as FeeStructure[];
+  const displayedStructures = showUnassignedOnly
+    ? allStructures.filter((s) => !s.isAssigned)
+    : allStructures;
 
   return (
     <div className="space-y-6">
@@ -941,9 +1075,22 @@ export default function FeesPage() {
         <>
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-body">
-              {(structures as FeeStructure[]).length} fee structure{(structures as FeeStructure[]).length !== 1 ? "s" : ""}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-body">
+                {displayedStructures.length}{showUnassignedOnly ? "" : ` of ${allStructures.length}`} fee structure{displayedStructures.length !== 1 ? "s" : ""}
+                {showUnassignedOnly && <span className="ml-1 text-xs">(unassigned)</span>}
+              </p>
+              <button
+                onClick={() => setShowUnassignedOnly((v) => !v)}
+                className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
+                  showUnassignedOnly
+                    ? "border-primary bg-primary text-white"
+                    : "border-stroke text-body hover:border-primary hover:text-primary dark:border-strokedark"
+                }`}
+              >
+                {showUnassignedOnly ? "Show All" : "Unassigned Only"}
+              </button>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" onClick={() => setShowAssignClass(true)}>
                 <Building2 className="h-4 w-4" aria-hidden="true" /> Assign to Class
@@ -976,23 +1123,24 @@ export default function FeesPage() {
                     <Th>Category</Th>
                     <Th>Particulars</Th>
                     <Th>Total</Th>
+                    <Th>Status</Th>
                     <Th>Created</Th>
                     <Th>Actions</Th>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {(structures as FeeStructure[]).length === 0 ? (
+                  {displayedStructures.length === 0 ? (
                     <tr>
-                      <Td colSpan={5} className="py-10 text-center text-body">
-                        No fee structures yet.
+                      <Td colSpan={6} className="py-10 text-center text-body">
+                        {showUnassignedOnly ? "All fee structures have been assigned." : "No fee structures yet."}
                       </Td>
                     </tr>
                   ) : (
-                    (structures as FeeStructure[]).map((f) => (
+                    displayedStructures.map((f) => (
                       <tr key={f._id} className="hover:bg-meta-2 transition-colors dark:hover:bg-meta-4">
                         <Td>
                           <Badge variant={f.category === "all" ? "info" : f.category === "class" ? "warning" : "default"}>
-                            {f.category}
+                            {categoryLabel(f)}
                           </Badge>
                         </Td>
                         <Td className="text-body text-xs">
@@ -1002,6 +1150,13 @@ export default function FeesPage() {
                           <span className="font-semibold text-black dark:text-white">
                             Nle{f.totalAmount.toLocaleString()}
                           </span>
+                        </Td>
+                        <Td>
+                          {f.isAssigned === true ? (
+                            <Badge variant="success">Assigned</Badge>
+                          ) : f.isAssigned === false ? (
+                            <Badge variant="warning">Unassigned</Badge>
+                          ) : null}
                         </Td>
                         <Td className="text-body text-xs">
                           {new Date(f.createdAt).toLocaleDateString()}
@@ -1036,22 +1191,25 @@ export default function FeesPage() {
             onClose={() => setShowAssignClass(false)}
             classes={classes as Class[]}
             structures={structures as FeeStructure[]}
+            onAssigned={() => queryClient.invalidateQueries({ queryKey: ["fee-structures"] })}
           />
           <AssignAllStudentsModal
             open={showAssignAll}
             onClose={() => setShowAssignAll(false)}
             students={students as AuthUser[]}
+            onAssigned={() => queryClient.invalidateQueries({ queryKey: ["fee-structures"] })}
           />
           <AssignStudentModal
             open={showAssignStudent}
             onClose={() => setShowAssignStudent(false)}
             students={students as AuthUser[]}
+            onAssigned={() => queryClient.invalidateQueries({ queryKey: ["fee-structures"] })}
           />
         </>
       )}
 
       {activeTab === "payments" && (
-        <StudentPaymentsTab />
+        <StudentPaymentsTab classes={classes as Class[]} />
       )}
     </div>
   );

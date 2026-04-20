@@ -60,15 +60,6 @@ interface NavItem {
 const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   {
-    label: "Students",
-    href: "/admin/students",
-    icon: GraduationCap,
-    children: [
-      { label: "Overview", href: "/admin/students" },
-      { label: "All Students", href: "/admin/students/list" },
-    ],
-  },
-  {
     label: "Teachers",
     href: "/admin/lecturers",
     icon: Users,
@@ -84,6 +75,15 @@ const adminNav: NavItem[] = [
     children: [
       { label: "Overview", href: "/admin/classes" },
       { label: "All Classes", href: "/admin/classes/list" },
+    ],
+  },
+  {
+    label: "Students",
+    href: "/admin/students",
+    icon: GraduationCap,
+    children: [
+      { label: "Overview", href: "/admin/students" },
+      { label: "All Students", href: "/admin/students/list" },
     ],
   },
   {
@@ -438,6 +438,13 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
                 return (
                   <li key={href}>
                     <button
+                      id={
+                        href === "/admin/lecturers" ? "nav-teachers" :
+                        href === "/admin/classes"   ? "nav-classes"   :
+                        href === "/admin/students"  ? "nav-students"  :
+                        href === "/admin/subjects"  ? "nav-subjects"  :
+                        undefined
+                      }
                       onClick={() => !sidebarCollapsed && toggleGroup(href)}
                       title={sidebarCollapsed ? label : undefined}
                       className={[

@@ -6,6 +6,7 @@ import { Bell, Menu, CheckCheck, Trash2, Camera, Loader2, LogOut } from "lucide-
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
+import { usePageTitle } from "@/context/PageTitleContext";
 import { notificationApi } from "@/lib/api/notification";
 import { uploadApi } from "@/lib/api/upload";
 import DarkModeSwitcher from "@/components/ui/Header/DarkModeSwitcher";
@@ -134,9 +135,14 @@ interface HeaderProps {
 
 export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed }: HeaderProps) {
   const { user, updateUser, logout } = useAuth();
+  const { title: contextTitle } = usePageTitle();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const socket = useSocket();
   const pathname = usePathname();
+
+  const institute = user?.institute && typeof user.institute === "object" ? user.institute : null;
+  const schoolName = institute?.name ?? null;
+  const schoolLogo = institute?.logo ?? null;
   const [notifOpen, setNotifOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -206,7 +212,7 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
 
   return (
     <>
-    <header className="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-b border-stroke bg-white px-4 shadow-sm dark:border-strokedark dark:bg-boxdark md:px-6">
+    <header id="app-header" className="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-b border-stroke bg-white px-4 shadow-sm dark:border-strokedark dark:bg-boxdark md:px-6">
       <div className="flex items-center gap-3">
         {/* Hamburger — mobile only */}
         <button
@@ -228,8 +234,29 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
           <Menu className="h-5 w-5" aria-hidden="true" />
         </button>
 
+        {/* School identity — shown when institute is available */}
+        {schoolName && (
+          <div className="hidden items-center gap-2 border-r border-stroke pr-3 sm:flex dark:border-strokedark">
+            {schoolLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={schoolLogo}
+                alt={schoolName}
+                className="h-7 w-7 rounded object-contain"
+              />
+            ) : (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold uppercase text-white">
+                {schoolName.charAt(0)}
+              </div>
+            )}
+            <span className="max-w-[140px] truncate text-sm font-medium text-black dark:text-white">
+              {schoolName}
+            </span>
+          </div>
+        )}
+
         <h1 className="text-base font-semibold text-black dark:text-white">
-          {pageTitle(pathname)}
+          {contextTitle ?? pageTitle(pathname)}
         </h1>
       </div>
 
