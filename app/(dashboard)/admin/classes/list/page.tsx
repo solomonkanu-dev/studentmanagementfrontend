@@ -299,6 +299,7 @@ export default function ClassesListPage() {
                       <button
                         type="button"
                         title="Edit class"
+                        aria-label={`Edit ${c.name}`}
                         onClick={() => openEdit(c)}
                         className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary dark:hover:bg-meta-4"
                       >
