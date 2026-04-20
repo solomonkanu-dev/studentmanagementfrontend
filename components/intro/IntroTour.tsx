@@ -18,6 +18,14 @@ export function IntroTour() {
     if (!steps || steps.length === 0) return;
 
     let active = true;
+    let seenMarked = false;
+
+    const markIntroSeenOnce = () => {
+      if (!seenMarked) {
+        seenMarked = true;
+        markIntroSeen();
+      }
+    };
 
     const timer = setTimeout(() => {
       if (!active) return;
@@ -46,8 +54,8 @@ export function IntroTour() {
               helperElementPadding: 8,
               tooltipRenderAsHtml: true,
             })
-            .onComplete(markIntroSeen)
-            .onExit(markIntroSeen)
+            .onComplete(markIntroSeenOnce)
+            .onExit(markIntroSeenOnce)
             .start();
         })
         .catch((err) => {

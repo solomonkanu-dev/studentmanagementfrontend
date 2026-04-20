@@ -76,7 +76,7 @@ export default function AcademicCalendarWidget() {
   const [year, setYear]   = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0-based
 
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const { data: events = [] } = useQuery({
     queryKey: ["calendar-events"],

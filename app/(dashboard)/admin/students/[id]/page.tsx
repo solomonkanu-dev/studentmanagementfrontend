@@ -61,7 +61,7 @@ export default function StudentDetailPage({ params }: PageProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "profile" | "documents" | "qr">("overview");
   const [editOpen, setEditOpen] = useState(false);
 
-  const { data: student, isLoading: loadingStudent, isError: studentError, error: studentFetchError, refetch: refetchStudent } = useQuery({
+  const { data: student, isLoading: loadingStudent, isError: studentError, error: studentFetchError, refetch: refetchStudent, isFetching } = useQuery({
     queryKey: ["admin-student", id],
     queryFn: () => adminApi.getStudent(id),
   });
@@ -173,9 +173,17 @@ export default function StudentDetailPage({ params }: PageProps) {
           {studentError && (
             <button
               onClick={() => refetchStudent()}
-              className="text-xs text-primary hover:underline"
+              disabled={isFetching}
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
-              Retry
+              {isFetching ? (
+                <>
+                  <div className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" aria-hidden="true" />
+                  Retrying…
+                </>
+              ) : (
+                "Retry"
+              )}
             </button>
           )}
           <Link href="/admin/students" className="text-xs text-primary hover:underline">

@@ -109,7 +109,7 @@ function CreateStructureModal({
   const [error, setError] = useState("");
   const [autoAssign, setAutoAssign] = useState(false);
   const [assignProgress, setAssignProgress] = useState<{ processed: number; total: number } | null>(null);
-  const [assignResult, setAssignResult] = useState<{ assigned: number; skipped: number } | null>(null);
+  const [assignResult, setAssignResult] = useState<{ assigned: number; skipped: number; failed: number } | null>(null);
 
   const {
     register,
@@ -129,19 +129,24 @@ function CreateStructureModal({
   const runAutoAssign = async (studentList: AuthUser[]) => {
     if (studentList.length === 0) return;
     setAssignProgress({ processed: 0, total: studentList.length });
-    let assigned = 0; let skipped = 0;
+    let assigned = 0; let skipped = 0; let failed = 0;
     for (const student of studentList) {
       try {
         await adminApi.assignFeeToStudent({ studentId: student._id });
         assigned++;
       } catch (err: unknown) {
         const status = (err as { response?: { status?: number } })?.response?.status;
-        if (status === 409) skipped++;
+        if (status === 409) {
+          skipped++;
+        } else {
+          failed++;
+          console.error(`Failed to assign fee to student ${student._id}:`, err);
+        }
       }
-      setAssignProgress({ processed: assigned + skipped, total: studentList.length });
+      setAssignProgress({ processed: assigned + skipped + failed, total: studentList.length });
     }
     setAssignProgress(null);
-    setAssignResult({ assigned, skipped });
+    setAssignResult({ assigned, skipped, failed });
   };
 
   const mutation = useMutation({
@@ -300,6 +305,9 @@ function CreateStructureModal({
             <p>Created and assigned to {assignResult.assigned} student{assignResult.assigned !== 1 ? "s" : ""}.</p>
             {assignResult.skipped > 0 && (
               <p className="text-body">{assignResult.skipped} already had fees assigned (skipped).</p>
+            )}
+            {assignResult.failed > 0 && (
+              <p className="text-meta-1">{assignResult.failed} failed to assign due to errors.</p>
             )}
           </div>
         )}
