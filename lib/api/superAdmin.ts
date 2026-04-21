@@ -26,4 +26,8 @@ export const superAdminApi = {
     const { data } = await apiClient.patch(`/super-admin/admins/${adminId}/unsuspend`);
     return data;
   },
+  deletePendingAdmin: async (adminId: string) => {
+    const { data } = await apiClient.delete(`/super-admin/pending-admins/${adminId}`);
+    return data;
+  },
 };

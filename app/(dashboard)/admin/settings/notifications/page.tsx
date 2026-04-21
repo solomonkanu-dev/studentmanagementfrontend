@@ -144,6 +144,9 @@ function TypesTab() {
   const [testEmail, setTestEmail] = useState("");
   const [testMsg, setTestMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testSmsMsg, setTestSmsMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [testSmsLoading, setTestSmsLoading] = useState(false);
 
   const { data: settings, isLoading } = useQuery<NotificationSettings>({
     queryKey: ["notification-settings"],
@@ -169,6 +172,23 @@ function TypesTab() {
 
   const handleSave = () => {
     if (localEnabled) saveMutation.mutate(localEnabled);
+  };
+
+  const handleTestSms = async () => {
+    if (!testPhone) return;
+    setTestSmsLoading(true);
+    setTestSmsMsg(null);
+    try {
+      const res = await notificationSettingsApi.sendTestSms(testPhone);
+      setTestSmsMsg({ ok: true, text: res.message });
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Failed to send test SMS";
+      setTestSmsMsg({ ok: false, text: msg });
+    } finally {
+      setTestSmsLoading(false);
+    }
   };
 
   const handleTestEmail = async () => {
@@ -291,6 +311,52 @@ function TypesTab() {
           >
             {testMsg.ok ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
             {testMsg.text}
+          </div>
+        )}
+      </div>
+
+      {/* Test SMS */}
+      <div className="rounded-xl border border-stroke bg-white p-6 dark:border-strokedark dark:bg-boxdark">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-meta-3/10">
+            <Send className="h-5 w-5 text-meta-3" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-black dark:text-white">Send Test SMS</h2>
+            <p className="text-xs text-body">Verify Twilio SMS delivery is working. Include country code (e.g. +232...).</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <input
+            type="tel"
+            value={testPhone}
+            onChange={(e) => setTestPhone(e.target.value)}
+            placeholder="+23276000000"
+            className="flex-1 rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+          />
+          <button
+            type="button"
+            onClick={handleTestSms}
+            disabled={testSmsLoading || !testPhone}
+            className="flex items-center gap-2 rounded-xl bg-meta-3 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+            {testSmsLoading ? "Sending..." : "Send Test"}
+          </button>
+        </div>
+
+        {testSmsMsg && (
+          <div
+            className={[
+              "mt-3 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm",
+              testSmsMsg.ok
+                ? "bg-meta-3/10 text-meta-3"
+                : "bg-meta-1/10 text-meta-1",
+            ].join(" ")}
+          >
+            {testSmsMsg.ok ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+            {testSmsMsg.text}
           </div>
         )}
       </div>

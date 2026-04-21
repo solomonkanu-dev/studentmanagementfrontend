@@ -52,6 +52,11 @@ export const notificationSettingsApi = {
     return data;
   },
 
+  sendTestSms: async (testPhone: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post('/admin/notification-settings/test-sms', { testPhone });
+    return data;
+  },
+
   getLogs: async (page = 1): Promise<{ logs: EmailLogEntry[]; total: number; pages: number }> => {
     const { data } = await apiClient.get(`/admin/notification-settings/logs?page=${page}`);
     return data;

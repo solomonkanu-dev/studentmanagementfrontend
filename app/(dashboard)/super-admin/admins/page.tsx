@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Users,
   PlayCircle,
+  Trash2,
 } from "lucide-react";
 import type { PendingAdmin } from "@/lib/types";
 import { errMsg } from "@/lib/utils/errMsg";
@@ -31,6 +32,7 @@ export default function AdminsPage() {
   const [tab, setTab] = useState<"pending" | "all">("pending");
   const [actionTarget, setActionTarget] = useState<{ admin: PendingAdmin; type: "suspend" | "unsuspend" } | null>(null);
   const [actionError, setActionError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<PendingAdmin | null>(null);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["pending-admins"] });
@@ -69,6 +71,11 @@ export default function AdminsPage() {
     mutationFn: superAdminApi.unsuspendAdmin,
     onSuccess: () => { invalidate(); setActionTarget(null); setActionError(""); },
     onError: (e: unknown) => setActionError(errMsg(e, "Failed to unsuspend admin")),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: superAdminApi.deletePendingAdmin,
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
   });
 
   const totalAdmins = stats?.admins?.total ?? 0;
@@ -174,14 +181,24 @@ export default function AdminsPage() {
                       {new Date(admin.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
                     </Td>
                     <Td>
-                      <Button
-                        size="sm"
-                        isLoading={approveMutation.isPending && approveMutation.variables === admin._id}
-                        onClick={() => approveMutation.mutate(admin._id)}
-                      >
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Approve
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          isLoading={approveMutation.isPending && approveMutation.variables === admin._id}
+                          onClick={() => approveMutation.mutate(admin._id)}
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Approve
+                        </Button>
+                        <button
+                          onClick={() => setDeleteTarget(admin)}
+                          className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-meta-1 hover:bg-meta-1/10 transition-colors"
+                          title="Delete request"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </div>
                     </Td>
                   </tr>
                 ))}
@@ -264,6 +281,40 @@ export default function AdminsPage() {
           )
         )}
       </Card>
+
+      {/* Delete pending admin confirm modal */}
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Admin Request"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-meta-1/10">
+              <Trash2 className="h-5 w-5 text-meta-1" />
+            </div>
+            <div>
+              <p className="text-sm text-body">
+                This will permanently delete the request from{" "}
+                <span className="font-semibold text-black dark:text-white">{deleteTarget?.fullName}</span>.
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              isLoading={deleteMutation.isPending}
+              onClick={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget._id); }}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Suspend / Unsuspend confirm modal */}
       <Modal
