@@ -283,4 +283,26 @@ export const adminApi = {
     const { data } = await apiClient.post("/admin/promote/bulk", payload);
     return data;
   },
+
+  // Archive
+  archiveUser: async (userId: string, note?: string) => {
+    const { data } = await apiClient.patch(`/admin/archive/${userId}`, { note: note ?? '' });
+    return data;
+  },
+  restoreUser: async (userId: string) => {
+    const { data } = await apiClient.patch(`/admin/archive/${userId}/restore`);
+    return data;
+  },
+  getArchivedStudents: async () => {
+    const { data } = await apiClient.get('/admin/archive/students');
+    return (data.data ?? data) as AuthUser[];
+  },
+  getArchivedLecturers: async () => {
+    const { data } = await apiClient.get('/admin/archive/lecturers');
+    return (data.data ?? data) as AuthUser[];
+  },
+  getArchivedUserDetail: async (userId: string) => {
+    const { data } = await apiClient.get(`/admin/archive/${userId}`);
+    return data.data ?? data;
+  },
 };

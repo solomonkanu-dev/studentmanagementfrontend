@@ -42,6 +42,7 @@ import {
   TableProperties,
   MessageSquare,
   ClipboardCheck,
+  Archive,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -112,6 +113,7 @@ const adminNav: NavItem[] = [
   { label: "Messages", href: "/admin/messages", icon: MessageSquare },
   { label: "AI Analytics", href: "/admin/ai-analytics", icon: Sparkles },
   { label: "Audit Logs", href: "/admin/audit-logs", icon: Activity },
+  { label: "Archive", href: "/admin/archive", icon: Archive },
   { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
   {
     label: "Settings",

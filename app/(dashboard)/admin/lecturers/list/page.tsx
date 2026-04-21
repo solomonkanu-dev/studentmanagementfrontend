@@ -31,6 +31,7 @@ import {
   Trash2,
   ShieldAlert,
   Download,
+  Archive,
 } from "lucide-react";
 import { exportApi } from "@/lib/api/export";
 import type { AuthUser, Class } from "@/lib/types";
@@ -361,6 +362,9 @@ export default function LecturersListPage() {
   // Suspend / delete
   const [suspendTarget, setSuspendTarget] = useState<AuthUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AuthUser | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<AuthUser | null>(null);
+  const [archiveNote, setArchiveNote] = useState("");
+  const [archiveError, setArchiveError] = useState("");
   const [suspendError, setSuspendError] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
@@ -471,6 +475,18 @@ export default function LecturersListPage() {
     mutationFn: adminApi.deleteUser,
     onSuccess: () => { invalidateLecturers(); setDeleteTarget(null); setDeleteError(""); },
     onError: (err: unknown) => setDeleteError(errMsg(err, "Failed to delete lecturer")),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: ({ userId, note }: { userId: string; note: string }) =>
+      adminApi.archiveUser(userId, note),
+    onSuccess: () => {
+      invalidateLecturers();
+      setArchiveTarget(null);
+      setArchiveNote("");
+      setArchiveError("");
+    },
+    onError: (e: unknown) => setArchiveError(errMsg(e, "Failed to archive lecturer")),
   });
 
   // ── Filtered list ──
@@ -717,6 +733,12 @@ export default function LecturersListPage() {
                         onClick={() => { setDeleteTarget(l); setDeleteError(""); }}
                         variant="danger"
                       />
+                      <ActionBtn
+                        icon={<Archive className="h-3.5 w-3.5" />}
+                        label="Archive lecturer"
+                        onClick={() => { setArchiveTarget(l); setArchiveNote(""); setArchiveError(""); }}
+                        variant="default"
+                      />
                     </div>
                   </Td>
                 </tr>
@@ -915,6 +937,46 @@ export default function LecturersListPage() {
               onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget._id)}
             >
               Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Archive modal ── */}
+      <Modal
+        open={archiveTarget !== null}
+        onClose={() => { setArchiveTarget(null); setArchiveNote(""); setArchiveError(""); }}
+        title="Archive Lecturer"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-50 dark:bg-yellow-900/20">
+              <Archive className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <p className="text-sm text-body">
+              Archiving <span className="font-semibold text-black dark:text-white">{archiveTarget?.fullName}</span> will remove them from active lists. Their records are preserved and can be viewed in the Archive section. You can restore them at any time.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">
+              Note <span className="font-normal text-body">(optional)</span>
+            </label>
+            <textarea
+              value={archiveNote}
+              onChange={(e) => setArchiveNote(e.target.value)}
+              placeholder="e.g. Resigned, contract ended…"
+              rows={2}
+              className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white resize-none"
+            />
+          </div>
+          {archiveError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{archiveError}</p>}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => { setArchiveTarget(null); setArchiveNote(""); setArchiveError(""); }}>Cancel</Button>
+            <Button
+              isLoading={archiveMutation.isPending}
+              onClick={() => archiveTarget && archiveMutation.mutate({ userId: archiveTarget._id, note: archiveNote })}
+            >
+              Archive Lecturer
             </Button>
           </div>
         </div>

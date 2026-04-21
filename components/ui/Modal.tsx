@@ -40,8 +40,8 @@ export function Modal({ open, onClose, title, children, className = "" }: ModalP
       >
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4 dark:border-strokedark">
           <h2 className="text-base font-semibold text-black dark:text-white">{title}</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0">
-            <X className="h-4 w-4" aria-hidden="true" />
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 p-0">
+            <X className="h-5 w-5" aria-hidden="true" />
             <span className="sr-only">Close</span>
           </Button>
         </div>
