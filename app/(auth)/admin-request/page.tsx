@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import { apiClient } from "@/lib/api/client";
+
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import {
@@ -210,13 +210,18 @@ export default function AdminRequestPage() {
   const onSubmit = async (values: FormValues) => {
     setError("");
     try {
-      await apiClient.post("/admin/admin-request", values);
+      const res = await fetch("/api/admin-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message ?? "Request failed. Please try again.");
+      }
       setSubmitted(true);
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Request failed. Please try again.";
-      setError(msg);
+      setError((err as Error)?.message ?? "Request failed. Please try again.");
     }
   };
 

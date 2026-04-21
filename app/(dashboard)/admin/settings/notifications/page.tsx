@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   notificationSettingsApi,
   type NotificationSettings,
+  type SmtpConfig,
   type EmailLogEntry,
 } from "@/lib/api/notificationSettings";
 import {
@@ -22,6 +23,9 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
+  Settings,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 // ─── Notification type metadata ──────────────────────────────────────────────
@@ -90,7 +94,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
-type Tab = "types" | "logs";
+type Tab = "types" | "smtp" | "logs";
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -108,7 +112,7 @@ export default function NotificationsSettingsPage() {
 
       {/* Tabs */}
       <div className="mb-6 flex gap-1 rounded-xl border border-stroke bg-white p-1 dark:border-strokedark dark:bg-boxdark">
-        {(["types", "logs"] as Tab[]).map((tab) => (
+        {(["types", "smtp", "logs"] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -120,12 +124,14 @@ export default function NotificationsSettingsPage() {
             ].join(" ")}
           >
             {tab === "types" && "Notification Types"}
-            {tab === "logs" && "Delivery Log"}
+            {tab === "smtp"  && "SMTP Setup"}
+            {tab === "logs"  && "Delivery Log"}
           </button>
         ))}
       </div>
 
       {activeTab === "types" && <TypesTab />}
+      {activeTab === "smtp"  && <SmtpTab />}
       {activeTab === "logs"  && <LogsTab />}
     </div>
   );
@@ -251,7 +257,7 @@ function TypesTab() {
           </div>
           <div>
             <h2 className="text-base font-semibold text-black dark:text-white">Send Test Email</h2>
-            <p className="text-xs text-body">Verify Resend email delivery is working.</p>
+            <p className="text-xs text-body">Verify your SMTP email delivery is working.</p>
           </div>
         </div>
 
@@ -287,6 +293,218 @@ function TypesTab() {
             {testMsg.text}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── SMTP Configuration tab ───────────────────────────────────────────────────
+
+function SmtpTab() {
+  const qc = useQueryClient();
+  const [showPass, setShowPass] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const { data: settings, isLoading } = useQuery<NotificationSettings>({
+    queryKey: ["notification-settings"],
+    queryFn: notificationSettingsApi.getSettings,
+  });
+
+  const [form, setForm] = useState<SmtpConfig | null>(null);
+  const smtp = form ?? settings?.smtp ?? { host: "", port: 587, secure: false, user: "", pass: "", fromEmail: "", fromName: "" };
+
+  const saveMutation = useMutation({
+    mutationFn: (smtp: SmtpConfig) => notificationSettingsApi.updateSettings({ smtp }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notification-settings"] });
+      setForm(null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    },
+  });
+
+  const set = (key: keyof SmtpConfig, value: string | number | boolean) =>
+    setForm((prev) => ({ ...(prev ?? settings?.smtp ?? smtp), [key]: value }));
+
+  if (isLoading) {
+    return <div className="flex h-40 items-center justify-center text-body">Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Info banner */}
+      <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+        <Settings className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <p className="text-xs text-body">
+          Configure your SMTP server so EduPulse can send fee receipts, result notifications,
+          announcements, and other emails directly from your mail account.
+          For Gmail, use <strong>smtp.gmail.com</strong>, port <strong>587</strong>, and an{" "}
+          <strong>App Password</strong> (not your account password).
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-stroke bg-white p-6 dark:border-strokedark dark:bg-boxdark">
+        <h2 className="mb-5 text-base font-semibold text-black dark:text-white">
+          SMTP Server Settings
+        </h2>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Host */}
+          <div className="sm:col-span-2">
+            <label className="mb-1.5 block text-xs font-medium text-black dark:text-white">
+              SMTP Host
+            </label>
+            <input
+              type="text"
+              value={smtp.host}
+              onChange={(e) => set("host", e.target.value)}
+              placeholder="smtp.gmail.com"
+              className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+            />
+          </div>
+
+          {/* Port */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-black dark:text-white">
+              Port
+            </label>
+            <input
+              type="number"
+              value={smtp.port}
+              onChange={(e) => set("port", Number(e.target.value))}
+              placeholder="587"
+              className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+            />
+          </div>
+
+          {/* Secure (SSL) */}
+          <div className="flex items-end pb-0.5">
+            <label className="flex cursor-pointer items-center gap-3">
+              <div
+                onClick={() => set("secure", !smtp.secure)}
+                className={[
+                  "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none",
+                  smtp.secure ? "bg-primary" : "bg-stroke dark:bg-strokedark",
+                ].join(" ")}
+                role="switch"
+                aria-checked={smtp.secure}
+              >
+                <span
+                  className={[
+                    "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform",
+                    smtp.secure ? "translate-x-6" : "translate-x-1",
+                  ].join(" ")}
+                />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-black dark:text-white">Use SSL/TLS</p>
+                <p className="text-[10px] text-body">Enable for port 465</p>
+              </div>
+            </label>
+          </div>
+
+          {/* Username */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-black dark:text-white">
+              Username
+            </label>
+            <input
+              type="email"
+              value={smtp.user}
+              onChange={(e) => set("user", e.target.value)}
+              placeholder="you@gmail.com"
+              className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-black dark:text-white">
+              Password / App Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                value={smtp.pass}
+                onChange={(e) => set("pass", e.target.value)}
+                placeholder="••••••••••••••••"
+                className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 pr-10 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-body hover:text-black dark:hover:text-white"
+                aria-label={showPass ? "Hide password" : "Show password"}
+              >
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* From Name */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-black dark:text-white">
+              From Name
+            </label>
+            <input
+              type="text"
+              value={smtp.fromName}
+              onChange={(e) => set("fromName", e.target.value)}
+              placeholder="EduPulse"
+              className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+            />
+          </div>
+
+          {/* From Email */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-black dark:text-white">
+              From Email Address
+            </label>
+            <input
+              type="email"
+              value={smtp.fromEmail}
+              onChange={(e) => set("fromEmail", e.target.value)}
+              placeholder="noreply@yourschool.com"
+              className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => saveMutation.mutate(smtp)}
+            disabled={saveMutation.isPending || form === null}
+            className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {saveMutation.isPending ? "Saving..." : "Save SMTP Settings"}
+          </button>
+          {saved && (
+            <span className="flex items-center gap-1 text-sm text-meta-3">
+              <CheckCircle className="h-4 w-4" /> Saved
+            </span>
+          )}
+          {saveMutation.isError && (
+            <span className="flex items-center gap-1 text-sm text-meta-1">
+              <XCircle className="h-4 w-4" /> Failed to save
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Gmail tip */}
+      <div className="rounded-xl border border-stroke bg-white p-5 dark:border-strokedark dark:bg-boxdark">
+        <div className="mb-3 flex items-center gap-2">
+          <Mail className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-black dark:text-white">Gmail Quick Setup</h3>
+        </div>
+        <ol className="space-y-1.5 text-xs text-body">
+          <li>1. Go to <strong>myaccount.google.com → Security → 2-Step Verification</strong> and enable it.</li>
+          <li>2. Scroll down and click <strong>App passwords</strong>.</li>
+          <li>3. Create a new app password (name it "EduPulse") — copy the 16-character code.</li>
+          <li>4. Paste it in the Password field above (spaces are fine, they will be ignored).</li>
+          <li>5. Use <strong>smtp.gmail.com</strong>, port <strong>587</strong>, SSL off.</li>
+        </ol>
       </div>
     </div>
   );
