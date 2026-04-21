@@ -11,9 +11,7 @@ import { AdminChatWidget } from "@/components/ui/AdminChatWidget";
 import { SocketProvider } from "@/context/SocketContext";
 import { DashboardErrorBoundary } from "@/components/ui/DashboardErrorBoundary";
 import useColorMode from "@/hooks/useColorMode";
-import { IntroTour } from "@/components/intro/IntroTour";
 import { PageTitleProvider } from "@/context/PageTitleContext";
-import "intro.js/introjs.css";
 
 export default function DashboardLayout({
   children,
@@ -81,7 +79,6 @@ export default function DashboardLayout({
       {user.role === "lecturer" && <LecturerChatWidget />}
       {user.role === "admin" && <AdminChatWidget />}
 
-      <IntroTour />
     </div>
     </SocketProvider>
     </PageTitleProvider>
