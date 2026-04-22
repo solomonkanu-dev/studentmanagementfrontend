@@ -13,7 +13,7 @@ export interface AuthUser {
   lifecycleNote?: string;
   lifecycleUpdatedAt?: string;
   institute?: string | { _id: string; name: string; logo?: string; schoolType?: SchoolType; onboardingCompleted?: boolean };
-  class?: string;
+  class?: string | { _id: string; name: string };
   profilePhoto?: string;
   studentProfile?: StudentProfile;
   lecturerProfile?: LecturerProfile;

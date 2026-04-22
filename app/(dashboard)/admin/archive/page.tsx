@@ -41,12 +41,12 @@ export default function ArchivePage() {
   const [restoreError, setRestoreError] = useState("");
   const [detailTarget, setDetailTarget] = useState<AuthUser | null>(null);
 
-  const { data: archivedStudents = [], isLoading: loadingStudents } = useQuery({
+  const { data: archivedStudents = [], isLoading: loadingStudents, isError: errorStudents } = useQuery({
     queryKey: ["archived-students"],
     queryFn: adminApi.getArchivedStudents,
   });
 
-  const { data: archivedLecturers = [], isLoading: loadingLecturers } = useQuery({
+  const { data: archivedLecturers = [], isLoading: loadingLecturers, isError: errorLecturers } = useQuery({
     queryKey: ["archived-lecturers"],
     queryFn: adminApi.getArchivedLecturers,
     enabled: tab === "lecturers",
@@ -73,6 +73,7 @@ export default function ArchivePage() {
 
   const list: AuthUser[] = tab === "students" ? archivedStudents : archivedLecturers;
   const isLoading = tab === "students" ? loadingStudents : loadingLecturers;
+  const isError = tab === "students" ? errorStudents : errorLecturers;
 
   const filtered = list.filter((u) =>
     u.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -131,6 +132,10 @@ export default function ArchivePage() {
         {/* Table */}
         {isLoading ? (
           <Spinner />
+        ) : isError ? (
+          <p className="py-12 text-center text-sm text-meta-1">
+            Failed to load archived records. Please refresh the page.
+          </p>
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<Archive className="h-7 w-7 text-body" />}
@@ -151,7 +156,7 @@ export default function ArchivePage() {
             </TableHead>
             <TableBody>
               {filtered.map((u) => {
-                const classObj = u.class as unknown as { name: string } | null;
+                const classObj = typeof u.class === "string" ? null : (u.class as { _id: string; name: string } | undefined) ?? null;
                 const dept = (u.lecturerProfile as unknown as { department?: string } | null)?.department;
                 return (
                   <tr key={u._id} className="hover:bg-meta-2 transition-colors dark:hover:bg-meta-4">

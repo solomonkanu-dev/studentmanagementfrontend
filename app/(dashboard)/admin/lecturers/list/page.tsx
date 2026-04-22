@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { adminApi } from "@/lib/api/admin";
+import { generatePassword } from "@/lib/utils/password";
 import { classApi } from "@/lib/api/class";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -37,14 +38,6 @@ import { exportApi } from "@/lib/api/export";
 import type { AuthUser, Class } from "@/lib/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function generatePassword(): string {
-  const chars =
-    "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!";
-  return Array.from(crypto.getRandomValues(new Uint8Array(12)))
-    .map((b) => chars[b % chars.length])
-    .join("");
-}
 
 function passwordStrength(p: string): { level: number; label: string } {
   let score = 0;
@@ -369,7 +362,7 @@ export default function LecturersListPage() {
   const [deleteError, setDeleteError] = useState("");
 
   // ── Queries ──
-  const { data: lecturers = [], isLoading } = useQuery({
+  const { data: lecturers = [], isLoading, isError } = useQuery({
     queryKey: ["admin-lecturers"],
     queryFn: adminApi.getLecturers,
   });
@@ -641,6 +634,10 @@ export default function LecturersListPage() {
               aria-label="Loading teachers"
             />
           </div>
+        ) : isError ? (
+          <p className="py-12 text-center text-sm text-meta-1">
+            Failed to load lecturers. Please refresh the page.
+          </p>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">

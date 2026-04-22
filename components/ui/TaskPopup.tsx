@@ -17,7 +17,8 @@ const TaskPopup: React.FC<TaskPopupProps> = (props) => {
       <div className="relative m-auto w-full max-w-180 rounded-sm border border-stroke bg-gray p-4 shadow-default dark:border-strokedark dark:bg-meta-4 sm:p-8 xl:p-10">
         <button
           onClick={() => props.setPopupOpen(false)}
-          className="absolute right-1 top-1 sm:right-5 sm:top-5"
+          aria-label="Close"
+          className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-body transition-colors hover:text-black dark:hover:text-white sm:right-5 sm:top-5"
         >
           <svg
             className="fill-current"

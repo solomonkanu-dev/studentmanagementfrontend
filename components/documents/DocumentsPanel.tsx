@@ -599,7 +599,7 @@ function TemplateEditor({ templates, student, inst, onSave, onReset, onClose }: 
             <h2 className="text-base font-semibold text-black dark:text-white">Customize Document Templates</h2>
             <p className="mt-0.5 text-xs text-body">Edit the text used in each document. Changes are saved per institution.</p>
           </div>
-          <button onClick={onClose} className="text-body transition-colors hover:text-black dark:hover:text-white">
+          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-md text-body transition-colors hover:text-black dark:hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>

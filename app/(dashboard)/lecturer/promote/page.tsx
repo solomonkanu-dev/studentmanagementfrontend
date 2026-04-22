@@ -167,7 +167,7 @@ export default function LecturerPromotePage() {
                 <select
                   value={sourceClassId}
                   onChange={(e) => { setSourceClassId(e.target.value); setExcluded(new Set()); }}
-                  className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm text-black outline-none focus:border-meta-5 dark:border-strokedark dark:bg-boxdark dark:text-white"
+                  className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm text-black outline-none focus:border-meta-5 focus:ring-2 focus:ring-meta-5/20 dark:border-strokedark dark:bg-boxdark dark:text-white"
                 >
                   <option value="">Select your class…</option>
                   {typedMyClasses.map((c) => (
@@ -186,7 +186,7 @@ export default function LecturerPromotePage() {
                 <select
                   value={targetClassId}
                   onChange={(e) => setTargetClassId(e.target.value)}
-                  className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm text-black outline-none focus:border-meta-5 dark:border-strokedark dark:bg-boxdark dark:text-white"
+                  className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm text-black outline-none focus:border-meta-5 focus:ring-2 focus:ring-meta-5/20 dark:border-strokedark dark:bg-boxdark dark:text-white"
                 >
                   <option value="">Select target class…</option>
                   {targetOptions.map((c) => (
@@ -222,7 +222,7 @@ export default function LecturerPromotePage() {
                       max={100}
                       value={gradeThreshold}
                       onChange={(e) => setGradeThreshold(Number(e.target.value))}
-                      className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm outline-none focus:border-meta-5 dark:border-strokedark dark:bg-boxdark dark:text-white"
+                      className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm outline-none focus:border-meta-5 focus:ring-2 focus:ring-meta-5/20 dark:border-strokedark dark:bg-boxdark dark:text-white"
                     />
                     <p className="mt-1 text-[11px] text-body">Students below this average will be flagged</p>
                   </div>
@@ -236,7 +236,7 @@ export default function LecturerPromotePage() {
                       max={100}
                       value={attendanceThreshold}
                       onChange={(e) => setAttendanceThreshold(Number(e.target.value))}
-                      className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm outline-none focus:border-meta-5 dark:border-strokedark dark:bg-boxdark dark:text-white"
+                      className="w-full rounded-xl border border-stroke bg-white px-3 py-2 text-sm outline-none focus:border-meta-5 focus:ring-2 focus:ring-meta-5/20 dark:border-strokedark dark:bg-boxdark dark:text-white"
                     />
                     <p className="mt-1 text-[11px] text-body">Students below this rate will be flagged</p>
                   </div>

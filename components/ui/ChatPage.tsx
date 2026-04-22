@@ -22,6 +22,7 @@ import {
   Loader2,
   Users,
   ChevronDown,
+  X,
 } from "lucide-react";
 
 // ─── Tick icon ────────────────────────────────────────────────────────────────
@@ -178,9 +179,9 @@ function NewConversationModal({
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded p-1 text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
           >
-            ×
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         <div className="p-4">
@@ -322,9 +323,9 @@ function NewGroupModal({
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded p-1 text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-body hover:bg-stroke hover:text-black transition-colors dark:hover:bg-meta-4 dark:hover:text-white"
           >
-            ×
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 

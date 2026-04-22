@@ -212,11 +212,22 @@ function ExamScheduleTab() {
                     <Td><Badge variant={statusVariant(exam.status)}>{exam.status}</Badge></Td>
                     <Td>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(exam)} className="text-gray-400 hover:text-primary transition-colors"><Pencil size={15} /></button>
+                        <button
+                          onClick={() => openEdit(exam)}
+                          aria-label="Edit exam"
+                          title="Edit exam"
+                          className="rounded p-1 text-gray-400 hover:text-primary transition-colors"
+                        >
+                          <Pencil size={15} aria-hidden="true" />
+                        </button>
                         <button
                           onClick={() => setConfirmDeleteId(exam._id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
-                        ><Trash2 size={15} /></button>
+                          aria-label="Delete exam"
+                          title="Delete exam"
+                          className="rounded p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={15} aria-hidden="true" />
+                        </button>
                       </div>
                     </Td>
                   </tr>

@@ -5,8 +5,8 @@ import Image from "next/image";
 const TaskHeader = () => {
   const [popupOpen, setPopupOpen] = useState(false);
 
-  const trigger = useRef<any>(null);
-  const popup = useRef<any>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const popup = useRef<HTMLDivElement>(null);
 
   // close on click outside
   useEffect(() => {
@@ -14,8 +14,8 @@ const TaskHeader = () => {
       if (!popup.current) return;
       if (
         !popupOpen ||
-        popup.current.contains(target) ||
-        trigger.current.contains(target)
+        popup.current.contains(target as Node) ||
+        trigger.current?.contains(target as Node)
       )
         return;
       setPopupOpen(false);

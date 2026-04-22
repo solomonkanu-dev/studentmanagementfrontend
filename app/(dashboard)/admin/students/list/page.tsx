@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { adminApi } from "@/lib/api/admin";
+import { generatePassword } from "@/lib/utils/password";
 import { classApi } from "@/lib/api/class";
 import { exportApi } from "@/lib/api/export";
 import { Button } from "@/components/ui/Button";
@@ -22,62 +22,11 @@ import {
   ShieldOff, PlayCircle, Trash2, ShieldAlert, Download, Activity, Archive,
 } from "lucide-react";
 import type { AuthUser, Class } from "@/lib/types";
-
-// ─── Schemas ─────────────────────────────────────────────────────────────────
-
-const createSchema = z.object({
-  fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Invalid email"),
-  classId: z.string().min(1, "Select a class"),
-  registrationNumber: z.string().optional(),
-  dateOfAdmission: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  gender: z.string().optional(),
-  mobileNumber: z.string().optional(),
-  address: z.string().optional(),
-  bloodGroup: z.string().optional(),
-  religion: z.string().optional(),
-  previousSchool: z.string().optional(),
-  familyType: z.string().optional(),
-  medicalInfo: z.string().optional(),
-  guardianName: z.string().optional(),
-  guardianPhone: z.string().optional(),
-  guardianEmail: z.string().email("Invalid email").optional().or(z.literal("")),
-  guardianRelationship: z.string().optional(),
-  guardianOccupation: z.string().optional(),
-});
-
-const editSchema = z.object({
-  fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Invalid email"),
-  classId: z.string().min(1, "Select a class"),
-  registrationNumber: z.string().optional(),
-  dateOfAdmission: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  gender: z.string().optional(),
-  mobileNumber: z.string().optional(),
-  address: z.string().optional(),
-  bloodGroup: z.string().optional(),
-  religion: z.string().optional(),
-  previousSchool: z.string().optional(),
-  familyType: z.string().optional(),
-  medicalInfo: z.string().optional(),
-  guardianName: z.string().optional(),
-  guardianPhone: z.string().optional(),
-  guardianEmail: z.string().email("Invalid email").optional().or(z.literal("")),
-  guardianRelationship: z.string().optional(),
-  guardianOccupation: z.string().optional(),
-});
-
-type CreateForm = z.infer<typeof createSchema>;
-type EditForm = z.infer<typeof editSchema>;
-
-function generatePassword() {
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!";
-  return Array.from(crypto.getRandomValues(new Uint8Array(12)))
-    .map((b) => chars[b % chars.length])
-    .join("");
-}
+import type { UseFormRegister, FieldErrors, Path } from "react-hook-form";
+import {
+  studentSchema, type StudentForm,
+  buildStudentProfile, buildGuardian, nextRegistrationNumber,
+} from "./_schemas";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -86,44 +35,16 @@ export default function StudentsListPage() {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("");
 
-  // Create modal
+  // Modal open state — each stores the target student (or boolean for create)
   const [showCreate, setShowCreate] = useState(false);
-  const [createError, setCreateError] = useState("");
-  const [tempPassword, setTempPassword] = useState("");
-  const [pwCopied, setPwCopied] = useState(false);
-
-  // Edit modal
   const [editTarget, setEditTarget] = useState<AuthUser | null>(null);
-  const [editError, setEditError] = useState("");
-
-  // Reset password modal
   const [resetTarget, setResetTarget] = useState<AuthUser | null>(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
-  const [resetError, setResetError] = useState("");
-  const [resetDone, setResetDone] = useState(false);
-  const [resetCopied, setResetCopied] = useState(false);
-
-  // Suspend / delete
   const [suspendTarget, setSuspendTarget] = useState<AuthUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AuthUser | null>(null);
-  const [suspendError, setSuspendError] = useState("");
-  const [deleteError, setDeleteError] = useState("");
-
-  // Lifecycle modal
   const [lifecycleTarget, setLifecycleTarget] = useState<AuthUser | null>(null);
-  const [lifecycleStatus, setLifecycleStatus] = useState("active");
-  const [lifecycleNote, setLifecycleNote] = useState("");
-  const [lifecycleError, setLifecycleError] = useState("");
-
-  // Archive modal
   const [archiveTarget, setArchiveTarget] = useState<AuthUser | null>(null);
-  const [archiveNote, setArchiveNote] = useState("");
-  const [archiveError, setArchiveError] = useState("");
 
-  // ─── Queries ────────────────────────────────────────────────────────────────
-
-  const { data: students = [], isLoading } = useQuery({
+  const { data: students = [], isLoading, isError } = useQuery({
     queryKey: ["admin-students"],
     queryFn: adminApi.getStudents,
   });
@@ -133,240 +54,24 @@ export default function StudentsListPage() {
     queryFn: classApi.getAll,
   });
 
-  // ─── Mutations ──────────────────────────────────────────────────────────────
+  const invalidateStudents = () =>
+    queryClient.invalidateQueries({ queryKey: ["admin-students"] });
 
-  const createMutation = useMutation({
-    mutationFn: adminApi.createStudent,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-students"] });
-      queryClient.invalidateQueries({ queryKey: ["classes"] });
-      resetCreate();
-      const d = data as unknown as Record<string, unknown>;
-      if (d.tempPassword) setTempPassword(d.tempPassword as string);
-      else setShowCreate(false);
-    },
-    onError: (e: unknown) => setCreateError(errMsg(e, "Failed to create student")),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
-      adminApi.updateStudent(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-students"] });
-      closeEdit();
-    },
-    onError: (e: unknown) => setEditError(errMsg(e, "Failed to update student")),
-  });
-
-  const resetMutation = useMutation({
-    mutationFn: ({ userId, password }: { userId: string; password: string }) =>
-      adminApi.resetPassword(userId, { password }),
-    onSuccess: () => setResetDone(true),
-    onError: (e: unknown) => setResetError(errMsg(e, "Failed to reset password")),
-  });
-
-  const invalidateStudents = () => queryClient.invalidateQueries({ queryKey: ["admin-students"] });
-
-  const suspendMutation = useMutation({
-    mutationFn: (userId: string) =>
-      (students as AuthUser[]).find((s) => s._id === userId)?.isActive
-        ? adminApi.suspendUser(userId)
-        : adminApi.unsuspendUser(userId),
-    onSuccess: () => { invalidateStudents(); setSuspendTarget(null); setSuspendError(""); },
-    onError: (e: unknown) => setSuspendError(errMsg(e, "Failed to update account status")),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: adminApi.deleteUser,
-    onSuccess: () => { invalidateStudents(); setDeleteTarget(null); setDeleteError(""); },
-    onError: (e: unknown) => setDeleteError(errMsg(e, "Failed to delete student")),
-  });
-
-  const lifecycleMutation = useMutation({
-    mutationFn: ({ studentId, payload }: { studentId: string; payload: { lifecycleStatus: string; lifecycleNote?: string } }) =>
-      adminApi.updateStudentLifecycle(studentId, payload),
-    onSuccess: () => {
-      invalidateStudents();
-      setLifecycleTarget(null);
-      setLifecycleError("");
-    },
-    onError: (e: unknown) => setLifecycleError(errMsg(e, "Failed to update lifecycle status")),
-  });
-
-  const archiveMutation = useMutation({
-    mutationFn: ({ userId, note }: { userId: string; note: string }) =>
-      adminApi.archiveUser(userId, note),
-    onSuccess: () => {
-      invalidateStudents();
-      setArchiveTarget(null);
-      setArchiveNote("");
-      setArchiveError("");
-    },
-    onError: (e: unknown) => setArchiveError(errMsg(e, "Failed to archive student")),
-  });
-
-  // ─── Create form ─────────────────────────────────────────────────────────────
-
-  const {
-    register: regCreate,
-    handleSubmit: handleCreate,
-    reset: resetCreate,
-    setValue: setCreateValue,
-    formState: { errors: createErrors },
-  } = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
-
-  function nextRegistrationNumber(list: AuthUser[]) {
-    const nums = list.flatMap((s) => {
-      const id = s.studentProfile?.registrationNumber ?? "";
-      const m = id.match(/(\d+)$/);
-      return m ? [parseInt(m[1], 10)] : [];
-    });
-    const max = nums.length > 0 ? Math.max(...nums) : 0;
-    return `STU-${String(max + 1).padStart(3, "0")}`;
-  }
-
-  function openCreate() {
-    setShowCreate(true);
-    setCreateValue("registrationNumber", nextRegistrationNumber(students));
-  }
-
-  const onCreateSubmit = (v: CreateForm) => {
-    setCreateError("");
-    setTempPassword("");
-    const studentProfile = buildStudentProfile(v);
-    const guardian = buildGuardian(v);
-    if (guardian) studentProfile.guardian = guardian;
-    createMutation.mutate({
-      fullName: v.fullName,
-      email: v.email,
-      classId: v.classId,
-      ...(Object.keys(studentProfile).length > 0 ? { studentProfile } : {}),
-    });
-  };
-
-  const closeCreate = () => {
-    setShowCreate(false);
-    resetCreate();
-    setCreateError("");
-    setTempPassword("");
-    setPwCopied(false);
-  };
-
-  // ─── Edit form ───────────────────────────────────────────────────────────────
-
-  const {
-    register: regEdit,
-    handleSubmit: handleEdit,
-    reset: resetEdit,
-    formState: { errors: editErrors },
-  } = useForm<EditForm>({ resolver: zodResolver(editSchema) });
-
-  const openEdit = (s: AuthUser) => {
-    setEditTarget(s);
-    setEditError("");
-    const p = s.studentProfile ?? {};
-    const g = (p as Record<string, unknown>).guardian as Record<string, string> | undefined;
-    resetEdit({
-      fullName: s.fullName,
-      email: s.email,
-      classId: typeof s.class === "string" ? s.class : (s.class as unknown as Class)?._id ?? "",
-      registrationNumber: (p as Record<string, string>).registrationNumber ?? "",
-      dateOfAdmission: (p as Record<string, string>).dateOfAdmission ? (p as Record<string, string>).dateOfAdmission.slice(0, 10) : "",
-      dateOfBirth: (p as Record<string, string>).dateOfBirth ?? "",
-      gender: (p as Record<string, string>).gender ?? "",
-      mobileNumber: (p as Record<string, string>).mobileNumber ?? "",
-      address: (p as Record<string, string>).address ?? "",
-      bloodGroup: (p as Record<string, string>).bloodGroup ?? "",
-      religion: (p as Record<string, string>).religion ?? "",
-      previousSchool: (p as Record<string, string>).previousSchool ?? "",
-      familyType: (p as Record<string, string>).familyType ?? "",
-      medicalInfo: (p as Record<string, string>).medicalInfo ?? "",
-      guardianName: g?.guardianName ?? "",
-      guardianPhone: g?.guardianPhone ?? "",
-      guardianEmail: g?.guardianEmail ?? "",
-      guardianRelationship: g?.guardianRelationship ?? "",
-      guardianOccupation: g?.guardianOccupation ?? "",
-    });
-  };
-
-  const closeEdit = () => {
-    setEditTarget(null);
-    resetEdit();
-    setEditError("");
-  };
-
-  const onEditSubmit = (v: EditForm) => {
-    if (!editTarget) return;
-    setEditError("");
-    const studentProfile = buildStudentProfile(v);
-    const guardian = buildGuardian(v);
-    if (guardian) studentProfile.guardian = guardian;
-    updateMutation.mutate({
-      id: editTarget._id,
-      payload: {
-        fullName: v.fullName,
-        email: v.email,
-        classId: v.classId,
-        ...(Object.keys(studentProfile).length > 0 ? { studentProfile } : {}),
-      },
-    });
-  };
-
-  // ─── Reset password ──────────────────────────────────────────────────────────
-
-  const openReset = (s: AuthUser) => {
-    setResetTarget(s);
-    setNewPassword(generatePassword());
-    setResetError("");
-    setResetDone(false);
-    setResetCopied(false);
-    setShowPwd(false);
-  };
-
-  const closeReset = () => {
-    setResetTarget(null);
-    setNewPassword("");
-    setResetError("");
-    setResetDone(false);
-    setResetCopied(false);
-  };
-
-  const copyReset = () => {
-    navigator.clipboard.writeText(newPassword);
-    setResetCopied(true);
-    setTimeout(() => setResetCopied(false), 2000);
-  };
-
-  // ─── Lifecycle handlers ──────────────────────────────────────────────────────
-
-  const openLifecycle = (s: AuthUser) => {
-    setLifecycleTarget(s);
-    setLifecycleStatus(s.lifecycleStatus ?? "active");
-    setLifecycleNote(s.lifecycleNote ?? "");
-    setLifecycleError("");
-  };
-
-  const closeLifecycle = () => {
-    setLifecycleTarget(null);
-    setLifecycleError("");
-  };
-
-  // ─── Filtered list ───────────────────────────────────────────────────────────
-
-  const filtered = students.filter((s: AuthUser) => {
+  const filtered = (students as AuthUser[]).filter((s) => {
     const matchesSearch =
       s.fullName.toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase());
     const studentClassId =
-      typeof s.class === "string" ? s.class : (s.class as unknown as { _id: string } | null)?._id ?? "";
+      typeof s.class === "string"
+        ? s.class
+        : (s.class as { _id: string } | undefined)?._id ?? "";
     const matchesClass = !classFilter || studentClassId === classFilter;
     return matchesSearch && matchesClass;
   });
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
-
   return (
     <div className="space-y-6">
+      {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative w-full sm:max-w-xs">
@@ -388,9 +93,7 @@ export default function StudentsListPage() {
           >
             <option value="">All Classes</option>
             {(classes as Class[]).map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
+              <option key={c._id} value={c._id}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -399,18 +102,23 @@ export default function StudentsListPage() {
             <Download className="h-4 w-4" aria-hidden="true" />
             Export CSV
           </Button>
-          <Button onClick={openCreate}>
+          <Button onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
             Add Student
           </Button>
         </div>
       </div>
 
+      {/* ── Table ───────────────────────────────────────────────────────────── */}
       <Card>
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" role="status" />
           </div>
+        ) : isError ? (
+          <p className="py-12 text-center text-sm text-meta-1">
+            Failed to load students. Please refresh the page.
+          </p>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
@@ -436,7 +144,11 @@ export default function StudentsListPage() {
             <TableBody>
               {filtered.map((s: AuthUser) => {
                 const className = (classes as Class[]).find(
-                  (c) => c._id === (typeof s.class === "string" ? s.class : (s.class as unknown as Class)?._id)
+                  (c) =>
+                    c._id ===
+                    (typeof s.class === "string"
+                      ? s.class
+                      : (s.class as { _id: string } | undefined)?._id)
                 )?.name;
                 return (
                   <tr key={s._id} className="hover:bg-whiter transition-colors dark:hover:bg-meta-4">
@@ -453,20 +165,22 @@ export default function StudentsListPage() {
                     <Td>
                       <div className="flex flex-col gap-0.5">
                         {s.isActive && (
-                        <Badge variant={s.approved ? "success" : "warning"}>
-                          {s.approved ? "Approved" : "Pending"}
-                        </Badge>
+                          <Badge variant={s.approved ? "success" : "warning"}>
+                            {s.approved ? "Approved" : "Pending"}
+                          </Badge>
                         )}
-                        {!s.isActive && (
-                          <Badge variant="danger">Suspended</Badge>
-                        )}
+                        {!s.isActive && <Badge variant="danger">Suspended</Badge>}
                       </div>
                     </Td>
                     <Td>
                       <LifecycleStatusBadge status={s.lifecycleStatus} />
                     </Td>
                     <Td className="text-xs text-body">
-                      {new Date(s.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                      {new Date(s.createdAt).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </Td>
                     <Td>
                       <div className="flex items-center gap-1">
@@ -475,18 +189,18 @@ export default function StudentsListPage() {
                             <Eye className="h-3.5 w-3.5" />
                           </ActionBtn>
                         </Link>
-                        <ActionBtn title="Edit student" onClick={() => openEdit(s)}>
+                        <ActionBtn title="Edit student" onClick={() => setEditTarget(s)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </ActionBtn>
-                        <ActionBtn title="Update lifecycle status" onClick={() => openLifecycle(s)}>
+                        <ActionBtn title="Update lifecycle status" onClick={() => setLifecycleTarget(s)}>
                           <Activity className="h-3.5 w-3.5" />
                         </ActionBtn>
-                        <ActionBtn title="Reset password" onClick={() => openReset(s)} danger>
+                        <ActionBtn title="Reset password" onClick={() => setResetTarget(s)} danger>
                           <KeyRound className="h-3.5 w-3.5" />
                         </ActionBtn>
                         <ActionBtn
                           title={s.isActive ? "Suspend account" : "Unsuspend account"}
-                          onClick={() => { setSuspendTarget(s); setSuspendError(""); }}
+                          onClick={() => setSuspendTarget(s)}
                           danger={s.isActive}
                         >
                           {s.isActive
@@ -494,10 +208,13 @@ export default function StudentsListPage() {
                             : <PlayCircle className="h-3.5 w-3.5 text-meta-3" />
                           }
                         </ActionBtn>
-                        <ActionBtn title="Delete account" onClick={() => { setDeleteTarget(s); setDeleteError(""); }} danger>
+                        <ActionBtn title="Delete account" onClick={() => setDeleteTarget(s)} danger>
                           <Trash2 className="h-3.5 w-3.5" />
                         </ActionBtn>
-                        <ActionBtn title="Archive student" onClick={() => { setArchiveTarget(s); setArchiveNote(""); setArchiveError(""); }}>
+                        <ActionBtn
+                          title="Archive student"
+                          onClick={() => setArchiveTarget(s)}
+                        >
                           <Archive className="h-3.5 w-3.5" />
                         </ActionBtn>
                       </div>
@@ -510,266 +227,643 @@ export default function StudentsListPage() {
         )}
       </Card>
 
-      {/* ── Create modal ────────────────────────────────────────────────────── */}
-      <Modal open={showCreate} onClose={closeCreate} title="Add Student">
-        {tempPassword ? (
-          <PasswordReveal
-            label="Student created successfully!"
-            note="Share this with the student. They should change it on first login."
-            password={tempPassword}
-            copied={pwCopied}
-            onCopy={() => { navigator.clipboard.writeText(tempPassword); setPwCopied(true); setTimeout(() => setPwCopied(false), 2000); }}
-            onDone={closeCreate}
-          />
-        ) : (
-          <form onSubmit={handleCreate(onCreateSubmit)} className="space-y-5">
-            <StudentFormFields register={regCreate} errors={createErrors} classes={classes as Class[]} />
-            {createError && <ErrorMsg msg={createError} />}
-            <p className="text-xs text-body">A temporary password will be auto-generated for first login.</p>
-            <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="secondary" onClick={closeCreate}>Cancel</Button>
-              <Button type="submit" isLoading={createMutation.isPending}>Create Student</Button>
-            </div>
-          </form>
-        )}
-      </Modal>
+      {/* ── Modals ──────────────────────────────────────────────────────────── */}
+      <CreateStudentModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        students={students as AuthUser[]}
+        classes={classes as Class[]}
+        onSuccess={() => {
+          invalidateStudents();
+          queryClient.invalidateQueries({ queryKey: ["classes"] });
+        }}
+      />
+      <EditStudentModal
+        target={editTarget}
+        onClose={() => setEditTarget(null)}
+        classes={classes as Class[]}
+        onSuccess={invalidateStudents}
+      />
+      <ResetPasswordModal
+        target={resetTarget}
+        onClose={() => setResetTarget(null)}
+      />
+      <SuspendModal
+        target={suspendTarget}
+        onClose={() => setSuspendTarget(null)}
+        onSuccess={invalidateStudents}
+      />
+      <DeleteModal
+        target={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onSuccess={invalidateStudents}
+      />
+      <ArchiveModal
+        target={archiveTarget}
+        onClose={() => setArchiveTarget(null)}
+        onSuccess={invalidateStudents}
+      />
+      <LifecycleModal
+        target={lifecycleTarget}
+        onClose={() => setLifecycleTarget(null)}
+        onSuccess={invalidateStudents}
+      />
+    </div>
+  );
+}
 
-      {/* ── Edit modal ──────────────────────────────────────────────────────── */}
-      <Modal open={editTarget !== null} onClose={closeEdit} title="Edit Student">
-        <form onSubmit={handleEdit(onEditSubmit)} className="space-y-5">
-          <StudentFormFields register={regEdit} errors={editErrors} classes={classes as Class[]} />
-          {editError && <ErrorMsg msg={editError} />}
+// ─── Create modal ─────────────────────────────────────────────────────────────
+
+function CreateStudentModal({
+  open,
+  onClose,
+  students,
+  classes,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  students: AuthUser[];
+  classes: Class[];
+  onSuccess: () => void;
+}) {
+  const [tempPassword, setTempPassword] = useState("");
+  const [pwCopied, setPwCopied] = useState(false);
+  const [createError, setCreateError] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<StudentForm>({ resolver: zodResolver(studentSchema) });
+
+  const mutation = useMutation({
+    mutationFn: adminApi.createStudent,
+    onSuccess: (data) => {
+      onSuccess();
+      reset();
+      const d = data as unknown as Record<string, unknown>;
+      if (d.tempPassword) setTempPassword(d.tempPassword as string);
+      else handleClose();
+    },
+    onError: (e: unknown) => setCreateError(errMsg(e, "Failed to create student")),
+  });
+
+  // Pre-fill registration number when modal opens
+  useEffect(() => {
+    if (open) {
+      setValue("registrationNumber", nextRegistrationNumber(students));
+      setTempPassword("");
+      setCreateError("");
+      setPwCopied(false);
+    }
+  }, [open, students, setValue]);
+
+  function handleClose() {
+    onClose();
+    reset();
+    setTempPassword("");
+    setCreateError("");
+    setPwCopied(false);
+  }
+
+  function onSubmit(v: StudentForm) {
+    setCreateError("");
+    setTempPassword("");
+    const studentProfile = buildStudentProfile(v);
+    const guardian = buildGuardian(v);
+    if (guardian) studentProfile.guardian = guardian;
+    mutation.mutate({
+      fullName: v.fullName,
+      email: v.email,
+      classId: v.classId,
+      ...(Object.keys(studentProfile).length > 0 ? { studentProfile } : {}),
+    });
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Add Student">
+      {tempPassword ? (
+        <PasswordReveal
+          label="Student created successfully!"
+          note="Share this with the student. They should change it on first login."
+          password={tempPassword}
+          copied={pwCopied}
+          onCopy={() => {
+            navigator.clipboard.writeText(tempPassword);
+            setPwCopied(true);
+            setTimeout(() => setPwCopied(false), 2000);
+          }}
+          onDone={handleClose}
+        />
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <StudentFormFields register={register} errors={errors} classes={classes} />
+          {createError && <ErrorMsg msg={createError} />}
+          <p className="text-xs text-body">
+            A temporary password will be auto-generated for first login.
+          </p>
           <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={closeEdit}>Cancel</Button>
-            <Button type="submit" isLoading={updateMutation.isPending}>Save Changes</Button>
+            <Button type="button" variant="secondary" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={mutation.isPending}>
+              Create Student
+            </Button>
           </div>
         </form>
-      </Modal>
+      )}
+    </Modal>
+  );
+}
 
-      {/* ── Reset password modal ─────────────────────────────────────────────── */}
-      <Modal open={resetTarget !== null} onClose={closeReset} title="Reset Password">
-        {resetDone ? (
-          <PasswordReveal
-            label={`Password reset for ${resetTarget?.fullName}`}
-            note="Share this new password with the student so they can log in."
-            password={newPassword}
-            copied={resetCopied}
-            onCopy={copyReset}
-            onDone={closeReset}
-          />
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-body">
-              Set a new password for{" "}
-              <span className="font-semibold text-black dark:text-white">{resetTarget?.fullName}</span>.
-            </p>
+// ─── Edit modal ───────────────────────────────────────────────────────────────
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-black dark:text-white">New Password</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type={showPwd ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="h-9 w-full rounded border border-stroke bg-transparent px-3 pr-9 font-mono text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPwd((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-body hover:text-black dark:hover:text-white"
-                  >
-                    {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-                <Button
+function EditStudentModal({
+  target,
+  onClose,
+  classes,
+  onSuccess,
+}: {
+  target: AuthUser | null;
+  onClose: () => void;
+  classes: Class[];
+  onSuccess: () => void;
+}) {
+  const [editError, setEditError] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<StudentForm>({ resolver: zodResolver(studentSchema) });
+
+  const mutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
+      adminApi.updateStudent(id, payload),
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+    },
+    onError: (e: unknown) => setEditError(errMsg(e, "Failed to update student")),
+  });
+
+  // Populate form when target changes
+  useEffect(() => {
+    if (!target) { reset(); setEditError(""); return; }
+    setEditError("");
+    const p = target.studentProfile ?? {};
+    const g = (p as Record<string, unknown>).guardian as Record<string, string> | undefined;
+    reset({
+      fullName: target.fullName,
+      email: target.email,
+      classId:
+        typeof target.class === "string"
+          ? target.class
+          : (target.class as { _id: string } | undefined)?._id ?? "",
+      registrationNumber: (p as Record<string, string>).registrationNumber ?? "",
+      dateOfAdmission: (p as Record<string, string>).dateOfAdmission
+        ? (p as Record<string, string>).dateOfAdmission.slice(0, 10)
+        : "",
+      dateOfBirth: (p as Record<string, string>).dateOfBirth ?? "",
+      gender: (p as Record<string, string>).gender ?? "",
+      mobileNumber: (p as Record<string, string>).mobileNumber ?? "",
+      address: (p as Record<string, string>).address ?? "",
+      bloodGroup: (p as Record<string, string>).bloodGroup ?? "",
+      religion: (p as Record<string, string>).religion ?? "",
+      previousSchool: (p as Record<string, string>).previousSchool ?? "",
+      familyType: (p as Record<string, string>).familyType ?? "",
+      medicalInfo: (p as Record<string, string>).medicalInfo ?? "",
+      guardianName: g?.guardianName ?? "",
+      guardianPhone: g?.guardianPhone ?? "",
+      guardianEmail: g?.guardianEmail ?? "",
+      guardianRelationship: g?.guardianRelationship ?? "",
+      guardianOccupation: g?.guardianOccupation ?? "",
+    });
+  }, [target, reset]);
+
+  function onSubmit(v: StudentForm) {
+    if (!target) return;
+    setEditError("");
+    const studentProfile = buildStudentProfile(v);
+    const guardian = buildGuardian(v);
+    if (guardian) studentProfile.guardian = guardian;
+    mutation.mutate({
+      id: target._id,
+      payload: {
+        fullName: v.fullName,
+        email: v.email,
+        classId: v.classId,
+        ...(Object.keys(studentProfile).length > 0 ? { studentProfile } : {}),
+      },
+    });
+  }
+
+  return (
+    <Modal open={target !== null} onClose={onClose} title="Edit Student">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <StudentFormFields register={register} errors={errors} classes={classes} />
+        {editError && <ErrorMsg msg={editError} />}
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" isLoading={mutation.isPending}>
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ─── Reset password modal ─────────────────────────────────────────────────────
+
+function ResetPasswordModal({
+  target,
+  onClose,
+}: {
+  target: AuthUser | null;
+  onClose: () => void;
+}) {
+  const [newPassword, setNewPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetDone, setResetDone] = useState(false);
+  const [resetCopied, setResetCopied] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: ({ userId, password }: { userId: string; password: string }) =>
+      adminApi.resetPassword(userId, { password }),
+    onSuccess: () => setResetDone(true),
+    onError: (e: unknown) => setResetError(errMsg(e, "Failed to reset password")),
+  });
+
+  // Reset state when a new target is selected
+  useEffect(() => {
+    if (target) {
+      setNewPassword(generatePassword());
+      setResetError("");
+      setResetDone(false);
+      setResetCopied(false);
+      setShowPwd(false);
+    }
+  }, [target]);
+
+  function handleClose() {
+    onClose();
+    setNewPassword("");
+    setResetError("");
+    setResetDone(false);
+    setResetCopied(false);
+  }
+
+  function copyPassword() {
+    navigator.clipboard.writeText(newPassword);
+    setResetCopied(true);
+    setTimeout(() => setResetCopied(false), 2000);
+  }
+
+  return (
+    <Modal open={target !== null} onClose={handleClose} title="Reset Password">
+      {resetDone ? (
+        <PasswordReveal
+          label={`Password reset for ${target?.fullName}`}
+          note="Share this new password with the student so they can log in."
+          password={newPassword}
+          copied={resetCopied}
+          onCopy={copyPassword}
+          onDone={handleClose}
+        />
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-body">
+            Set a new password for{" "}
+            <span className="font-semibold text-black dark:text-white">{target?.fullName}</span>.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">New Password</label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showPwd ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="h-9 w-full rounded border border-stroke bg-transparent px-3 pr-9 font-mono text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white"
+                />
+                <button
                   type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setNewPassword(generatePassword())}
-                  title="Generate random password"
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-body hover:text-black dark:hover:text-white"
                 >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </Button>
+                  {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </button>
               </div>
-              <PasswordStrength password={newPassword} />
-            </div>
-
-            {resetError && <ErrorMsg msg={resetError} />}
-
-            <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="secondary" onClick={closeReset}>Cancel</Button>
               <Button
-                isLoading={resetMutation.isPending}
-                onClick={() => resetTarget && resetMutation.mutate({ userId: resetTarget._id, password: newPassword })}
-                disabled={newPassword.length < 6}
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setNewPassword(generatePassword())}
+                title="Generate random password"
               >
-                Reset Password
+                <RefreshCw className="h-3.5 w-3.5" />
               </Button>
             </div>
+            <PasswordStrength password={newPassword} />
           </div>
-        )}
-      </Modal>
-
-      {/* ── Suspend / Unsuspend modal ────────────────────────────────────────── */}
-      <Modal
-        open={suspendTarget !== null}
-        onClose={() => { setSuspendTarget(null); setSuspendError(""); }}
-        title={suspendTarget?.isActive ? "Suspend Account" : "Unsuspend Account"}
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${suspendTarget?.isActive ? "bg-meta-1/10" : "bg-meta-3/10"}`}>
-              {suspendTarget?.isActive
-                ? <ShieldAlert className="h-5 w-5 text-meta-1" />
-                : <PlayCircle className="h-5 w-5 text-meta-3" />
-              }
-            </div>
-            <p className="text-sm text-body">
-              {suspendTarget?.isActive ? (
-                <>Suspending <span className="font-semibold text-black dark:text-white">{suspendTarget?.fullName}</span> will prevent them from logging in. You can unsuspend at any time.</>
-              ) : (
-                <>Unsuspending <span className="font-semibold text-black dark:text-white">{suspendTarget?.fullName}</span> will restore their access to the platform.</>
-              )}
-            </p>
-          </div>
-          {suspendError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{suspendError}</p>}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => { setSuspendTarget(null); setSuspendError(""); }}>Cancel</Button>
-            <Button
-              variant={suspendTarget?.isActive ? "danger" : undefined}
-              isLoading={suspendMutation.isPending}
-              onClick={() => suspendTarget && suspendMutation.mutate(suspendTarget._id)}
-            >
-              {suspendTarget?.isActive ? "Suspend" : "Unsuspend"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Delete modal ─────────────────────────────────────────────────────── */}
-      <Modal
-        open={deleteTarget !== null}
-        onClose={() => { setDeleteTarget(null); setDeleteError(""); }}
-        title="Delete Student"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-body">
-            Permanently delete <span className="font-semibold text-black dark:text-white">{deleteTarget?.fullName}</span>? This cannot be undone and will remove all their data.
-          </p>
-          {deleteError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{deleteError}</p>}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => { setDeleteTarget(null); setDeleteError(""); }}>Cancel</Button>
-            <Button
-              variant="danger"
-              isLoading={deleteMutation.isPending}
-              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget._id)}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Archive modal ───────────────────────────────────────────────────── */}
-      <Modal
-        open={archiveTarget !== null}
-        onClose={() => { setArchiveTarget(null); setArchiveNote(""); setArchiveError(""); }}
-        title="Archive Student"
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-50 dark:bg-yellow-900/20">
-              <Archive className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <p className="text-sm text-body">
-              Archiving <span className="font-semibold text-black dark:text-white">{archiveTarget?.fullName}</span> will remove them from active lists. Their fees, results, and records are preserved and can be viewed in the Archive section. You can restore them at any time.
-            </p>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-black dark:text-white">
-              Note <span className="font-normal text-body">(optional)</span>
-            </label>
-            <textarea
-              value={archiveNote}
-              onChange={(e) => setArchiveNote(e.target.value)}
-              placeholder="e.g. Graduated June 2025, transferred to another school…"
-              rows={2}
-              className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white resize-none"
-            />
-          </div>
-          {archiveError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{archiveError}</p>}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => { setArchiveTarget(null); setArchiveNote(""); setArchiveError(""); }}>Cancel</Button>
-            <Button
-              isLoading={archiveMutation.isPending}
-              onClick={() => archiveTarget && archiveMutation.mutate({ userId: archiveTarget._id, note: archiveNote })}
-            >
-              Archive Student
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Lifecycle modal ──────────────────────────────────────────────────── */}
-      <Modal
-        open={lifecycleTarget !== null}
-        onClose={closeLifecycle}
-        title="Update Lifecycle Status"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-body">
-            Update the lifecycle status for{" "}
-            <span className="font-semibold text-black dark:text-white">{lifecycleTarget?.fullName}</span>.
-          </p>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-black dark:text-white">Status</label>
-            <select
-              value={lifecycleStatus}
-              onChange={(e) => setLifecycleStatus(e.target.value)}
-              className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
-            >
-              <option value="active">Active</option>
-              <option value="graduated">Graduated</option>
-              <option value="transferred">Transferred</option>
-              <option value="withdrawn">Withdrawn</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-black dark:text-white">
-              Note <span className="font-normal text-body">(optional)</span>
-            </label>
-            <textarea
-              value={lifecycleNote}
-              onChange={(e) => setLifecycleNote(e.target.value)}
-              placeholder="Add a note about this status change…"
-              rows={3}
-              className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white resize-none"
-            />
-          </div>
-
-          {lifecycleError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{lifecycleError}</p>}
-
+          {resetError && <ErrorMsg msg={resetError} />}
           <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={closeLifecycle}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={handleClose}>
+              Cancel
+            </Button>
             <Button
-              isLoading={lifecycleMutation.isPending}
+              isLoading={mutation.isPending}
               onClick={() =>
-                lifecycleTarget &&
-                lifecycleMutation.mutate({
-                  studentId: lifecycleTarget._id,
-                  payload: { lifecycleStatus, lifecycleNote: lifecycleNote || undefined },
-                })
+                target && mutation.mutate({ userId: target._id, password: newPassword })
               }
+              disabled={newPassword.length < 6}
             >
-              Save Status
+              Reset Password
             </Button>
           </div>
         </div>
-      </Modal>
-    </div>
+      )}
+    </Modal>
+  );
+}
+
+// ─── Suspend / Unsuspend modal ────────────────────────────────────────────────
+
+function SuspendModal({
+  target,
+  onClose,
+  onSuccess,
+}: {
+  target: AuthUser | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [suspendError, setSuspendError] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: (userId: string) =>
+      target?.isActive ? adminApi.suspendUser(userId) : adminApi.unsuspendUser(userId),
+    onSuccess: () => { onSuccess(); onClose(); setSuspendError(""); },
+    onError: (e: unknown) => setSuspendError(errMsg(e, "Failed to update account status")),
+  });
+
+  function handleClose() { onClose(); setSuspendError(""); }
+
+  return (
+    <Modal
+      open={target !== null}
+      onClose={handleClose}
+      title={target?.isActive ? "Suspend Account" : "Unsuspend Account"}
+    >
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+              target?.isActive ? "bg-meta-1/10" : "bg-meta-3/10"
+            }`}
+          >
+            {target?.isActive
+              ? <ShieldAlert className="h-5 w-5 text-meta-1" />
+              : <PlayCircle className="h-5 w-5 text-meta-3" />
+            }
+          </div>
+          <p className="text-sm text-body">
+            {target?.isActive ? (
+              <>
+                Suspending{" "}
+                <span className="font-semibold text-black dark:text-white">{target.fullName}</span>{" "}
+                will prevent them from logging in. You can unsuspend at any time.
+              </>
+            ) : (
+              <>
+                Unsuspending{" "}
+                <span className="font-semibold text-black dark:text-white">{target?.fullName}</span>{" "}
+                will restore their access to the platform.
+              </>
+            )}
+          </p>
+        </div>
+        {suspendError && <ErrorMsg msg={suspendError} />}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
+          <Button
+            variant={target?.isActive ? "danger" : undefined}
+            isLoading={mutation.isPending}
+            onClick={() => target && mutation.mutate(target._id)}
+          >
+            {target?.isActive ? "Suspend" : "Unsuspend"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Delete modal ─────────────────────────────────────────────────────────────
+
+function DeleteModal({
+  target,
+  onClose,
+  onSuccess,
+}: {
+  target: AuthUser | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [deleteError, setDeleteError] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: adminApi.deleteUser,
+    onSuccess: () => { onSuccess(); onClose(); setDeleteError(""); },
+    onError: (e: unknown) => setDeleteError(errMsg(e, "Failed to delete student")),
+  });
+
+  function handleClose() { onClose(); setDeleteError(""); }
+
+  return (
+    <Modal open={target !== null} onClose={handleClose} title="Delete Student">
+      <div className="space-y-4">
+        <p className="text-sm text-body">
+          Permanently delete{" "}
+          <span className="font-semibold text-black dark:text-white">{target?.fullName}</span>? This
+          cannot be undone and will remove all their data.
+        </p>
+        {deleteError && <ErrorMsg msg={deleteError} />}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
+          <Button
+            variant="danger"
+            isLoading={mutation.isPending}
+            onClick={() => target && mutation.mutate(target._id)}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Archive modal ────────────────────────────────────────────────────────────
+
+function ArchiveModal({
+  target,
+  onClose,
+  onSuccess,
+}: {
+  target: AuthUser | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [archiveNote, setArchiveNote] = useState("");
+  const [archiveError, setArchiveError] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: ({ userId, note }: { userId: string; note: string }) =>
+      adminApi.archiveUser(userId, note),
+    onSuccess: () => { onSuccess(); onClose(); setArchiveNote(""); setArchiveError(""); },
+    onError: (e: unknown) => setArchiveError(errMsg(e, "Failed to archive student")),
+  });
+
+  function handleClose() { onClose(); setArchiveNote(""); setArchiveError(""); }
+
+  return (
+    <Modal open={target !== null} onClose={handleClose} title="Archive Student">
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-50 dark:bg-yellow-900/20">
+            <Archive className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          <p className="text-sm text-body">
+            Archiving{" "}
+            <span className="font-semibold text-black dark:text-white">{target?.fullName}</span>{" "}
+            will remove them from active lists. Their fees, results, and records are preserved
+            and can be viewed in the Archive section. You can restore them at any time.
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-black dark:text-white">
+            Note <span className="font-normal text-body">(optional)</span>
+          </label>
+          <textarea
+            value={archiveNote}
+            onChange={(e) => setArchiveNote(e.target.value)}
+            placeholder="e.g. Graduated June 2025, transferred to another school…"
+            rows={2}
+            className="w-full resize-none rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
+          />
+        </div>
+        {archiveError && <ErrorMsg msg={archiveError} />}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
+          <Button
+            isLoading={mutation.isPending}
+            onClick={() => target && mutation.mutate({ userId: target._id, note: archiveNote })}
+          >
+            Archive Student
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Lifecycle modal ──────────────────────────────────────────────────────────
+
+function LifecycleModal({
+  target,
+  onClose,
+  onSuccess,
+}: {
+  target: AuthUser | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [lifecycleStatus, setLifecycleStatus] = useState("active");
+  const [lifecycleNote, setLifecycleNote] = useState("");
+  const [lifecycleError, setLifecycleError] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: ({
+      studentId,
+      payload,
+    }: {
+      studentId: string;
+      payload: { lifecycleStatus: string; lifecycleNote?: string };
+    }) => adminApi.updateStudentLifecycle(studentId, payload),
+    onSuccess: () => { onSuccess(); onClose(); setLifecycleError(""); },
+    onError: (e: unknown) => setLifecycleError(errMsg(e, "Failed to update lifecycle status")),
+  });
+
+  // Sync form to the selected student
+  useEffect(() => {
+    if (target) {
+      setLifecycleStatus(target.lifecycleStatus ?? "active");
+      setLifecycleNote(target.lifecycleNote ?? "");
+      setLifecycleError("");
+    }
+  }, [target]);
+
+  function handleClose() { onClose(); setLifecycleError(""); }
+
+  return (
+    <Modal open={target !== null} onClose={handleClose} title="Update Lifecycle Status">
+      <div className="space-y-4">
+        <p className="text-sm text-body">
+          Update the lifecycle status for{" "}
+          <span className="font-semibold text-black dark:text-white">{target?.fullName}</span>.
+        </p>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-black dark:text-white">Status</label>
+          <select
+            value={lifecycleStatus}
+            onChange={(e) => setLifecycleStatus(e.target.value)}
+            className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
+          >
+            <option value="active">Active</option>
+            <option value="graduated">Graduated</option>
+            <option value="transferred">Transferred</option>
+            <option value="withdrawn">Withdrawn</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-black dark:text-white">
+            Note <span className="font-normal text-body">(optional)</span>
+          </label>
+          <textarea
+            value={lifecycleNote}
+            onChange={(e) => setLifecycleNote(e.target.value)}
+            placeholder="Add a note about this status change…"
+            rows={3}
+            className="w-full resize-none rounded-md border border-stroke bg-transparent px-3 py-2 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
+          />
+        </div>
+        {lifecycleError && <ErrorMsg msg={lifecycleError} />}
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="secondary" onClick={handleClose}>Cancel</Button>
+          <Button
+            isLoading={mutation.isPending}
+            onClick={() =>
+              target &&
+              mutation.mutate({
+                studentId: target._id,
+                payload: { lifecycleStatus, lifecycleNote: lifecycleNote || undefined },
+              })
+            }
+          >
+            Save Status
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -780,10 +874,8 @@ function StudentFormFields({
   errors,
   classes,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  errors: any;
+  register: UseFormRegister<StudentForm>;
+  errors: FieldErrors<StudentForm>;
   classes: Class[];
 }) {
   return (
@@ -800,7 +892,9 @@ function StudentFormFields({
               {...register("classId")}
             >
               <option value="">Select a class</option>
-              {classes.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+              {classes.map((c) => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
             </select>
             {errors.classId && <p className="text-xs text-meta-1">{errors.classId.message}</p>}
           </div>
@@ -850,16 +944,12 @@ function StudentFormFields({
   );
 }
 
-// ─── Reusable sub-components ──────────────────────────────────────────────────
-
-// ─── Lifecycle status badge ───────────────────────────────────────────────────
+// ─── Reusable UI sub-components ───────────────────────────────────────────────
 
 type LifecycleStatusValue = "active" | "graduated" | "transferred" | "withdrawn" | undefined;
 
 function LifecycleStatusBadge({ status }: { status: LifecycleStatusValue }) {
-  if (!status || status === "active") {
-    return <Badge variant="success">Active</Badge>;
-  }
+  if (!status || status === "active") return <Badge variant="success">Active</Badge>;
   if (status === "graduated") {
     return (
       <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
@@ -867,9 +957,7 @@ function LifecycleStatusBadge({ status }: { status: LifecycleStatusValue }) {
       </span>
     );
   }
-  if (status === "transferred") {
-    return <Badge variant="warning">Transferred</Badge>;
-  }
+  if (status === "transferred") return <Badge variant="warning">Transferred</Badge>;
   return <Badge variant="danger">Withdrawn</Badge>;
 }
 
@@ -920,7 +1008,12 @@ function PasswordStrength({ password }: { password: string }) {
     <div className="mt-1 space-y-1">
       <div className="flex gap-1">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={`h-1 flex-1 rounded-full transition-all ${capped >= i ? colors[capped] : "bg-stroke dark:bg-strokedark"}`} />
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all ${
+              capped >= i ? colors[capped] : "bg-stroke dark:bg-strokedark"
+            }`}
+          />
         ))}
       </div>
       <p className="text-xs text-body">{labels[capped]}</p>
@@ -928,7 +1021,9 @@ function PasswordStrength({ password }: { password: string }) {
   );
 }
 
-function ActionBtn({ children, title, onClick, danger }: {
+function ActionBtn({
+  children, title, onClick, danger,
+}: {
   children: React.ReactNode; title: string; onClick: () => void; danger?: boolean;
 }) {
   return (
@@ -936,7 +1031,11 @@ function ActionBtn({ children, title, onClick, danger }: {
       type="button"
       title={title}
       onClick={onClick}
-      className={`rounded p-1.5 text-body transition-colors ${danger ? "hover:bg-meta-1/10 hover:text-meta-1" : "hover:bg-meta-2 hover:text-primary dark:hover:bg-meta-4"}`}
+      className={`rounded p-1.5 text-body transition-colors ${
+        danger
+          ? "hover:bg-meta-1/10 hover:text-meta-1"
+          : "hover:bg-meta-2 hover:text-primary dark:hover:bg-meta-4"
+      }`}
     >
       {children}
     </button>
@@ -946,13 +1045,19 @@ function ActionBtn({ children, title, onClick, danger }: {
 function SectionLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
     <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-body">
-      {children} {optional && <span className="font-normal normal-case">(optional)</span>}
+      {children}{" "}
+      {optional && <span className="font-normal normal-case">(optional)</span>}
     </p>
   );
 }
 
-function SelectField({ label, name, register, options }: {
-  label: string; name: string; register: (name: string) => object; options: string[];
+function SelectField({
+  label, name, register, options,
+}: {
+  label: string;
+  name: Path<StudentForm>;
+  register: UseFormRegister<StudentForm>;
+  options: string[];
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -962,7 +1067,11 @@ function SelectField({ label, name, register, options }: {
         {...register(name)}
       >
         <option value="">Select</option>
-        {options.map((o) => <option key={o} value={o} className="capitalize">{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+        {options.map((o) => (
+          <option key={o} value={o} className="capitalize">
+            {o.charAt(0).toUpperCase() + o.slice(1)}
+          </option>
+        ))}
       </select>
     </div>
   );
@@ -970,31 +1079,4 @@ function SelectField({ label, name, register, options }: {
 
 function ErrorMsg({ msg }: { msg: string }) {
   return <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{msg}</p>;
-}
-
-function buildStudentProfile(v: CreateForm | EditForm) {
-  const p: Record<string, unknown> = {};
-  if (v.registrationNumber) p.registrationNumber = v.registrationNumber;
-  if (v.dateOfAdmission) p.dateOfAdmission = v.dateOfAdmission;
-  if (v.dateOfBirth) p.dateOfBirth = v.dateOfBirth;
-  if (v.gender) p.gender = v.gender;
-  if (v.mobileNumber) p.mobileNumber = v.mobileNumber;
-  if (v.address) p.address = v.address;
-  if (v.bloodGroup) p.bloodGroup = v.bloodGroup;
-  if (v.religion) p.religion = v.religion;
-  if (v.previousSchool) p.previousSchool = v.previousSchool;
-  if (v.familyType) p.familyType = v.familyType;
-  if (v.medicalInfo) p.medicalInfo = v.medicalInfo;
-  return p;
-}
-
-function buildGuardian(v: CreateForm | EditForm) {
-  if (!v.guardianName && !v.guardianPhone) return undefined;
-  return {
-    guardianName: v.guardianName || undefined,
-    guardianPhone: v.guardianPhone || undefined,
-    guardianEmail: v.guardianEmail || undefined,
-    guardianRelationship: v.guardianRelationship || undefined,
-    guardianOccupation: v.guardianOccupation || undefined,
-  };
 }

@@ -401,7 +401,7 @@ function PreviewCard({ watched }: { watched: Partial<FormValues> }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={watched.logo}
-                alt=""
+                alt="Institute logo preview"
                 className="h-8 w-8 shrink-0 rounded object-cover"
               />
             ) : (

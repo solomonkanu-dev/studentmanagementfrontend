@@ -154,9 +154,9 @@ export function StudentChatWidget() {
           <button
             onClick={() => setOpen(false)}
             aria-label="Close chat"
-            className="text-body hover:text-black dark:hover:text-white transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-body hover:text-black dark:hover:text-white transition-colors"
           >
-            <X className="h-4 w-4" aria-hidden="true" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
