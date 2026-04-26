@@ -7,13 +7,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { feesApi } from "@/lib/api/fees";
 import { adminApi } from "@/lib/api/admin";
+import { termApi } from "@/lib/api/term";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Plus, Pencil, Trash2, Receipt, X } from "lucide-react";
-import type { FeeStructure, Class, AuthUser } from "@/lib/types";
+import type { FeeStructure, Class, AuthUser, AcademicTerm } from "@/lib/types";
 import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ const schema = z.object({
   category: z.enum(["all", "class", "student"]),
   classId: z.string().optional(),
   studentId: z.string().optional(),
+  termId: z.string().optional(),
   particulars: z
     .array(z.object({
       label: z.string().min(1, "Label required"),
@@ -32,6 +34,12 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function termLabel(f: FeeStructure): string {
+  if (!f.termId) return "—";
+  if (typeof f.termId === "object") return `${f.termId.name} (${f.termId.academicYear})`;
+  return String(f.termId);
+}
 
 function categoryLabel(f: FeeStructure): string {
   if (f.category === "class") {
@@ -89,6 +97,11 @@ export default function FeesParticularsPage() {
     queryFn: adminApi.getStudents,
   });
 
+  const { data: terms = [] } = useQuery({
+    queryKey: ["academic-terms"],
+    queryFn: termApi.getAll,
+  });
+
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["fee-structures"] });
 
   const createMutation = useMutation({
@@ -137,6 +150,7 @@ export default function FeesParticularsPage() {
       category: f.category,
       classId: typeof f.classId === "object" && f.classId ? (f.classId as { _id: string })._id : (f.classId as string) ?? "",
       studentId: typeof f.studentId === "object" && f.studentId ? (f.studentId as { _id: string })._id : (f.studentId as string) ?? "",
+      termId: typeof f.termId === "object" && f.termId ? (f.termId as { _id: string })._id : (f.termId as string) ?? "",
       particulars: f.particulars.length > 0 ? f.particulars : [{ label: "", amount: 0 }],
     });
     setApiError("");
@@ -158,6 +172,7 @@ export default function FeesParticularsPage() {
     };
     if (values.category === "class" && values.classId) payload.classId = values.classId;
     if (values.category === "student" && values.studentId) payload.studentId = values.studentId;
+    if (values.termId) payload.termId = values.termId;
 
     if (mode === "create") {
       createMutation.mutate(payload);
@@ -220,6 +235,7 @@ export default function FeesParticularsPage() {
                   <Th>Category</Th>
                   <Th>Particulars</Th>
                   <Th>Total</Th>
+                  <Th>Term</Th>
                   <Th>Created</Th>
                   <Th>Actions</Th>
                 </tr>
@@ -245,6 +261,7 @@ export default function FeesParticularsPage() {
                     <Td>
                       <Badge variant="success">Nle {f.totalAmount.toLocaleString()}</Badge>
                     </Td>
+                    <Td className="text-xs text-body">{termLabel(f)}</Td>
                     <Td className="text-xs text-body">
                       {new Date(f.createdAt).toLocaleDateString("en-US", {
                         day: "numeric", month: "short", year: "numeric",
@@ -287,6 +304,17 @@ export default function FeesParticularsPage() {
             <option value="all">All Students</option>
             <option value="class">Specific Class</option>
             <option value="student">Specific Student</option>
+          </SelectField>
+
+          <SelectField label="Term (optional)" {...register("termId")}>
+            <option value="">No specific term</option>
+            {(terms as AcademicTerm[])
+              .sort((a, b) => b.academicYear.localeCompare(a.academicYear))
+              .map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.name} — {t.academicYear}{t.isCurrent ? " (current)" : ""}
+                </option>
+              ))}
           </SelectField>
 
           {category === "class" && (

@@ -7,7 +7,6 @@ import { parentApi } from "@/lib/api/parent";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import {
-  Users,
   CalendarCheck,
   FileText,
   CreditCard,
@@ -15,6 +14,7 @@ import {
   GraduationCap,
   ChevronRight,
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Sparkles,
 } from "lucide-react";
@@ -22,6 +22,117 @@ import Link from "next/link";
 import type { LinkedStudent } from "@/lib/types";
 import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
 import type { ChildPromotionHistory } from "@/lib/api/parent";
+import { groupFeesByTerm } from "@/lib/utils/feeGrouping";
+
+interface FeeRecord {
+  _id: string;
+  totalAmount: number;
+  amountPaid: number;
+  balance: number;
+  status: "paid" | "partial" | "unpaid";
+  dueDate?: string;
+  termId?: string | { _id: string; name: string; academicYear: string };
+  termName?: string;
+  academicYear?: string;
+}
+
+const STATUS_VARIANT: Record<string, "success" | "warning" | "danger"> = {
+  paid: "success",
+  partial: "warning",
+  unpaid: "danger",
+};
+
+function FeeHistoryCard({ fees, childId }: { fees: FeeRecord[]; childId?: string }) {
+  const totalBilled = fees.reduce((s, f) => s + f.totalAmount, 0);
+  const totalPaid = fees.reduce((s, f) => s + f.amountPaid, 0);
+  const totalOutstanding = fees.reduce((s, f) => s + f.balance, 0);
+  const grouped = groupFeesByTerm(fees);
+  const showHeadings = grouped.size > 1;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-body" />
+            <span className="text-sm font-semibold text-black dark:text-white">Fee History</span>
+          </div>
+          {childId && (
+            <Link
+              href={`/parent/fees?child=${childId}`}
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              View all <ChevronRight className="h-3 w-3" />
+            </Link>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Summary */}
+        <div className="grid grid-cols-3 divide-x divide-stroke dark:divide-strokedark">
+          <div className="pr-4 text-center">
+            <p className="text-sm font-bold text-black dark:text-white">NLe {totalBilled.toLocaleString()}</p>
+            <p className="text-[11px] text-body">Total Billed</p>
+          </div>
+          <div className="px-4 text-center">
+            <p className="text-sm font-bold text-meta-3">NLe {totalPaid.toLocaleString()}</p>
+            <p className="text-[11px] text-body">Paid</p>
+          </div>
+          <div className="pl-4 text-center">
+            <p className={`text-sm font-bold ${totalOutstanding > 0 ? "text-meta-1" : "text-meta-3"}`}>
+              NLe {totalOutstanding.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-body">Outstanding</p>
+          </div>
+        </div>
+
+        {fees.length === 0 ? (
+          <p className="py-4 text-center text-xs text-body">No fee records found for this student.</p>
+        ) : (
+          <div className="divide-y divide-stroke dark:divide-strokedark">
+            {[...grouped].map(([label, groupFees]) => (
+              <div key={label}>
+                {showHeadings && (
+                  <p className="pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-body first:pt-0">
+                    {label}
+                  </p>
+                )}
+                {groupFees.map((fee) => (
+                  <div key={fee._id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                    <div>
+                      <p className="text-xs text-black dark:text-white">
+                        Paid: NLe {(fee.amountPaid ?? 0).toLocaleString()} / NLe {(fee.totalAmount ?? 0).toLocaleString()}
+                      </p>
+                      {fee.dueDate && (
+                        <p className="text-[11px] text-body">
+                          Due: {new Date(fee.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </p>
+                      )}
+                      {fee.balance > 0 && (
+                        <p className="text-[11px] font-medium text-meta-1">
+                          NLe {(fee.balance ?? 0).toLocaleString()} outstanding
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant={STATUS_VARIANT[fee.status] ?? "default"}>
+                      {fee.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {fees.length > 0 && totalOutstanding === 0 && (
+          <div className="flex items-center gap-2 rounded-lg border border-meta-3/30 bg-meta-3/10 px-3 py-2">
+            <span className="text-xs font-medium text-meta-3">All fees paid — no outstanding balance.</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ParentDashboard() {
   const { user } = useAuth();
@@ -60,6 +171,13 @@ export default function ParentDashboard() {
     queryKey: ["parent-announcements"],
     queryFn: parentApi.getAnnouncements,
     refetchInterval: 60_000,
+  });
+
+  const { data: attendanceStats } = useQuery({
+    queryKey: ["parent-attendance-stats", childId],
+    queryFn: () => parentApi.getChildAttendanceStats(childId!),
+    enabled: !!childId,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   const { data: promotionData } = useQuery<ChildPromotionHistory>({
@@ -115,21 +233,30 @@ export default function ParentDashboard() {
       {/* Child selector */}
       {(children as LinkedStudent[]).length > 1 && (
         <div className="flex flex-wrap gap-2">
-          {(children as LinkedStudent[]).map((child) => (
-            <button
-              key={child._id}
-              onClick={() => setSelectedChildId(child._id)}
-              className={[
-                "flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
-                (selectedChild?._id === child._id)
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-stroke text-body hover:border-primary hover:text-primary dark:border-strokedark",
-              ].join(" ")}
-            >
-              <GraduationCap className="h-4 w-4" />
-              {child.fullName}
-            </button>
-          ))}
+          {(children as LinkedStudent[]).map((child) => {
+            const childClass =
+              child.class && typeof child.class === "object" ? child.class.name : null;
+            return (
+              <button
+                key={child._id}
+                onClick={() => setSelectedChildId(child._id)}
+                className={[
+                  "flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                  selectedChild?._id === child._id
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-stroke text-body hover:border-primary hover:text-primary dark:border-strokedark",
+                ].join(" ")}
+              >
+                <GraduationCap className="h-4 w-4 shrink-0" />
+                <span className="flex flex-col items-start leading-tight">
+                  <span>{child.fullName}</span>
+                  {childClass && (
+                    <span className="text-[11px] font-normal opacity-70">{childClass}</span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -138,21 +265,52 @@ export default function ParentDashboard() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
                 {selectedChild.fullName.charAt(0).toUpperCase()}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-black dark:text-white">{selectedChild.fullName}</p>
-                <p className="text-sm text-body">Class: {className}</p>
-                {selectedChild.studentProfile?.registrationNumber && (
-                  <p className="text-xs text-body">
-                    Reg: {selectedChild.studentProfile.registrationNumber}
-                  </p>
-                )}
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    <GraduationCap className="h-3 w-3" />
+                    {className}
+                  </span>
+                  {selectedChild.studentProfile?.registrationNumber && (
+                    <span className="text-xs text-body">
+                      Reg: {selectedChild.studentProfile.registrationNumber}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Today's absence alert */}
+      {attendanceStats?.todayStatus?.status === "absent" && (
+        <div className="flex items-start gap-3 rounded-xl border border-meta-1/40 bg-meta-1/10 px-4 py-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-meta-1/20">
+            <AlertTriangle className="h-4 w-4 text-meta-1" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-meta-1">Absence Alert — Today</p>
+            <p className="text-xs text-body mt-0.5">
+              {selectedChild?.fullName ?? "Your child"} was marked absent
+              {attendanceStats.todayStatus.className ? ` from ${attendanceStats.todayStatus.className}` : ""}
+              {attendanceStats.todayStatus.date
+                ? ` on ${new Date(attendanceStats.todayStatus.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`
+                : " today"}.
+              Please contact the school if this is unexpected.
+            </p>
+          </div>
+          <a
+            href={`/parent/attendance?child=${childId}`}
+            className="shrink-0 text-xs text-meta-1 underline hover:no-underline"
+          >
+            View
+          </a>
+        </div>
       )}
 
       {/* Promotion banner */}
@@ -231,6 +389,9 @@ export default function ParentDashboard() {
           />
         </div>
       )}
+
+      {/* Fee history */}
+      <FeeHistoryCard fees={fees as FeeRecord[]} childId={childId} />
 
       {/* Academic Calendar */}
       <AcademicCalendarWidget />

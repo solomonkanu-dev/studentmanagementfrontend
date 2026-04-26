@@ -52,7 +52,7 @@ export default function StudentTimetablePage() {
         <CardContent>
           {isLoading ? (
             <p className="py-6 text-sm text-body">Loading timetable…</p>
-          ) : !timetable || timetable.entries.length === 0 ? (
+          ) : !timetable?.entries?.length ? (
             <div className="flex flex-col items-center py-12 text-center">
               <CalendarRange className="mb-3 h-10 w-10 text-stroke dark:text-strokedark" />
               <p className="text-sm text-body">No timetable published for your class yet.</p>

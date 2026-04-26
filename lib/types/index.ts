@@ -195,6 +195,7 @@ export interface FeeStructure {
   category: "all" | "class" | "student";
   classId?: string | { _id: string; name: string };
   studentId?: string | { _id: string; fullName: string };
+  termId?: string | { _id: string; name: string; academicYear: string };
   particulars: FeeParticular[];
   totalAmount: number;
   instituteId: string;
@@ -552,7 +553,7 @@ export interface Notification {
 // ─── Announcement ─────────────────────────────────────────────────────────────
 
 export type AnnouncementType = "system_wide" | "institute_specific";
-export type AnnouncementRole = "admin" | "lecturer" | "student" | "super_admin";
+export type AnnouncementRole = "admin" | "lecturer" | "student" | "super_admin" | "parent";
 
 export interface AnnouncementReadEntry {
   user: string;

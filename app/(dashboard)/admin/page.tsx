@@ -7,6 +7,8 @@ import { adminApi } from "@/lib/api/admin";
 import { adminParentApi } from "@/lib/api/parent";
 import { subjectApi } from "@/lib/api/subject";
 import { salaryApi } from "@/lib/api/salary";
+import { financialApi } from "@/lib/api/financial";
+import Link from "next/link";
 import CardDataStats from "@/components/ui/CardDataStats";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -20,6 +22,7 @@ import {
   BookOpen,
   DollarSign,
   TrendingUp,
+  TrendingDown,
   AlertCircle,
   CheckCircle2,
   Clock,
@@ -27,6 +30,9 @@ import {
   Sunset,
   Moon,
   Heart,
+  Landmark,
+  Wallet,
+  ArrowRight,
 } from "lucide-react";
 import type {
   FeeByClass, FeeByStatus, FeeDefaulter, FeeCollectionTrend,
@@ -164,6 +170,7 @@ export default function AdminDashboard() {
   const { data: defaulters = [] }  = useQuery({ queryKey: ["fee-defaulters"],    queryFn: () => adminApi.getFeeDefaulters(8) });
   const { data: trend = [] }       = useQuery({ queryKey: ["fee-trend"],         queryFn: adminApi.getFeeCollectionTrend });
   const { data: salaryPage }       = useQuery({ queryKey: ["salary-all"],        queryFn: () => salaryApi.getAll({ limit: 200 }) });
+  const { data: financialSummary } = useQuery({ queryKey: ["financial-summary"], queryFn: () => financialApi.getSummary() });
 
   const trendSlice = [...(trend as FeeCollectionTrend[])].slice(-6);
   const salaries: Salary[] = salaryPage?.data ?? [];
@@ -322,6 +329,68 @@ export default function AdminDashboard() {
     grid: { ...baseChart.grid, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
   };
   const workloadSeries = [{ name: "Subjects", data: teacherWorkload.map((t) => t.count) }];
+
+  // ── Financial summary ───────────────────────────────────────────────────────
+  const finTerms = financialSummary?.termComparison ?? [];
+  const finIncomeByCategory = useMemo(() => financialSummary?.byCategory.filter((c) => c.type === "income") ?? [], [financialSummary]);
+  const finExpenseByCategory = useMemo(() => financialSummary?.byCategory.filter((c) => c.type === "expense") ?? [], [financialSummary]);
+
+  const finBarOptions: ApexCharts.ApexOptions = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: "bar" },
+    plotOptions: { bar: { borderRadius: 4, columnWidth: "52%" } },
+    colors: [C.success, C.danger],
+    xaxis: {
+      categories: finTerms.map((t) => t.term),
+      labels: { style: { fontSize: "10px", colors: C.body }, rotate: -20 },
+      axisBorder: { show: false }, axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { fontSize: "10px", colors: C.body }, formatter: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v) } },
+    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
+    legend: { position: "top", fontSize: "11px" },
+  };
+  const finBarSeries = [
+    { name: "Income",  data: finTerms.map((t) => t.income) },
+    { name: "Expense", data: finTerms.map((t) => t.expense) },
+  ];
+
+  const finAreaOptions: ApexCharts.ApexOptions = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: "area" },
+    stroke: { curve: "smooth", width: 2 },
+    fill: { type: "gradient", gradient: { opacityFrom: 0.25, opacityTo: 0.02 } },
+    colors: [C.primary],
+    xaxis: {
+      categories: finTerms.map((t) => t.term),
+      labels: { style: { fontSize: "10px", colors: C.body }, rotate: -20 },
+      axisBorder: { show: false }, axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { fontSize: "10px", colors: C.body }, formatter: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v) } },
+    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
+  };
+  const finAreaSeries = [{ name: "Net Balance", data: finTerms.map((t) => t.income - t.expense) }];
+
+  const finIncomePieOptions: ApexCharts.ApexOptions = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: "donut" },
+    labels: finIncomeByCategory.map((c) => c.category),
+    colors: ["#10b981","#3c50e0","#8b5cf6","#f59e0b","#06b6d4","#84cc16"],
+    legend: { position: "bottom", fontSize: "10px" },
+    dataLabels: { enabled: true, formatter: (v: number | string) => `${Number(v).toFixed(0)}%` },
+    plotOptions: { pie: { donut: { size: "58%", labels: { show: true, total: { show: true, label: "Income", fontSize: "11px", color: C.body, formatter: () => `NLe ${finIncomeByCategory.reduce((s, c) => s + c.total, 0).toLocaleString()}` } } } } },
+    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
+  };
+
+  const finExpensePieOptions: ApexCharts.ApexOptions = {
+    ...baseChart,
+    chart: { ...baseChart.chart, type: "donut" },
+    labels: finExpenseByCategory.map((c) => c.category),
+    colors: ["#fb5454","#f59e0b","#8b5cf6","#3c50e0","#ec4899","#f97316","#14b8a6","#06b6d4","#a78bfa"],
+    legend: { position: "bottom", fontSize: "10px" },
+    dataLabels: { enabled: true, formatter: (v: number | string) => `${Number(v).toFixed(0)}%` },
+    plotOptions: { pie: { donut: { size: "58%", labels: { show: true, total: { show: true, label: "Expenses", fontSize: "11px", color: C.body, formatter: () => `NLe ${finExpenseByCategory.reduce((s, c) => s + c.total, 0).toLocaleString()}` } } } } },
+    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
+  };
 
   // ── Chart: Salary donut ─────────────────────────────────────────────────────
   const salaryColors = { paid: C.success, pending: C.warning, cancelled: C.danger };
@@ -568,6 +637,126 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Financial Overview ──────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-black dark:text-white">Financial Overview</h2>
+          <p className="text-xs text-body">School-wide income, expenses and balance</p>
+        </div>
+        <Link href="/admin/financial-records" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+          Full report <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      {financialSummary ? (
+        <>
+          {/* KPI cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-meta-3/10">
+                  <TrendingUp className="h-5 w-5 text-meta-3" />
+                </div>
+                <div>
+                  <p className="text-xs text-body">Total Income</p>
+                  <p className="text-lg font-bold text-meta-3">NLe {financialSummary.totalIncome.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-meta-1/10">
+                  <TrendingDown className="h-5 w-5 text-meta-1" />
+                </div>
+                <div>
+                  <p className="text-xs text-body">Total Expense</p>
+                  <p className="text-lg font-bold text-meta-1">NLe {financialSummary.totalExpense.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-sm border border-stroke bg-white p-5 shadow-default dark:border-strokedark dark:bg-boxdark">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${financialSummary.netBalance >= 0 ? "bg-primary/10" : "bg-meta-1/10"}`}>
+                  <Wallet className={`h-5 w-5 ${financialSummary.netBalance >= 0 ? "text-primary" : "text-meta-1"}`} />
+                </div>
+                <div>
+                  <p className="text-xs text-body">Net {financialSummary.netBalance >= 0 ? "Surplus" : "Deficit"}</p>
+                  <p className={`text-lg font-bold ${financialSummary.netBalance >= 0 ? "text-primary" : "text-meta-1"}`}>
+                    NLe {Math.abs(financialSummary.netBalance).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {financialSummary.totalIncome > 0 && (
+                <div className="mt-3">
+                  <div className="mb-1 flex items-center justify-between text-[10px] text-body">
+                    <span>Expense ratio</span>
+                    <span className="font-medium">{Math.round((financialSummary.totalExpense / financialSummary.totalIncome) * 100)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-stroke dark:bg-strokedark">
+                    <div
+                      className={`h-full rounded-full transition-all ${Math.round((financialSummary.totalExpense / financialSummary.totalIncome) * 100) >= 100 ? "bg-meta-1" : Math.round((financialSummary.totalExpense / financialSummary.totalIncome) * 100) >= 80 ? "bg-yellow-500" : "bg-meta-3"}`}
+                      style={{ width: `${Math.min(100, Math.round((financialSummary.totalExpense / financialSummary.totalIncome) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Income vs Expense bar + Net trend */}
+          {finTerms.length > 0 && (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <h2 className="text-sm font-semibold text-black dark:text-white">Income vs Expense by Term</h2>
+                </CardHeader>
+                <CardContent>
+                  <ReactApexChart type="bar" series={finBarSeries} options={finBarOptions} height={220} />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <h2 className="text-sm font-semibold text-black dark:text-white">Net Balance Trend</h2>
+                </CardHeader>
+                <CardContent>
+                  <ReactApexChart type="area" series={finAreaSeries} options={finAreaOptions} height={220} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Category donuts */}
+          {(finIncomeByCategory.length > 0 || finExpenseByCategory.length > 0) && (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {finIncomeByCategory.length > 0 && (
+                <Card>
+                  <CardHeader><h2 className="text-sm font-semibold text-black dark:text-white">Income by Category</h2></CardHeader>
+                  <CardContent>
+                    <ReactApexChart type="donut" series={finIncomeByCategory.map((c) => c.total)} options={finIncomePieOptions} height={250} />
+                  </CardContent>
+                </Card>
+              )}
+              {finExpenseByCategory.length > 0 && (
+                <Card>
+                  <CardHeader><h2 className="text-sm font-semibold text-black dark:text-white">Expense by Category</h2></CardHeader>
+                  <CardContent>
+                    <ReactApexChart type="donut" series={finExpenseByCategory.map((c) => c.total)} options={finExpensePieOptions} height={250} />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="rounded-sm border border-stroke bg-white p-8 text-center shadow-default dark:border-strokedark dark:bg-boxdark">
+          <Landmark className="mx-auto mb-2 h-8 w-8 text-stroke" />
+          <p className="text-sm text-body">No financial records yet.</p>
+          <Link href="/admin/financial-records" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            Add first record <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+      )}
 
       {/* ── Defaulters + Recent students ─────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

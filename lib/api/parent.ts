@@ -18,6 +18,9 @@ export interface ChildFee {
   balance: number;
   status: "paid" | "partial" | "unpaid";
   dueDate?: string;
+  termId?: string | { _id: string; name: string; academicYear: string };
+  termName?: string;
+  academicYear?: string;
 }
 
 export interface PromotionEntry {
@@ -31,6 +34,21 @@ export interface ChildPromotionHistory {
   history: PromotionEntry[];
 }
 
+export interface ChildAttendanceStats {
+  todayStatus: {
+    date: string;
+    status: "present" | "absent" | null;
+    className: string | null;
+  } | null;
+  monthlyAbsences: {
+    year: number;
+    month: number;
+    label: string;
+    absences: number;
+  }[];
+  totalAbsencesThisYear: number;
+}
+
 export const parentApi = {
   getMyChildren: async (): Promise<LinkedStudent[]> => {
     const { data } = await apiClient.get("/parent/my-children");
@@ -39,6 +57,11 @@ export const parentApi = {
 
   getChildAttendance: async (studentId: string): Promise<ChildAttendanceSummary> => {
     const { data } = await apiClient.get(`/parent/child/${studentId}/attendance`);
+    return data.data ?? data;
+  },
+
+  getChildAttendanceStats: async (studentId: string): Promise<ChildAttendanceStats> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/attendance-stats`);
     return data.data ?? data;
   },
 

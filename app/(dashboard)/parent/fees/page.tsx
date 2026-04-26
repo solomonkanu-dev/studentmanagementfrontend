@@ -7,6 +7,7 @@ import { parentApi } from "@/lib/api/parent";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CreditCard, GraduationCap } from "lucide-react";
+import { groupFeesByTerm } from "@/lib/utils/feeGrouping";
 import type { LinkedStudent } from "@/lib/types";
 
 interface FeeItem {
@@ -22,7 +23,10 @@ interface ChildFeeRecord {
   balance: number;
   status: "paid" | "partial" | "unpaid";
   dueDate?: string;
-  items: FeeItem[];
+  items?: FeeItem[];
+  termId?: string | { _id: string; name: string; academicYear: string };
+  termName?: string;
+  academicYear?: string;
 }
 
 const STATUS_VARIANT: Record<string, "success" | "warning" | "danger"> = {
@@ -30,6 +34,45 @@ const STATUS_VARIANT: Record<string, "success" | "warning" | "danger"> = {
   partial: "warning",
   unpaid: "danger",
 };
+
+function FeeRow({ fee }: { fee: ChildFeeRecord }) {
+  return (
+    <div className="py-3 first:pt-0 last:pb-0">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-body">
+            Paid: NLe {(fee.amountPaid ?? 0).toLocaleString()} / NLe {(fee.totalAmount ?? 0).toLocaleString()}
+          </p>
+          {fee.dueDate && (
+            <p className="text-[11px] text-body">
+              Due: {new Date(fee.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Badge variant={STATUS_VARIANT[fee.status] ?? "default"}>
+            {fee.status}
+          </Badge>
+          {fee.balance > 0 && (
+            <span className="text-xs font-medium text-meta-1">
+              NLe {(fee.balance ?? 0).toLocaleString()} due
+            </span>
+          )}
+        </div>
+      </div>
+      {(fee.items?.length ?? 0) > 0 && (
+        <div className="mt-2 space-y-1">
+          {fee.items?.map((item, i) => (
+            <div key={i} className="flex items-center justify-between rounded-lg bg-whiter px-3 py-1.5 dark:bg-meta-4/20">
+              <p className="text-sm font-medium text-black dark:text-white">{item.title}</p>
+              <p className="text-xs text-body">NLe {(item.amount ?? 0).toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function FeesPage() {
   const searchParams = useSearchParams();
@@ -53,6 +96,8 @@ function FeesPage() {
   });
 
   const typedFees = fees as unknown as ChildFeeRecord[];
+  const grouped = groupFeesByTerm(typedFees);
+  const showHeadings = grouped.size > 1;
 
   const totalBilled = typedFees.reduce((s, f) => s + f.totalAmount, 0);
   const totalPaid = typedFees.reduce((s, f) => s + f.amountPaid, 0);
@@ -117,46 +162,24 @@ function FeesPage() {
             ))}
           </div>
 
-          {/* Fee items */}
+          {/* Fee breakdown grouped by term */}
           <Card>
             <CardHeader>
               <span className="text-sm font-semibold text-black dark:text-white">Fee Breakdown</span>
             </CardHeader>
             <CardContent className="divide-y divide-stroke dark:divide-strokedark">
-              {typedFees.map((fee) => (
-                <div key={fee._id} className="py-3 first:pt-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-body">
-                        Paid: NLe {(fee.amountPaid ?? 0).toLocaleString()} / NLe {(fee.totalAmount ?? 0).toLocaleString()}
+              {[...grouped].map(([label, groupFees]) => (
+                <div key={label}>
+                  {showHeadings && (
+                    <div className="border-b border-stroke/50 pb-1 pt-3 first:pt-0 dark:border-strokedark/50">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-body">
+                        {label}
                       </p>
-                      {fee.dueDate && (
-                        <p className="text-[11px] text-body">
-                          Due: {new Date(fee.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant={STATUS_VARIANT[fee.status] ?? "default"}>
-                        {fee.status}
-                      </Badge>
-                      {fee.balance > 0 && (
-                        <span className="text-xs font-medium text-meta-1">
-                          NLe {(fee.balance ?? 0).toLocaleString()} due
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {fee.items.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {fee.items.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between rounded-lg bg-whiter px-3 py-1.5 dark:bg-meta-4/20">
-                          <p className="text-sm font-medium text-black dark:text-white">{item.title}</p>
-                          <p className="text-xs text-body">NLe {(item.amount ?? 0).toLocaleString()}</p>
-                        </div>
-                      ))}
                     </div>
                   )}
+                  {groupFees.map((fee) => (
+                    <FeeRow key={fee._id} fee={fee} />
+                  ))}
                 </div>
               ))}
             </CardContent>

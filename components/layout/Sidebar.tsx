@@ -43,6 +43,8 @@ import {
   MessageSquare,
   ClipboardCheck,
   Archive,
+  Images,
+  Landmark,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -107,6 +109,7 @@ const adminNav: NavItem[] = [
   { label: "Fees", href: "/admin/fees", icon: CreditCard },
   { label: "Terms", href: "/admin/terms", icon: CalendarDays },
   { label: "Salary", href: "/admin/salary", icon: DollarSign },
+  { label: "Financial Records", href: "/admin/financial-records", icon: Landmark },
   { label: "Plan & Billing", href: "/admin/plan", icon: CreditCard },
   { label: "Institute", href: "/admin/institute", icon: Building2 },
   { label: "Theme", href: "/admin/theme", icon: Palette },
@@ -114,6 +117,7 @@ const adminNav: NavItem[] = [
   { label: "AI Analytics", href: "/admin/ai-analytics", icon: Sparkles },
   { label: "Audit Logs", href: "/admin/audit-logs", icon: Activity },
   { label: "Archive", href: "/admin/archive", icon: Archive },
+  { label: "Gallery", href: "/admin/gallery", icon: Images },
   { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
   {
     label: "Settings",
@@ -162,6 +166,7 @@ const studentNav: NavItem[] = [
   { label: "Academic Calendar", href: "/student/academic-calendar", icon: CalendarDays },
   { label: "Messages", href: "/student/messages", icon: MessageSquare },
   { label: "Rules & Regulations", href: "/student/rules", icon: ScrollText },
+  { label: "Gallery", href: "/student/gallery", icon: Images },
   { label: "Announcements", href: "/student/announcements", icon: Megaphone },
 ];
 
@@ -173,6 +178,7 @@ const parentNav: NavItem[] = [
   { label: "Timetable", href: "/parent/timetable", icon: TableProperties },
   { label: "Academic Calendar", href: "/parent/academic-calendar", icon: CalendarDays },
   { label: "Messages", href: "/parent/messages", icon: MessageSquare },
+  { label: "Gallery", href: "/parent/gallery", icon: Images },
   { label: "Announcements", href: "/parent/announcements", icon: Megaphone },
 ];
 

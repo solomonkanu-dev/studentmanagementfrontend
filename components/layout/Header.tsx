@@ -249,7 +249,7 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
                 {schoolName.charAt(0)}
               </div>
             )}
-            <span className="max-w-[140px] truncate text-sm font-medium text-black dark:text-white">
+            <span className="text-sm font-medium text-black dark:text-white">
               {schoolName}
             </span>
           </div>

@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { feesApi } from "@/lib/api/fees";
 import { adminApi } from "@/lib/api/admin";
+import { termApi } from "@/lib/api/term";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
@@ -14,7 +15,7 @@ import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { Plus, Trash2, Users, User, Building2, X, Download, Receipt } from "lucide-react";
 import { exportApi } from "@/lib/api/export";
-import type { FeeStructure, AuthUser, Class } from "@/lib/types";
+import type { FeeStructure, AuthUser, Class, AcademicTerm } from "@/lib/types";
 import Link from "next/link";
 import type { FeePayment } from "@/lib/api/student";
 import { errMsg } from "@/lib/utils/errMsg";
@@ -25,6 +26,7 @@ const structureSchema = z.object({
   category: z.enum(["all", "class", "student"]),
   classId: z.string().optional(),
   studentId: z.string().optional(),
+  termId: z.string().optional(),
   particulars: z
     .array(z.object({ label: z.string().min(1, "Label required"), amount: z.preprocess((v) => Number(v), z.number().min(0, "Must be ≥ 0")) }))
     .min(1, "Add at least one particular"),
@@ -66,6 +68,12 @@ function SelectField({
       {error && <p className="text-xs text-meta-1">{error}</p>}
     </div>
   );
+}
+
+function termLabel(s: FeeStructure): string {
+  if (!s.termId) return "—";
+  if (typeof s.termId === "object") return `${s.termId.name} (${s.termId.academicYear})`;
+  return String(s.termId);
 }
 
 function categoryLabel(s: FeeStructure): string {
@@ -125,6 +133,11 @@ function CreateStructureModal({
 
   const { fields, append, remove } = useFieldArray({ control, name: "particulars" });
   const category = watch("category");
+
+  const { data: terms = [] } = useQuery({
+    queryKey: ["academic-terms"],
+    queryFn: termApi.getAll,
+  });
 
   const runAutoAssign = async (studentList: AuthUser[]) => {
     if (studentList.length === 0) return;
@@ -186,6 +199,7 @@ function CreateStructureModal({
           };
           if (values.category === "class" && values.classId) payload.classId = values.classId;
           if (values.category === "student" && values.studentId) payload.studentId = values.studentId;
+          if (values.termId) payload.termId = values.termId;
           mutation.mutate(payload);
         })}
         className="space-y-4"
@@ -194,6 +208,17 @@ function CreateStructureModal({
           <option value="all">All Students</option>
           <option value="class">Specific Class</option>
           <option value="student">Specific Student</option>
+        </SelectField>
+
+        <SelectField label="Term (optional)" {...register("termId")}>
+          <option value="">No specific term</option>
+          {(terms as AcademicTerm[])
+            .sort((a, b) => b.academicYear.localeCompare(a.academicYear))
+            .map((t) => (
+              <option key={t._id} value={t._id}>
+                {t.name} — {t.academicYear}{t.isCurrent ? " (current)" : ""}
+              </option>
+            ))}
         </SelectField>
 
         {category === "class" && (
@@ -1027,10 +1052,17 @@ export default function FeesPage() {
   const [showAssignAll, setShowAssignAll] = useState(false);
   const [showAssignStudent, setShowAssignStudent] = useState(false);
   const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
+  const [termFilter, setTermFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
 
   const { data: structures = [], isLoading } = useQuery({
     queryKey: ["fee-structures"],
     queryFn: feesApi.getStructures,
+  });
+
+  const { data: terms = [] } = useQuery({
+    queryKey: ["academic-terms"],
+    queryFn: termApi.getAll,
   });
 
   const { data: classes = [] } = useQuery({
@@ -1049,9 +1081,21 @@ export default function FeesPage() {
   });
 
   const allStructures = structures as FeeStructure[];
-  const displayedStructures = showUnassignedOnly
-    ? allStructures.filter((s) => !s.isAssigned)
-    : allStructures;
+  const uniqueYears = [...new Set((terms as AcademicTerm[]).map((t) => t.academicYear))].sort().reverse();
+
+  const displayedStructures = allStructures
+    .filter((s) => (showUnassignedOnly ? !s.isAssigned : true))
+    .filter((s) => {
+      if (!termFilter) return true;
+      if (termFilter === "__none__") return !s.termId;
+      const id = typeof s.termId === "object" && s.termId ? s.termId._id : s.termId;
+      return id === termFilter;
+    })
+    .filter((s) => {
+      if (!yearFilter) return true;
+      const termObj = typeof s.termId === "object" && s.termId ? s.termId : null;
+      return termObj?.academicYear === yearFilter;
+    });
 
   return (
     <div className="space-y-6">
@@ -1098,6 +1142,33 @@ export default function FeesPage() {
               >
                 {showUnassignedOnly ? "Show All" : "Unassigned Only"}
               </button>
+              <select
+                value={termFilter}
+                onChange={(e) => setTermFilter(e.target.value)}
+                className="h-8 rounded border border-stroke bg-transparent px-2 text-xs text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
+              >
+                <option value="">All terms</option>
+                {(terms as AcademicTerm[])
+                  .sort((a, b) => b.academicYear.localeCompare(a.academicYear))
+                  .map((t) => (
+                    <option key={t._id} value={t._id}>
+                      {t.name} — {t.academicYear}
+                    </option>
+                  ))}
+                <option value="__none__">No term assigned</option>
+              </select>
+              {uniqueYears.length > 0 && (
+                <select
+                  value={yearFilter}
+                  onChange={(e) => { setYearFilter(e.target.value); setTermFilter(""); }}
+                  className="h-8 rounded border border-stroke bg-transparent px-2 text-xs text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
+                >
+                  <option value="">All years</option>
+                  {uniqueYears.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" onClick={() => setShowAssignClass(true)}>
@@ -1131,6 +1202,7 @@ export default function FeesPage() {
                     <Th>Category</Th>
                     <Th>Particulars</Th>
                     <Th>Total</Th>
+                    <Th>Term</Th>
                     <Th>Status</Th>
                     <Th>Created</Th>
                     <Th>Actions</Th>
@@ -1139,7 +1211,7 @@ export default function FeesPage() {
                 <TableBody>
                   {displayedStructures.length === 0 ? (
                     <tr>
-                      <Td colSpan={6} className="py-10 text-center text-body">
+                      <Td colSpan={7} className="py-10 text-center text-body">
                         {showUnassignedOnly ? "All fee structures have been assigned." : "No fee structures yet."}
                       </Td>
                     </tr>
@@ -1159,6 +1231,7 @@ export default function FeesPage() {
                             Nle{f.totalAmount.toLocaleString()}
                           </span>
                         </Td>
+                        <Td className="text-body text-xs">{termLabel(f)}</Td>
                         <Td>
                           {f.isAssigned === true ? (
                             <Badge variant="success">Assigned</Badge>

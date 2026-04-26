@@ -20,14 +20,14 @@ import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
-const ROLES: AnnouncementRole[] = ["admin", "lecturer", "student", "super_admin"];
+const ROLES: AnnouncementRole[] = ["admin", "lecturer", "student", "parent", "super_admin"];
 
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
   body: z.string().min(1, "Body is required"),
   type: z.enum(["system_wide", "institute_specific"]).default("system_wide"),
   institute: z.string().optional(),
-  targetRoles: z.array(z.enum(["admin", "lecturer", "student", "super_admin"])).default([]),
+  targetRoles: z.array(z.enum(["admin", "lecturer", "student", "super_admin", "parent"])).default([]),
   expiresAt: z.string().optional(),
 }).superRefine((val, ctx) => {
   if (val.type === "institute_specific" && !val.institute) {

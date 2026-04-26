@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { parentApi } from "@/lib/api/parent";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { CalendarCheck, GraduationCap } from "lucide-react";
+import { CalendarCheck, GraduationCap, AlertTriangle, TrendingDown } from "lucide-react";
 import type { LinkedStudent } from "@/lib/types";
 
 function AttendancePage() {
@@ -30,7 +30,16 @@ function AttendancePage() {
     enabled: !!childId,
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ["parent-attendance-stats", childId],
+    queryFn: () => parentApi.getChildAttendanceStats(childId!),
+    enabled: !!childId,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const selectedChild = (children as LinkedStudent[]).find((c) => c._id === childId);
+  const isAbsentToday = stats?.todayStatus?.status === "absent";
+  const maxAbsences = Math.max(...(stats?.monthlyAbsences ?? []).map((m) => m.absences), 1);
 
   return (
     <div className="space-y-6">
@@ -62,6 +71,26 @@ function AttendancePage() {
               {child.fullName}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Today's absence alert */}
+      {isAbsentToday && (
+        <div className="flex items-start gap-3 rounded-xl border border-meta-1/40 bg-meta-1/10 px-4 py-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-meta-1/20">
+            <AlertTriangle className="h-4 w-4 text-meta-1" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-meta-1">Absent Today</p>
+            <p className="text-xs text-body mt-0.5">
+              {selectedChild?.fullName ?? "Your child"} was marked absent
+              {stats?.todayStatus?.className ? ` from ${stats.todayStatus.className}` : ""}
+              {stats?.todayStatus?.date
+                ? ` on ${new Date(stats.todayStatus.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`
+                : " today"}.
+              Please contact the school if this is unexpected.
+            </p>
+          </div>
         </div>
       )}
 
@@ -112,6 +141,53 @@ function AttendancePage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Monthly absence statistics */}
+          {stats && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-meta-1" />
+                    <span className="text-sm font-semibold text-black dark:text-white">Monthly Absences</span>
+                  </div>
+                  <span className="text-xs text-body">
+                    {stats.totalAbsencesThisYear} total this year
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {stats.monthlyAbsences.every((m) => m.absences === 0) ? (
+                  <p className="py-4 text-center text-xs text-meta-3">
+                    No absences recorded in the past 12 months.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {stats.monthlyAbsences.map((m) => (
+                      <div key={`${m.year}-${m.month}`} className="flex items-center gap-3">
+                        <span className="w-16 shrink-0 text-right text-[11px] text-body">{m.label}</span>
+                        <div className="flex-1 h-5 overflow-hidden rounded-sm bg-stroke dark:bg-strokedark">
+                          {m.absences > 0 && (
+                            <div
+                              className="h-full rounded-sm bg-meta-1/70 transition-all"
+                              style={{ width: `${(m.absences / maxAbsences) * 100}%` }}
+                            />
+                          )}
+                        </div>
+                        <span
+                          className={`w-6 shrink-0 text-right text-[11px] font-medium ${
+                            m.absences > 0 ? "text-meta-1" : "text-body"
+                          }`}
+                        >
+                          {m.absences}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Recent records */}
           {attendance.recentRecords?.length > 0 && (

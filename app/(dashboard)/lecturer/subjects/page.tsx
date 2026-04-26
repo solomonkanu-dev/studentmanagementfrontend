@@ -286,6 +286,7 @@ function AssignmentsModal({
 
 export default function LecturerSubjectsPage() {
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("");
   const [selected, setSelected] = useState<Subject | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -295,11 +296,23 @@ export default function LecturerSubjectsPage() {
 
   const subjects: Subject[] = Array.isArray(data) ? data : [];
 
-  const filtered = subjects.filter(
-    (s) =>
+  // Derive unique classes from the loaded subjects — no extra query needed
+  const classOptions = subjects.reduce<{ id: string; name: string }[]>((acc, s) => {
+    const id = typeof s.class === "object" && s.class ? s.class._id : (s.class as string);
+    const name = typeof s.class === "object" && s.class ? s.class.name : "";
+    if (id && name && !acc.some((c) => c.id === id)) acc.push({ id, name });
+    return acc;
+  }, []);
+
+  const filtered = subjects.filter((s) => {
+    const matchesSearch =
       s.name.toLowerCase().includes(search.toLowerCase()) ||
-      (s.code ?? "").toLowerCase().includes(search.toLowerCase())
-  );
+      (s.code ?? "").toLowerCase().includes(search.toLowerCase());
+    const subjectClassId =
+      typeof s.class === "object" && s.class ? s.class._id : (s.class as string);
+    const matchesClass = !classFilter || subjectClassId === classFilter;
+    return matchesSearch && matchesClass;
+  });
 
   const getClassName = (cls: string | Class) =>
     typeof cls === "object" ? cls.name : "—";
@@ -308,22 +321,37 @@ export default function LecturerSubjectsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-xs w-full">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body"
-            aria-hidden="true"
-          />
-          <input
-            type="text"
-            aria-label="Search subjects"
-            placeholder="Search by name or code…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:max-w-xs">
+            <Search
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-body"
+              aria-hidden="true"
+            />
+            <input
+              type="text"
+              aria-label="Search subjects"
+              placeholder="Search by name or code…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            />
+          </div>
+          {classOptions.length > 1 && (
+            <select
+              aria-label="Filter by class"
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="h-9 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            >
+              <option value="">All Classes</option>
+              {classOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
         </div>
         <p className="text-sm text-body">
-          {subjects.length} subject{subjects.length !== 1 ? "s" : ""} assigned
+          {filtered.length} of {subjects.length} subject{subjects.length !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -338,9 +366,11 @@ export default function LecturerSubjectsPage() {
             <BookOpen className="h-7 w-7 text-primary" aria-hidden="true" />
           </div>
           <p className="text-sm font-medium text-black dark:text-white">
-            {search ? "No subjects match your search." : "No subjects assigned yet."}
+            {search || classFilter
+              ? "No subjects match your filters."
+              : "No subjects assigned yet."}
           </p>
-          {!search && (
+          {!search && !classFilter && (
             <p className="text-xs text-body">
               Subjects assigned to you by the admin will appear here.
             </p>

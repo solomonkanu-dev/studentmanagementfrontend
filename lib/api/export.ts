@@ -17,4 +17,5 @@ export const exportApi = {
   feeCollection: () => downloadCsv("/exports/fee-collection", "fee-collection.csv"),
   salary: () => downloadCsv("/exports/salary", "salary.csv"),
   attendanceSummary: () => downloadCsv("/exports/attendance-summary", "attendance-summary.csv"),
+  financialRecords: () => downloadCsv("/exports/financial", "financial-records.csv"),
 };
