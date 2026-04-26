@@ -100,6 +100,7 @@ export const adminParentApi = {
     fullName: string;
     email: string;
     password: string;
+    phoneNumber?: string;
     linkedStudents?: string[];
   }): Promise<unknown> => {
     const { data } = await apiClient.post("/admin/parents", payload);

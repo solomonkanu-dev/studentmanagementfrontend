@@ -32,6 +32,7 @@ const createSchema = z.object({
   fullName: z.string().min(2, "Name required"),
   email: z.string().email("Valid email required"),
   password: z.string().min(6, "Min 6 characters"),
+  phoneNumber: z.string().optional(),
   linkedStudents: z.string().optional(), // comma-separated IDs, resolved via UI
 });
 type CreateForm = z.infer<typeof createSchema>;
@@ -42,6 +43,7 @@ interface Parent {
   _id: string;
   fullName: string;
   email: string;
+  phoneNumber?: string;
   isActive: boolean;
   linkedStudents: { _id: string; fullName: string; class?: { name: string } | string }[];
   createdAt: string;
@@ -76,6 +78,7 @@ export default function ParentsPage() {
         fullName: data.fullName,
         email: data.email,
         password: data.password,
+        phoneNumber: data.phoneNumber || undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-parents"] });
@@ -99,7 +102,8 @@ export default function ParentsPage() {
   const filtered = (parents as Parent[]).filter(
     (p) =>
       p.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      p.email.toLowerCase().includes(search.toLowerCase())
+      p.email.toLowerCase().includes(search.toLowerCase()) ||
+      (p.phoneNumber ?? "").includes(search)
   );
 
   return (
@@ -146,7 +150,7 @@ export default function ParentsPage() {
             <Table>
               <TableHead>
                 <tr>
-                  {["Name", "Email", "Linked Children", "Status", "Actions"].map((h) => (
+                  {["Name", "Email", "Phone", "Linked Children", "Status", "Actions"].map((h) => (
                     <Th key={h}>{h}</Th>
                   ))}
                 </tr>
@@ -158,6 +162,18 @@ export default function ParentsPage() {
                       <p className="font-medium text-black dark:text-white">{parent.fullName}</p>
                     </Td>
                     <Td className="text-body">{parent.email}</Td>
+                    <Td className="text-body whitespace-nowrap">
+                      {parent.phoneNumber ? (
+                        <a
+                          href={`tel:${parent.phoneNumber}`}
+                          className="hover:text-primary transition-colors"
+                        >
+                          {parent.phoneNumber}
+                        </a>
+                      ) : (
+                        <span className="italic text-xs">—</span>
+                      )}
+                    </Td>
                     <Td>
                       {parent.linkedStudents?.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
@@ -250,6 +266,13 @@ export default function ParentsPage() {
             <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">Email</label>
             <Input {...register("email")} type="email" placeholder="parent@example.com" />
             {errors.email && <p className="mt-1 text-xs text-meta-1">{errors.email.message}</p>}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
+              Phone Number <span className="font-normal text-body">(optional — used for SMS)</span>
+            </label>
+            <Input {...register("phoneNumber")} type="tel" placeholder="e.g. +23276123456" />
+            {errors.phoneNumber && <p className="mt-1 text-xs text-meta-1">{errors.phoneNumber.message}</p>}
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">

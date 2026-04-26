@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClassLabel } from "@/hooks/useClassLabel";
 import { announcementApi } from "@/lib/api/announcement";
@@ -58,14 +58,18 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   children?: SubItem[];
+  group?: string;
 }
 
 const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+
+  // ── People ─────────────────────────────────────────────────────────────────
   {
     label: "Teachers",
     href: "/admin/lecturers",
     icon: Users,
+    group: "People",
     children: [
       { label: "Overview", href: "/admin/lecturers" },
       { label: "All Teachers", href: "/admin/lecturers/list" },
@@ -75,6 +79,7 @@ const adminNav: NavItem[] = [
     label: "Classes",
     href: "/admin/classes",
     icon: School,
+    group: "People",
     children: [
       { label: "Overview", href: "/admin/classes" },
       { label: "All Classes", href: "/admin/classes/list" },
@@ -84,54 +89,65 @@ const adminNav: NavItem[] = [
     label: "Students",
     href: "/admin/students",
     icon: GraduationCap,
+    group: "People",
     children: [
       { label: "Overview", href: "/admin/students" },
       { label: "All Students", href: "/admin/students/list" },
     ],
   },
+  { label: "Parents", href: "/admin/parents", icon: Heart, group: "People" },
+
+  // ── Academics ──────────────────────────────────────────────────────────────
   {
     label: "Subjects",
     href: "/admin/subjects",
     icon: BookOpen,
+    group: "Academics",
     children: [
       { label: "Overview", href: "/admin/subjects" },
       { label: "All Subjects", href: "/admin/subjects/list" },
     ],
   },
-  { label: "Parents", href: "/admin/parents", icon: Heart },
-  { label: "Timetable", href: "/admin/timetable", icon: TableProperties },
-  { label: "Academic Calendar", href: "/admin/academic-calendar", icon: CalendarDays },
-  { label: "Promote Students", href: "/admin/promote", icon: GraduationCap },
-  { label: "Assignments", href: "/admin/assignments", icon: ClipboardList },
-  { label: "Attendance", href: "/admin/attendance", icon: CalendarCheck },
-  { label: "Results", href: "/admin/results", icon: FileText },
-  { label: "Exams", href: "/admin/exams", icon: ClipboardCheck },
-  { label: "Fees", href: "/admin/fees", icon: CreditCard },
-  { label: "Terms", href: "/admin/terms", icon: CalendarDays },
-  { label: "Salary", href: "/admin/salary", icon: DollarSign },
-  { label: "Financial Records", href: "/admin/financial-records", icon: Landmark },
-  { label: "Plan & Billing", href: "/admin/plan", icon: CreditCard },
-  { label: "Institute", href: "/admin/institute", icon: Building2 },
-  { label: "Theme", href: "/admin/theme", icon: Palette },
-  { label: "Messages", href: "/admin/messages", icon: MessageSquare },
-  { label: "AI Analytics", href: "/admin/ai-analytics", icon: Sparkles },
-  { label: "Audit Logs", href: "/admin/audit-logs", icon: Activity },
-  { label: "Archive", href: "/admin/archive", icon: Archive },
-  { label: "Gallery", href: "/admin/gallery", icon: Images },
-  { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
+  { label: "Timetable",         href: "/admin/timetable",          icon: TableProperties, group: "Academics" },
+  { label: "Academic Calendar", href: "/admin/academic-calendar",  icon: CalendarDays,    group: "Academics" },
+  { label: "Assignments",       href: "/admin/assignments",        icon: ClipboardList,   group: "Academics" },
+  { label: "Attendance",        href: "/admin/attendance",         icon: CalendarCheck,   group: "Academics" },
+  { label: "Results",           href: "/admin/results",            icon: FileText,        group: "Academics" },
+  { label: "Exams",             href: "/admin/exams",              icon: ClipboardCheck,  group: "Academics" },
+  { label: "Promote Students",  href: "/admin/promote",            icon: GraduationCap,   group: "Academics" },
+
+  // ── Finance ────────────────────────────────────────────────────────────────
+  { label: "Fees",               href: "/admin/fees",               icon: CreditCard, group: "Finance" },
+  { label: "Terms",              href: "/admin/terms",              icon: CalendarDays, group: "Finance" },
+  { label: "Salary",             href: "/admin/salary",             icon: DollarSign,  group: "Finance" },
+  { label: "Financial Records",  href: "/admin/financial-records",  icon: Landmark,    group: "Finance" },
+  { label: "Plan & Billing",     href: "/admin/plan",               icon: CreditCard,  group: "Finance" },
+
+  // ── Communication ──────────────────────────────────────────────────────────
+  { label: "Messages",      href: "/admin/messages",      icon: MessageSquare, group: "Communication" },
+  { label: "Announcements", href: "/admin/announcements", icon: Megaphone,     group: "Communication" },
+  { label: "Gallery",       href: "/admin/gallery",       icon: Images,        group: "Communication" },
+
+  // ── Administration ─────────────────────────────────────────────────────────
+  { label: "Institute",     href: "/admin/institute",    icon: Building2, group: "Administration" },
+  { label: "AI Analytics",  href: "/admin/ai-analytics", icon: Sparkles,  group: "Administration" },
+  { label: "Audit Logs",    href: "/admin/audit-logs",   icon: Activity,  group: "Administration" },
+  { label: "Archive",       href: "/admin/archive",      icon: Archive,   group: "Administration" },
+  { label: "Theme",         href: "/admin/theme",        icon: Palette,   group: "Administration" },
   {
     label: "Settings",
     href: "/admin/settings",
     icon: Settings,
+    group: "Administration",
     children: [
-      { label: "Fees Particulars", href: "/admin/settings/fees" },
-      { label: "Invoice Accounts", href: "/admin/settings/accounts" },
-      { label: "Marks Grading", href: "/admin/settings/grading" },
-      { label: "Document Templates", href: "/admin/settings/documents" },
-      { label: "Email Notifications", href: "/admin/settings/notifications" },
-      { label: "Rules & Regulations", href: "/admin/settings/rules" },
-      { label: "My Plan", href: "/admin/settings/plan" },
-      { label: "Account Settings", href: "/admin/settings/account" },
+      { label: "Fees Particulars",     href: "/admin/settings/fees" },
+      { label: "Invoice Accounts",     href: "/admin/settings/accounts" },
+      { label: "Marks Grading",        href: "/admin/settings/grading" },
+      { label: "Document Templates",   href: "/admin/settings/documents" },
+      { label: "Email Notifications",  href: "/admin/settings/notifications" },
+      { label: "Rules & Regulations",  href: "/admin/settings/rules" },
+      { label: "My Plan",              href: "/admin/settings/plan" },
+      { label: "Account Settings",     href: "/admin/settings/account" },
     ],
   },
 ];
@@ -236,6 +252,18 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
     : superAdminNav,
   [role, dynamicAdminNav, dynamicLecturerNav]);
 
+  // Pre-group nav items for section-level collapsing
+  const groupedNav = useMemo(() => {
+    const sections: { group: string | null; items: NavItem[] }[] = [];
+    for (const item of navItems) {
+      const g = item.group ?? null;
+      const last = sections[sections.length - 1];
+      if (!last || last.group !== g) sections.push({ group: g, items: [item] });
+      else last.items.push(item);
+    }
+    return sections;
+  }, [navItems]);
+
   const { data: announcements = [] } = useQuery({
     queryKey: ["announcements"],
     queryFn: announcementApi.getAll,
@@ -338,14 +366,42 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
   const toggleGroup = (href: string) => {
     setOpenGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(href)) {
-        next.delete(href);
-      } else {
-        next.add(href);
-      }
+      if (next.has(href)) next.delete(href);
+      else next.add(href);
       return next;
     });
   };
+
+  // Track which nav sections (group headers) are open — all open by default
+  const [openSections, setOpenSections] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    navItems.forEach((item) => { if (item.group) initial.add(item.group); });
+    return initial;
+  });
+
+  const toggleSection = (group: string) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  };
+
+  // Auto-open the section containing the active route
+  useEffect(() => {
+    navItems.forEach((item) => {
+      const isActive = pathname === item.href || item.children?.some((c) => pathname === c.href);
+      if (isActive && item.group) {
+        setOpenSections((prev) => {
+          if (prev.has(item.group!)) return prev;
+          const next = new Set(prev);
+          next.add(item.group!);
+          return next;
+        });
+      }
+    });
+  }, [pathname, navItems]);
 
   // Auto-open group when navigating into it
   useEffect(() => {
@@ -435,133 +491,186 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
         {/* Nav */}
         <nav className={["flex-1 overflow-y-auto no-scrollbar py-4", sidebarCollapsed ? "lg:px-1 px-3" : "px-3"].join(" ")}>
           <ul className="space-y-0.5">
-            {navItems.map((item) => {
-              const { label, href, icon: Icon, children } = item;
+            {groupedNav.map(({ group, items }) => {
 
-              // ─── Dropdown nav item ──────────────────────────
-              if (children) {
-                const isOpen = openGroups.has(href);
-                const isChildActive = children.some((c) => pathname === c.href);
+              // ── Ungrouped items (Dashboard, no group) ──────────────
+              if (!group) {
+                return items.map(({ label, href, icon: Icon }) => {
+                  const active = pathname === href;
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        onClick={() => setSidebarOpen(false)}
+                        title={sidebarCollapsed ? label : undefined}
+                        className={[
+                          "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                          sidebarCollapsed ? "lg:justify-center lg:px-0 lg:gap-0" : "",
+                          active ? "bg-primary text-white" : "text-bodydark hover:bg-meta-4 hover:text-white",
+                        ].join(" ")}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className={["flex-1", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>{label}</span>
+                      </Link>
+                    </li>
+                  );
+                });
+              }
 
-                return (
-                  <li key={href}>
+              // ── Grouped section ────────────────────────────────────
+              const isSectionOpen = openSections.has(group);
+              const hasActiveInSection = items.some(
+                (item) => pathname === item.href || item.children?.some((c) => pathname === c.href)
+              );
+
+              return (
+                <Fragment key={group}>
+                  {/* Section toggle button */}
+                  <li className={["mt-2", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
                     <button
-                      id={
-                        href === "/admin/lecturers" ? "nav-teachers" :
-                        href === "/admin/classes"   ? "nav-classes"   :
-                        href === "/admin/students"  ? "nav-students"  :
-                        href === "/admin/subjects"  ? "nav-subjects"  :
-                        undefined
-                      }
-                      onClick={() => !sidebarCollapsed && toggleGroup(href)}
-                      title={sidebarCollapsed ? label : undefined}
+                      onClick={() => toggleSection(group)}
                       className={[
-                        "flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                        sidebarCollapsed ? "lg:justify-center lg:px-0" : "justify-between",
-                        isChildActive
-                          ? "bg-meta-4 text-white"
-                          : "text-bodydark hover:bg-meta-4 hover:text-white",
+                        "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors select-none",
+                        hasActiveInSection ? "text-primary" : "text-bodydark2 hover:text-white",
                       ].join(" ")}
                     >
-                      <span className={["flex items-center gap-3", sidebarCollapsed ? "lg:gap-0" : ""].join(" ")}>
-                        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        <span className={sidebarCollapsed ? "lg:hidden" : ""}>{label}</span>
-                      </span>
+                      <span>{group}</span>
                       <ChevronDown
                         className={[
-                          "h-4 w-4 shrink-0 transition-transform duration-200",
-                          isOpen ? "rotate-180" : "",
-                          sidebarCollapsed ? "lg:hidden" : "",
+                          "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                          isSectionOpen ? "rotate-180" : "",
                         ].join(" ")}
                         aria-hidden="true"
                       />
                     </button>
+                  </li>
 
-                    {/* Sub-items */}
-                    <div
-                      className="overflow-hidden transition-all duration-200"
-                      style={{
-                        maxHeight: !sidebarCollapsed && isOpen ? `${children.length * 40 + 8}px` : "0px",
-                        marginTop: !sidebarCollapsed && isOpen ? "2px" : "0px",
-                      }}
-                    >
-                      <ul className="space-y-0.5 pl-4">
-                        {children.map((child) => {
-                          const childActive = pathname === child.href;
+                  {/* Section items — animated */}
+                  <div
+                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                    style={{ maxHeight: sidebarCollapsed || isSectionOpen ? "9999px" : "0px" }}
+                  >
+                    <ul className="space-y-0.5">
+                      {items.map((item) => {
+                        const { label, href, icon: Icon, children } = item;
+
+                        // ─── Dropdown nav item ──────────────────────
+                        if (children) {
+                          const isOpen = openGroups.has(href);
+                          const isChildActive = children.some((c) => pathname === c.href);
                           return (
-                            <li key={child.href}>
-                              <Link
-                                href={child.href}
-                                onClick={() => setSidebarOpen(false)}
+                            <li key={href}>
+                              <button
+                                id={
+                                  href === "/admin/lecturers" ? "nav-teachers" :
+                                  href === "/admin/classes"   ? "nav-classes"   :
+                                  href === "/admin/students"  ? "nav-students"  :
+                                  href === "/admin/subjects"  ? "nav-subjects"  :
+                                  undefined
+                                }
+                                onClick={() => !sidebarCollapsed && toggleGroup(href)}
+                                title={sidebarCollapsed ? label : undefined}
                                 className={[
-                                  "flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors",
-                                  childActive
-                                    ? "bg-primary text-white"
-                                    : "text-bodydark hover:bg-meta-4 hover:text-white",
+                                  "flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                                  sidebarCollapsed ? "lg:justify-center lg:px-0" : "justify-between",
+                                  isChildActive ? "bg-meta-4 text-white" : "text-bodydark hover:bg-meta-4 hover:text-white",
                                 ].join(" ")}
                               >
-                                <span
+                                <span className={["flex items-center gap-3", sidebarCollapsed ? "lg:gap-0" : ""].join(" ")}>
+                                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                  <span className={sidebarCollapsed ? "lg:hidden" : ""}>{label}</span>
+                                </span>
+                                <ChevronDown
                                   className={[
-                                    "h-1.5 w-1.5 shrink-0 rounded-full",
-                                    childActive ? "bg-white" : "bg-bodydark",
+                                    "h-4 w-4 shrink-0 transition-transform duration-200",
+                                    isOpen ? "rotate-180" : "",
+                                    sidebarCollapsed ? "lg:hidden" : "",
                                   ].join(" ")}
                                   aria-hidden="true"
                                 />
-                                {child.label}
-                              </Link>
+                              </button>
+                              <div
+                                className="overflow-hidden transition-all duration-200"
+                                style={{
+                                  maxHeight: !sidebarCollapsed && isOpen ? `${children.length * 40 + 8}px` : "0px",
+                                  marginTop: !sidebarCollapsed && isOpen ? "2px" : "0px",
+                                }}
+                              >
+                                <ul className="space-y-0.5 pl-4">
+                                  {children.map((child) => {
+                                    const childActive = pathname === child.href;
+                                    return (
+                                      <li key={child.href}>
+                                        <Link
+                                          href={child.href}
+                                          onClick={() => setSidebarOpen(false)}
+                                          className={[
+                                            "flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors",
+                                            childActive ? "bg-primary text-white" : "text-bodydark hover:bg-meta-4 hover:text-white",
+                                          ].join(" ")}
+                                        >
+                                          <span
+                                            className={["h-1.5 w-1.5 shrink-0 rounded-full", childActive ? "bg-white" : "bg-bodydark"].join(" ")}
+                                            aria-hidden="true"
+                                          />
+                                          {child.label}
+                                        </Link>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
                             </li>
                           );
-                        })}
-                      </ul>
-                    </div>
-                  </li>
-                );
-              }
+                        }
 
-              // ─── Plain nav item ─────────────────────────────
-              const active = pathname === href;
-              const isAnnouncements = href.endsWith("/announcements");
-              const isAssignments = href.endsWith("/assignments");
-              const isMessages = href.endsWith("/messages");
-              const isAdmins = href === "/super-admin/admins";
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    onClick={() => setSidebarOpen(false)}
-                    title={sidebarCollapsed ? label : undefined}
-                    className={[
-                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                      sidebarCollapsed ? "lg:justify-center lg:px-0 lg:gap-0" : "",
-                      active
-                        ? "bg-primary text-white"
-                        : "text-bodydark hover:bg-meta-4 hover:text-white",
-                    ].join(" ")}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className={["flex-1", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>{label}</span>
-                    {isAnnouncements && unreadAnnouncements > 0 && (
-                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-meta-1 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
-                        {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
-                      </span>
-                    )}
-                    {isAssignments && isStudent && pendingAssignments > 0 && (
-                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
-                        {pendingAssignments > 99 ? "99+" : pendingAssignments}
-                      </span>
-                    )}
-                    {isMessages && (unreadMessages as number) > 0 && (
-                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
-                        {(unreadMessages as number) > 99 ? "99+" : unreadMessages}
-                      </span>
-                    )}
-                    {isAdmins && pendingAdminCount > 0 && (
-                      <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
-                        {pendingAdminCount > 99 ? "99+" : pendingAdminCount}
-                      </span>
-                    )}
-                  </Link>
-                </li>
+                        // ─── Plain nav item ─────────────────────────
+                        const active = pathname === href;
+                        const isAnnouncements = href.endsWith("/announcements");
+                        const isAssignments = href.endsWith("/assignments");
+                        const isMessages = href.endsWith("/messages");
+                        const isAdmins = href === "/super-admin/admins";
+                        return (
+                          <li key={href}>
+                            <Link
+                              href={href}
+                              onClick={() => setSidebarOpen(false)}
+                              title={sidebarCollapsed ? label : undefined}
+                              className={[
+                                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                                sidebarCollapsed ? "lg:justify-center lg:px-0 lg:gap-0" : "",
+                                active ? "bg-primary text-white" : "text-bodydark hover:bg-meta-4 hover:text-white",
+                              ].join(" ")}
+                            >
+                              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                              <span className={["flex-1", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>{label}</span>
+                              {isAnnouncements && unreadAnnouncements > 0 && (
+                                <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-meta-1 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
+                                  {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
+                                </span>
+                              )}
+                              {isAssignments && isStudent && pendingAssignments > 0 && (
+                                <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
+                                  {pendingAssignments > 99 ? "99+" : pendingAssignments}
+                                </span>
+                              )}
+                              {isMessages && (unreadMessages as number) > 0 && (
+                                <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
+                                  {(unreadMessages as number) > 99 ? "99+" : unreadMessages}
+                                </span>
+                              )}
+                              {isAdmins && pendingAdminCount > 0 && (
+                                <span className={["flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1 text-[10px] font-bold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
+                                  {pendingAdminCount > 99 ? "99+" : pendingAdminCount}
+                                </span>
+                              )}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </Fragment>
               );
             })}
           </ul>

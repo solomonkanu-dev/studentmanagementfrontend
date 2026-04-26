@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/Badge";
 import TodayAttendanceCard from "@/components/ui/TodayAttendanceCard";
 import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
 import { useAuth } from "@/context/AuthContext";
+import { useIsDark } from "@/hooks/useIsDark";
+import { IncomeExpenseBar, NetBalanceTrend, CategoryDonut } from "@/components/ui/FinancialCharts";
+import { fmtCurrency } from "@/lib/utils/currency";
 import {
   GraduationCap,
   Users,
@@ -46,7 +49,7 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false })
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-function fmt(n: number) { return `NLe ${n.toLocaleString()}`; }
+function fmt(n: number) { return `NLe ${fmtCurrency(n)}`; }
 
 function statusVariant(status: string): "success" | "warning" | "danger" {
   if (status === "paid") return "success";
@@ -67,12 +70,14 @@ const C = {
   stroke:  "#e2e8f0",
 };
 
-const baseChart: ApexCharts.ApexOptions = {
-  chart: { toolbar: { show: false }, background: "transparent", fontFamily: "inherit" },
-  grid: { borderColor: C.stroke, strokeDashArray: 4 },
-  dataLabels: { enabled: false },
-  tooltip: { theme: "light" },
-};
+function makeBaseChart(isDark: boolean): ApexCharts.ApexOptions {
+  return {
+    chart: { toolbar: { show: false }, background: "transparent", fontFamily: "inherit" },
+    grid: { borderColor: C.stroke, strokeDashArray: 4 },
+    dataLabels: { enabled: false },
+    tooltip: { theme: isDark ? "dark" : "light" },
+  };
+}
 
 // ─── Live clock ───────────────────────────────────────────────────────────────
 
@@ -224,188 +229,156 @@ export default function AdminDashboard() {
   const salaryTotal = salaries.reduce((a, s) => a + s.totalAmount, 0);
   const salaryPaid  = salaries.filter((s) => s.status === "paid").reduce((a, s) => a + s.totalAmount, 0);
 
+  const isDark = useIsDark();
+
   // ── Chart: Fee trend ────────────────────────────────────────────────────────
-  const trendOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "area" },
-    stroke: { curve: "smooth", width: 2 },
-    fill: { type: "gradient", gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
-    colors: [C.primary, C.success],
-    xaxis: {
-      categories: trendSlice.map((t) => `${MONTH_NAMES[t.month - 1]} ${t.year}`),
-      labels: { style: { fontSize: "11px", colors: C.body } },
-      axisBorder: { show: false }, axisTicks: { show: false },
-    },
-    yaxis: { labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => v >= 1_000 ? `NLe ${(v/1_000).toFixed(0)}k` : `NLe ${v}` } },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-    legend: { position: "top", fontSize: "12px" },
-  };
-  const trendSeries = [
+  const trendOptions = useMemo((): ApexCharts.ApexOptions => {
+    const base = makeBaseChart(isDark);
+    return {
+      ...base,
+      chart: { ...base.chart, type: "area" },
+      stroke: { curve: "smooth", width: 2 },
+      fill: { type: "gradient", gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
+      colors: [C.primary, C.success],
+      xaxis: {
+        categories: trendSlice.map((t) => `${MONTH_NAMES[t.month - 1]} ${t.year}`),
+        labels: { style: { fontSize: "11px", colors: C.body } },
+        axisBorder: { show: false }, axisTicks: { show: false },
+      },
+      yaxis: { labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => v >= 1_000 ? `NLe ${(v/1_000).toFixed(0)}k` : `NLe ${v}` } },
+      tooltip: { theme: isDark ? "dark" : "light", y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
+      legend: { position: "top", fontSize: "12px" },
+    };
+  }, [trendSlice, isDark]);
+
+  const trendSeries = useMemo(() => [
     { name: "Billed",    data: trendSlice.map((t) => t.totalBilled) },
     { name: "Collected", data: trendSlice.map((t) => t.totalCollected) },
-  ];
+  ], [trendSlice]);
 
   // ── Chart: Fee status donut ─────────────────────────────────────────────────
   const statusData = feeByStatus as FeeByStatus[];
-  const donutSeries = statusData.map((s) => s.count);
-  const donutLabels = statusData.map((s) => s.status.charAt(0).toUpperCase() + s.status.slice(1));
-  const donutColors = statusData.map((s) =>
+  const donutSeries = useMemo(() => statusData.map((s) => s.count), [statusData]);
+  const donutLabels = useMemo(() => statusData.map((s) => s.status.charAt(0).toUpperCase() + s.status.slice(1)), [statusData]);
+  const donutColors = useMemo(() => statusData.map((s) =>
     s.status === "paid" ? C.success : s.status === "partial" ? C.warning : C.danger
-  );
-  const donutOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "donut" },
-    labels: donutLabels, colors: donutColors,
-    legend: { position: "bottom", fontSize: "12px" },
-    dataLabels: { enabled: true, formatter: (v: number) => `${v.toFixed(1)}%` },
-    plotOptions: { pie: { donut: { size: "62%", labels: { show: true, total: { show: true, label: "Students", fontSize: "13px", color: C.body, formatter: () => String(donutSeries.reduce((a, b) => a + b, 0)) } } } } },
-    tooltip: { y: { formatter: (v: number) => `${v} student${v !== 1 ? "s" : ""}` } },
-  };
+  ), [statusData]);
+  const donutOptions = useMemo((): ApexCharts.ApexOptions => {
+    const base = makeBaseChart(isDark);
+    return {
+      ...base,
+      chart: { ...base.chart, type: "donut" },
+      labels: donutLabels, colors: donutColors,
+      legend: { position: "bottom", fontSize: "12px" },
+      dataLabels: { enabled: true, formatter: (v: number) => `${v.toFixed(1)}%` },
+      plotOptions: { pie: { donut: { size: "62%", labels: { show: true, total: { show: true, label: "Students", fontSize: "13px", color: C.body, formatter: () => String(donutSeries.reduce((a, b) => a + b, 0)) } } } } },
+      tooltip: { theme: isDark ? "dark" : "light", y: { formatter: (v: number) => `${v} student${v !== 1 ? "s" : ""}` } },
+    };
+  }, [donutLabels, donutColors, donutSeries, isDark]);
 
   // ── Chart: Fee by class horizontal bar ──────────────────────────────────────
-  const classBars = (feeByClass as FeeByClass[]).slice(0, 10);
-  const classBarOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "bar" },
-    plotOptions: { bar: { horizontal: true, barHeight: "55%", borderRadius: 4 } },
-    dataLabels: { enabled: true, formatter: (v: number) => `${v}%`, style: { fontSize: "11px" } },
-    colors: [C.primary],
-    xaxis: { categories: classBars.map((c) => c.className), max: 100, labels: { formatter: (v) => `${v}%`, style: { fontSize: "11px", colors: C.body } }, axisBorder: { show: false } },
-    yaxis: { labels: { style: { fontSize: "11px", colors: C.body } } },
-    tooltip: { y: { formatter: (_v, opts) => { const c = classBars[opts?.dataPointIndex ?? -1]; return c ? `${c.collectionRate}% — ${fmt(c.totalCollected)} / ${fmt(c.totalExpected)}` : ""; } } },
-    grid: { ...baseChart.grid, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
-  };
-  const classBarSeries = [{ name: "Collection Rate", data: classBars.map((c) => c.collectionRate) }];
+  const classBars = useMemo(() => (feeByClass as FeeByClass[]).slice(0, 10), [feeByClass]);
+  const classBarOptions = useMemo((): ApexCharts.ApexOptions => {
+    const base = makeBaseChart(isDark);
+    return {
+      ...base,
+      chart: { ...base.chart, type: "bar" },
+      plotOptions: { bar: { horizontal: true, barHeight: "55%", borderRadius: 4 } },
+      dataLabels: { enabled: true, formatter: (v: number) => `${v}%`, style: { fontSize: "11px" } },
+      colors: [C.primary],
+      xaxis: { categories: classBars.map((c) => c.className), max: 100, labels: { formatter: (v) => `${v}%`, style: { fontSize: "11px", colors: C.body } }, axisBorder: { show: false } },
+      yaxis: { labels: { style: { fontSize: "11px", colors: C.body } } },
+      tooltip: { theme: isDark ? "dark" : "light", y: { formatter: (_v, opts) => { const c = classBars[opts?.dataPointIndex ?? -1]; return c ? `${c.collectionRate}% — ${fmt(c.totalCollected)} / ${fmt(c.totalExpected)}` : ""; } } },
+      grid: { ...base.grid, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    };
+  }, [classBars, isDark]);
+  const classBarSeries = useMemo(() => [{ name: "Collection Rate", data: classBars.map((c) => c.collectionRate) }], [classBars]);
 
   // ── Chart: Students per class column ────────────────────────────────────────
-  const studentsPerClassOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "bar" },
-    plotOptions: { bar: { borderRadius: 4, columnWidth: "55%" } },
-    colors: [C.indigo],
-    xaxis: {
-      categories: studentsPerClass.map((c) => c.name),
-      labels: { style: { fontSize: "11px", colors: C.body }, rotate: -30 },
-      axisBorder: { show: false }, axisTicks: { show: false },
-    },
-    yaxis: { labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => String(Math.round(v)) } },
-    tooltip: { y: { formatter: (v) => `${v} student${v !== 1 ? "s" : ""}` } },
-  };
-  const studentsPerClassSeries = [{ name: "Students", data: studentsPerClass.map((c) => c.count) }];
+  const studentsPerClassOptions = useMemo((): ApexCharts.ApexOptions => {
+    const base = makeBaseChart(isDark);
+    return {
+      ...base,
+      chart: { ...base.chart, type: "bar" },
+      plotOptions: { bar: { borderRadius: 4, columnWidth: "55%" } },
+      colors: [C.indigo],
+      xaxis: {
+        categories: studentsPerClass.map((c) => c.name),
+        labels: { style: { fontSize: "11px", colors: C.body }, rotate: -30 },
+        axisBorder: { show: false }, axisTicks: { show: false },
+      },
+      yaxis: { labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => String(Math.round(v)) } },
+      tooltip: { theme: isDark ? "dark" : "light", y: { formatter: (v) => `${v} student${v !== 1 ? "s" : ""}` } },
+    };
+  }, [studentsPerClass, isDark]);
+  const studentsPerClassSeries = useMemo(() => [{ name: "Students", data: studentsPerClass.map((c) => c.count) }], [studentsPerClass]);
 
   // ── Chart: Assignment status donut ──────────────────────────────────────────
-  const assignmentDonutOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "donut" },
-    colors: [C.danger, C.success, C.body],
-    labels: ["Overdue", "Active", "No Due Date"],
-    plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Total", fontSize: "13px", color: C.body, formatter: () => String(assignments.length) } } } } },
-    legend: { position: "bottom", fontSize: "12px" },
-    stroke: { width: 0 },
-    tooltip: { y: { formatter: (v) => `${v} assignment${v !== 1 ? "s" : ""}` } },
-  };
-  const assignmentDonutSeries = [assignmentStats.overdue, assignmentStats.active, assignmentStats.noDue];
+  const assignmentDonutOptions = useMemo((): ApexCharts.ApexOptions => {
+    const base = makeBaseChart(isDark);
+    return {
+      ...base,
+      chart: { ...base.chart, type: "donut" },
+      colors: [C.danger, C.success, C.body],
+      labels: ["Overdue", "Active", "No Due Date"],
+      plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Total", fontSize: "13px", color: C.body, formatter: () => String(assignments.length) } } } } },
+      legend: { position: "bottom", fontSize: "12px" },
+      stroke: { width: 0 },
+      tooltip: { theme: isDark ? "dark" : "light", y: { formatter: (v) => `${v} assignment${v !== 1 ? "s" : ""}` } },
+    };
+  }, [assignments.length, isDark]);
+  const assignmentDonutSeries = useMemo(() => [assignmentStats.overdue, assignmentStats.active, assignmentStats.noDue], [assignmentStats]);
 
   // ── Chart: Teacher workload horizontal bar ──────────────────────────────────
-  const workloadOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "bar" },
-    plotOptions: { bar: { horizontal: true, barHeight: "55%", borderRadius: 4 } },
-    colors: [C.violet],
-    xaxis: {
-      categories: teacherWorkload.map((t) => t.name.split(" ")[0]),
-      labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => String(Math.round(Number(v))) },
-      axisBorder: { show: false },
-    },
-    yaxis: { labels: { style: { fontSize: "11px", colors: C.body } } },
-    tooltip: {
-      y: {
-        formatter: (v, opts) => {
-          const t = teacherWorkload[opts?.dataPointIndex ?? -1];
-          return t ? `${t.name}: ${v} subject${v !== 1 ? "s" : ""}` : `${v}`;
+  const workloadOptions = useMemo((): ApexCharts.ApexOptions => {
+    const base = makeBaseChart(isDark);
+    return {
+      ...base,
+      chart: { ...base.chart, type: "bar" },
+      plotOptions: { bar: { horizontal: true, barHeight: "55%", borderRadius: 4 } },
+      colors: [C.violet],
+      xaxis: {
+        categories: teacherWorkload.map((t) => t.name.split(" ")[0]),
+        labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => String(Math.round(Number(v))) },
+        axisBorder: { show: false },
+      },
+      yaxis: { labels: { style: { fontSize: "11px", colors: C.body } } },
+      tooltip: {
+        theme: isDark ? "dark" : "light",
+        y: {
+          formatter: (v, opts) => {
+            const t = teacherWorkload[opts?.dataPointIndex ?? -1];
+            return t ? `${t.name}: ${v} subject${v !== 1 ? "s" : ""}` : `${v}`;
+          }
         }
-      }
-    },
-    grid: { ...baseChart.grid, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
-  };
-  const workloadSeries = [{ name: "Subjects", data: teacherWorkload.map((t) => t.count) }];
+      },
+      grid: { ...base.grid, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+    };
+  }, [teacherWorkload, isDark]);
+  const workloadSeries = useMemo(() => [{ name: "Subjects", data: teacherWorkload.map((t) => t.count) }], [teacherWorkload]);
 
   // ── Financial summary ───────────────────────────────────────────────────────
-  const finTerms = financialSummary?.termComparison ?? [];
+  const finTerms = useMemo(() => financialSummary?.termComparison ?? [], [financialSummary]);
   const finIncomeByCategory = useMemo(() => financialSummary?.byCategory.filter((c) => c.type === "income") ?? [], [financialSummary]);
   const finExpenseByCategory = useMemo(() => financialSummary?.byCategory.filter((c) => c.type === "expense") ?? [], [financialSummary]);
 
-  const finBarOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "bar" },
-    plotOptions: { bar: { borderRadius: 4, columnWidth: "52%" } },
-    colors: [C.success, C.danger],
-    xaxis: {
-      categories: finTerms.map((t) => t.term),
-      labels: { style: { fontSize: "10px", colors: C.body }, rotate: -20 },
-      axisBorder: { show: false }, axisTicks: { show: false },
-    },
-    yaxis: { labels: { style: { fontSize: "10px", colors: C.body }, formatter: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v) } },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-    legend: { position: "top", fontSize: "11px" },
-  };
-  const finBarSeries = [
-    { name: "Income",  data: finTerms.map((t) => t.income) },
-    { name: "Expense", data: finTerms.map((t) => t.expense) },
-  ];
-
-  const finAreaOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "area" },
-    stroke: { curve: "smooth", width: 2 },
-    fill: { type: "gradient", gradient: { opacityFrom: 0.25, opacityTo: 0.02 } },
-    colors: [C.primary],
-    xaxis: {
-      categories: finTerms.map((t) => t.term),
-      labels: { style: { fontSize: "10px", colors: C.body }, rotate: -20 },
-      axisBorder: { show: false }, axisTicks: { show: false },
-    },
-    yaxis: { labels: { style: { fontSize: "10px", colors: C.body }, formatter: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v) } },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-  };
-  const finAreaSeries = [{ name: "Net Balance", data: finTerms.map((t) => t.income - t.expense) }];
-
-  const finIncomePieOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "donut" },
-    labels: finIncomeByCategory.map((c) => c.category),
-    colors: ["#10b981","#3c50e0","#8b5cf6","#f59e0b","#06b6d4","#84cc16"],
-    legend: { position: "bottom", fontSize: "10px" },
-    dataLabels: { enabled: true, formatter: (v: number | string) => `${Number(v).toFixed(0)}%` },
-    plotOptions: { pie: { donut: { size: "58%", labels: { show: true, total: { show: true, label: "Income", fontSize: "11px", color: C.body, formatter: () => `NLe ${finIncomeByCategory.reduce((s, c) => s + c.total, 0).toLocaleString()}` } } } } },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-  };
-
-  const finExpensePieOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "donut" },
-    labels: finExpenseByCategory.map((c) => c.category),
-    colors: ["#fb5454","#f59e0b","#8b5cf6","#3c50e0","#ec4899","#f97316","#14b8a6","#06b6d4","#a78bfa"],
-    legend: { position: "bottom", fontSize: "10px" },
-    dataLabels: { enabled: true, formatter: (v: number | string) => `${Number(v).toFixed(0)}%` },
-    plotOptions: { pie: { donut: { size: "58%", labels: { show: true, total: { show: true, label: "Expenses", fontSize: "11px", color: C.body, formatter: () => `NLe ${finExpenseByCategory.reduce((s, c) => s + c.total, 0).toLocaleString()}` } } } } },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-  };
-
   // ── Chart: Salary donut ─────────────────────────────────────────────────────
   const salaryColors = { paid: C.success, pending: C.warning, cancelled: C.danger };
-  const salaryStatuses = Object.keys(salaryByStatus);
-  const salaryDonutOptions: ApexCharts.ApexOptions = {
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "donut" },
-    colors: salaryStatuses.map((s) => salaryColors[s as keyof typeof salaryColors] ?? C.body),
-    labels: salaryStatuses.map((s) => s.charAt(0).toUpperCase() + s.slice(1)),
-    plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Records", fontSize: "12px", color: C.body, formatter: () => String(salaries.length) } } } } },
-    legend: { position: "bottom", fontSize: "12px" },
-    stroke: { width: 0 },
-    tooltip: { y: { formatter: (v) => `${v} record${v !== 1 ? "s" : ""}` } },
-  };
-  const salaryDonutSeries = salaryStatuses.map((s) => salaryByStatus[s]);
+  const salaryStatuses = useMemo(() => Object.keys(salaryByStatus), [salaryByStatus]);
+  const salaryDonutOptions = useMemo((): ApexCharts.ApexOptions => {
+    const base = makeBaseChart(isDark);
+    return {
+      ...base,
+      chart: { ...base.chart, type: "donut" },
+      colors: salaryStatuses.map((s) => salaryColors[s as keyof typeof salaryColors] ?? C.body),
+      labels: salaryStatuses.map((s) => s.charAt(0).toUpperCase() + s.slice(1)),
+      plotOptions: { pie: { donut: { size: "60%", labels: { show: true, total: { show: true, label: "Records", fontSize: "12px", color: C.body, formatter: () => String(salaries.length) } } } } },
+      legend: { position: "bottom", fontSize: "12px" },
+      stroke: { width: 0 },
+      tooltip: { theme: isDark ? "dark" : "light", y: { formatter: (v) => `${v} record${v !== 1 ? "s" : ""}` } },
+    };
+  }, [salaryStatuses, salaries.length, isDark]);
+  const salaryDonutSeries = useMemo(() => salaryStatuses.map((s) => salaryByStatus[s]), [salaryStatuses, salaryByStatus]);
 
   return (
     <div className="space-y-6">
@@ -712,7 +685,7 @@ export default function AdminDashboard() {
                   <h2 className="text-sm font-semibold text-black dark:text-white">Income vs Expense by Term</h2>
                 </CardHeader>
                 <CardContent>
-                  <ReactApexChart type="bar" series={finBarSeries} options={finBarOptions} height={220} />
+                  <IncomeExpenseBar termComparison={finTerms} height={220} />
                 </CardContent>
               </Card>
               <Card>
@@ -720,7 +693,7 @@ export default function AdminDashboard() {
                   <h2 className="text-sm font-semibold text-black dark:text-white">Net Balance Trend</h2>
                 </CardHeader>
                 <CardContent>
-                  <ReactApexChart type="area" series={finAreaSeries} options={finAreaOptions} height={220} />
+                  <NetBalanceTrend termComparison={finTerms} height={220} />
                 </CardContent>
               </Card>
             </div>
@@ -733,7 +706,7 @@ export default function AdminDashboard() {
                 <Card>
                   <CardHeader><h2 className="text-sm font-semibold text-black dark:text-white">Income by Category</h2></CardHeader>
                   <CardContent>
-                    <ReactApexChart type="donut" series={finIncomeByCategory.map((c) => c.total)} options={finIncomePieOptions} height={250} />
+                    <CategoryDonut categories={finIncomeByCategory} type="income" height={250} />
                   </CardContent>
                 </Card>
               )}
@@ -741,7 +714,7 @@ export default function AdminDashboard() {
                 <Card>
                   <CardHeader><h2 className="text-sm font-semibold text-black dark:text-white">Expense by Category</h2></CardHeader>
                   <CardContent>
-                    <ReactApexChart type="donut" series={finExpenseByCategory.map((c) => c.total)} options={finExpensePieOptions} height={250} />
+                    <CategoryDonut categories={finExpenseByCategory} type="expense" height={250} />
                   </CardContent>
                 </Card>
               )}

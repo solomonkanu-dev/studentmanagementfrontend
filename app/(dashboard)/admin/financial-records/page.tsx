@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "sonner";
 import { financialApi } from "@/lib/api/financial";
 import type { FinancialRecord, FinancialBudget, FinancialAccount, RecordFilters } from "@/lib/api/financial";
 import { termApi } from "@/lib/api/term";
@@ -17,29 +18,24 @@ import {
   Wallet, Building2, Banknote, Smartphone, X,
 } from "lucide-react";
 import type { AcademicTerm } from "@/lib/types";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { fmtCurrency } from "@/lib/utils/currency";
+import { errMsg } from "@/lib/utils/errMsg";
+import { useIsDark } from "@/hooks/useIsDark";
+import { IncomeExpenseBar, NetBalanceTrend, CategoryDonut, FC } from "@/components/ui/FinancialCharts";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 // ─── Chart palette ────────────────────────────────────────────────────────────
 
-const C = {
-  primary: "#3c50e0",
-  success: "#10b981",
-  danger:  "#fb5454",
-  warning: "#f59e0b",
-  violet:  "#8b5cf6",
-  indigo:  "#6366f1",
-  cyan:    "#06b6d4",
-  body:    "#64748b",
-  stroke:  "#e2e8f0",
-};
+const C = FC;
 
-const baseChart: ApexCharts.ApexOptions = {
+const baseChart = (isDark: boolean): ApexCharts.ApexOptions => ({
   chart: { toolbar: { show: false }, background: "transparent", fontFamily: "inherit" },
   grid: { borderColor: C.stroke, strokeDashArray: 4 },
   dataLabels: { enabled: false },
-  tooltip: { theme: "light" },
-};
+  tooltip: { theme: isDark ? "dark" : "light" },
+});
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -47,7 +43,16 @@ const INCOME_CATEGORIES = ["Fee Payments", "Government Grants", "Donations", "Ba
 const EXPENSE_CATEGORIES = ["Salaries", "Utilities", "Supplies & Stationery", "Maintenance & Repairs", "Transportation", "Rent", "Equipment", "Events & Activities", "Other Expenses"];
 const PAYMENT_METHODS = ["cash", "bank_transfer", "card", "mobile_money", "cheque", "other"] as const;
 
-const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "Cash",
+  bank_transfer: "Bank Transfer",
+  card: "Card",
+  mobile_money: "Mobile Money",
+  cheque: "Cheque",
+  other: "Other",
+};
+
+const fmt = fmtCurrency;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const termLabel = (t: AcademicTerm) => `${t.name} — ${t.academicYear}`;
 
@@ -92,6 +97,18 @@ function FieldError({ msg }: { msg?: string }) {
   return msg ? <p className="mt-0.5 text-xs text-meta-1">{msg}</p> : null;
 }
 
+// ─── Modal wrapper hook (Escape key + focus trap + restore focus) ──────────────
+
+function useModalKeydown(onClose: () => void) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+}
+
 // ─── Record Modal ─────────────────────────────────────────────────────────────
 
 function RecordModal({
@@ -106,6 +123,10 @@ function RecordModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const titleId = "record-modal-title";
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
+  useModalKeydown(onClose);
+
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<RecordForm>({
     resolver: zodResolver(recordSchema),
     defaultValues: editing ? {
@@ -140,16 +161,25 @@ function RecordModal({
       queryClient.invalidateQueries({ queryKey: ["financial-summary"] });
       onClose();
     },
+    onError: (err) => {
+      toast.error(errMsg(err, editing ? "Failed to update record" : "Failed to create record"));
+    },
   });
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark max-h-[90vh] overflow-y-auto">
+      <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="w-full max-w-lg rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark max-h-[90vh] overflow-y-auto"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-black dark:text-white">
+          <h2 id={titleId} className="text-sm font-semibold text-black dark:text-white">
             {editing ? "Edit Record" : "Add Financial Record"}
           </h2>
-          <button onClick={onClose}><X className="h-4 w-4 text-body" /></button>
+          <button onClick={onClose} aria-label="Close dialog"><X className="h-4 w-4 text-body" aria-hidden="true" /></button>
         </div>
 
         <form onSubmit={handleSubmit((v) => mutate(v))} className="space-y-3">
@@ -177,49 +207,49 @@ function RecordModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Category <span className="text-meta-1">*</span></label>
-              <select {...register("category")} className={inputCls}>
+              <label htmlFor="record-category" className={labelCls}>Category <span className="text-meta-1" aria-hidden="true">*</span></label>
+              <select id="record-category" {...register("category")} className={inputCls}>
                 <option value="">Select…</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               <FieldError msg={errors.category?.message} />
             </div>
             <div>
-              <label className={labelCls}>Amount <span className="text-meta-1">*</span></label>
-              <input type="number" step="0.01" min="0" {...register("amount", { valueAsNumber: true })} placeholder="0.00" className={inputCls} />
+              <label htmlFor="record-amount" className={labelCls}>Amount <span className="text-meta-1" aria-hidden="true">*</span></label>
+              <input id="record-amount" type="number" step="0.01" min="0" {...register("amount", { valueAsNumber: true })} placeholder="0.00" className={inputCls} />
               <FieldError msg={errors.amount?.message} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Date <span className="text-meta-1">*</span></label>
-              <input type="date" {...register("date")} className={inputCls} />
+              <label htmlFor="record-date" className={labelCls}>Date <span className="text-meta-1" aria-hidden="true">*</span></label>
+              <input id="record-date" type="date" {...register("date")} className={inputCls} />
               <FieldError msg={errors.date?.message} />
             </div>
             <div>
-              <label className={labelCls}>Payment Method</label>
-              <select {...register("paymentMethod")} className={inputCls}>
+              <label htmlFor="record-payment-method" className={labelCls}>Payment Method</label>
+              <select id="record-payment-method" {...register("paymentMethod")} className={inputCls}>
                 {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>{m.replace("_", " ")}</option>
+                  <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>
                 ))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className={labelCls}>Description</label>
-            <textarea {...register("description")} rows={2} placeholder="Optional notes…" className={inputCls} />
+            <label htmlFor="record-description" className={labelCls}>Description</label>
+            <textarea id="record-description" {...register("description")} rows={2} placeholder="Optional notes…" className={inputCls} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Reference / Receipt No.</label>
-              <input {...register("reference")} placeholder="e.g. RCP-001" className={inputCls} />
+              <label htmlFor="record-reference" className={labelCls}>Reference / Receipt No.</label>
+              <input id="record-reference" {...register("reference")} placeholder="e.g. RCP-001" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Term (optional)</label>
-              <select {...register("termId")} className={inputCls}>
+              <label htmlFor="record-term" className={labelCls}>Term (optional)</label>
+              <select id="record-term" {...register("termId")} className={inputCls}>
                 <option value="">No term</option>
                 {terms.map((t) => <option key={t._id} value={t._id}>{termLabel(t)}</option>)}
               </select>
@@ -228,8 +258,8 @@ function RecordModal({
 
           {accounts.length > 0 && (
             <div>
-              <label className={labelCls}>Account (optional)</label>
-              <select {...register("accountId")} className={inputCls}>
+              <label htmlFor="record-account" className={labelCls}>Account (optional)</label>
+              <select id="record-account" {...register("accountId")} className={inputCls}>
                 <option value="">No account</option>
                 {accounts.map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
               </select>
@@ -252,7 +282,11 @@ function RecordModal({
 
 function BudgetModal({ terms, onClose }: { terms: AcademicTerm[]; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<BudgetForm>({
+  const titleId = "budget-modal-title";
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
+  useModalKeydown(onClose);
+
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<BudgetForm>({
     resolver: zodResolver(budgetSchema),
     defaultValues: { type: "expense", termId: terms.find((t) => t.isCurrent)?._id ?? "" },
   });
@@ -263,45 +297,59 @@ function BudgetModal({ terms, onClose }: { terms: AcademicTerm[]; onClose: () =>
   const { mutate, isPending } = useMutation({
     mutationFn: financialApi.upsertBudget,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["financial-budgets"] }); onClose(); },
+    onError: (err) => {
+      toast.error(errMsg(err, "Failed to save budget"));
+    },
   });
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark">
+      <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-black dark:text-white">Set Budget</h2>
-          <button onClick={onClose}><X className="h-4 w-4 text-body" /></button>
+          <h2 id={titleId} className="text-sm font-semibold text-black dark:text-white">Set Budget</h2>
+          <button onClick={onClose} aria-label="Close dialog"><X className="h-4 w-4 text-body" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit((v) => mutate(v))} className="space-y-3">
           <div>
             <label className={labelCls}>Type</label>
             <div className="flex rounded-lg border border-stroke overflow-hidden dark:border-strokedark">
               {(["income", "expense"] as const).map((t) => (
-                <button key={t} type="button" onClick={() => { }} className={["flex-1 py-2 text-sm font-medium capitalize", watch("type") === t ? (t === "income" ? "bg-meta-3 text-white" : "bg-meta-1 text-white") : "text-body"].join(" ")}>
-                  <input type="radio" {...register("type")} value={t} className="sr-only" />{t}
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => { setValue("type", t); setValue("category", ""); }}
+                  className={["flex-1 py-2 text-sm font-medium capitalize", watch("type") === t ? (t === "income" ? "bg-meta-3 text-white" : "bg-meta-1 text-white") : "text-body"].join(" ")}
+                >
+                  {t}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className={labelCls}>Term <span className="text-meta-1">*</span></label>
-            <select {...register("termId")} className={inputCls}>
+            <label htmlFor="budget-term" className={labelCls}>Term <span className="text-meta-1" aria-hidden="true">*</span></label>
+            <select id="budget-term" {...register("termId")} className={inputCls}>
               <option value="">Select term…</option>
               {terms.map((t) => <option key={t._id} value={t._id}>{termLabel(t)}</option>)}
             </select>
             <FieldError msg={errors.termId?.message} />
           </div>
           <div>
-            <label className={labelCls}>Category <span className="text-meta-1">*</span></label>
-            <select {...register("category")} className={inputCls}>
+            <label htmlFor="budget-category" className={labelCls}>Category <span className="text-meta-1" aria-hidden="true">*</span></label>
+            <select id="budget-category" {...register("category")} className={inputCls}>
               <option value="">Select…</option>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <FieldError msg={errors.category?.message} />
           </div>
           <div>
-            <label className={labelCls}>Budgeted Amount <span className="text-meta-1">*</span></label>
-            <input type="number" step="0.01" min="0" {...register("budgetedAmount", { valueAsNumber: true })} placeholder="0.00" className={inputCls} />
+            <label htmlFor="budget-amount" className={labelCls}>Budgeted Amount <span className="text-meta-1" aria-hidden="true">*</span></label>
+            <input id="budget-amount" type="number" step="0.01" min="0" {...register("budgetedAmount", { valueAsNumber: true })} placeholder="0.00" className={inputCls} />
             <FieldError msg={errors.budgetedAmount?.message} />
           </div>
           <div className="flex gap-3 pt-2">
@@ -318,6 +366,10 @@ function BudgetModal({ terms, onClose }: { terms: AcademicTerm[]; onClose: () =>
 
 function AccountModal({ editing, onClose }: { editing?: FinancialAccount; onClose: () => void }) {
   const queryClient = useQueryClient();
+  const titleId = "account-modal-title";
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
+  useModalKeydown(onClose);
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm<AccountForm>({
     resolver: zodResolver(accountSchema),
     defaultValues: editing ? {
@@ -333,24 +385,33 @@ function AccountModal({ editing, onClose }: { editing?: FinancialAccount; onClos
     mutationFn: (values: AccountForm) =>
       editing ? financialApi.updateAccount(editing._id, values) : financialApi.createAccount(values as Parameters<typeof financialApi.createAccount>[0]),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["financial-accounts"] }); onClose(); },
+    onError: (err) => {
+      toast.error(errMsg(err, editing ? "Failed to update account" : "Failed to create account"));
+    },
   });
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark">
+      <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-black dark:text-white">{editing ? "Edit Account" : "Add Account"}</h2>
-          <button onClick={onClose}><X className="h-4 w-4 text-body" /></button>
+          <h2 id={titleId} className="text-sm font-semibold text-black dark:text-white">{editing ? "Edit Account" : "Add Account"}</h2>
+          <button onClick={onClose} aria-label="Close dialog"><X className="h-4 w-4 text-body" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit((v) => mutate(v))} className="space-y-3">
           <div>
-            <label className={labelCls}>Account Name <span className="text-meta-1">*</span></label>
-            <input {...register("name")} placeholder="e.g. Main Bank Account" className={inputCls} />
+            <label htmlFor="account-name" className={labelCls}>Account Name <span className="text-meta-1" aria-hidden="true">*</span></label>
+            <input id="account-name" {...register("name")} placeholder="e.g. Main Bank Account" className={inputCls} />
             <FieldError msg={errors.name?.message} />
           </div>
           <div>
-            <label className={labelCls}>Type</label>
-            <select {...register("type")} className={inputCls}>
+            <label htmlFor="account-type" className={labelCls}>Type</label>
+            <select id="account-type" {...register("type")} className={inputCls}>
               <option value="bank">Bank</option>
               <option value="cash">Cash</option>
               <option value="mobile_money">Mobile Money</option>
@@ -359,24 +420,68 @@ function AccountModal({ editing, onClose }: { editing?: FinancialAccount; onClos
           {type === "bank" && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Bank Name</label>
-                <input {...register("bankName")} placeholder="e.g. Ecobank" className={inputCls} />
+                <label htmlFor="account-bank-name" className={labelCls}>Bank Name</label>
+                <input id="account-bank-name" {...register("bankName")} placeholder="e.g. Ecobank" className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Account No.</label>
-                <input {...register("accountNumber")} placeholder="e.g. 1234567890" className={inputCls} />
+                <label htmlFor="account-number" className={labelCls}>Account No.</label>
+                <input id="account-number" {...register("accountNumber")} placeholder="e.g. 1234567890" className={inputCls} />
               </div>
             </div>
           )}
           <div>
-            <label className={labelCls}>Opening Balance</label>
-            <input type="number" step="0.01" min="0" {...register("openingBalance", { valueAsNumber: true })} placeholder="0.00" className={inputCls} />
+            <label htmlFor="account-opening-balance" className={labelCls}>Opening Balance</label>
+            <input id="account-opening-balance" type="number" step="0.01" min="0" {...register("openingBalance", { valueAsNumber: true })} placeholder="0.00" className={inputCls} />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-stroke py-2 text-sm font-medium text-black hover:bg-stroke dark:border-strokedark dark:text-white dark:hover:bg-meta-4">Cancel</button>
             <button type="submit" disabled={isPending} className="flex-1 rounded-lg bg-primary py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60">{isPending ? "Saving…" : editing ? "Update" : "Add Account"}</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Confirm Delete Dialog ────────────────────────────────────────────────────
+
+function ConfirmDeleteDialog({
+  title,
+  body,
+  itemLabel,
+  isPending,
+  onCancel,
+  onConfirm,
+}: {
+  title: string;
+  body?: string;
+  itemLabel: string;
+  isPending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const titleId = "confirm-delete-title";
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
+  useModalKeydown(onCancel);
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
+      <div
+        ref={trapRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark"
+      >
+        <h3 id={titleId} className="mb-2 text-sm font-semibold text-black dark:text-white">{title}</h3>
+        <p className="mb-1 text-xs font-medium text-black dark:text-white">{itemLabel}</p>
+        {body && <p className="mb-5 text-xs text-body">{body}</p>}
+        <div className="flex gap-3 mt-4">
+          <button onClick={onCancel} className="flex-1 rounded-lg border border-stroke py-2 text-sm text-black hover:bg-stroke dark:border-strokedark dark:text-white dark:hover:bg-meta-4">Cancel</button>
+          <button onClick={onConfirm} disabled={isPending} className="flex-1 rounded-lg bg-meta-1 py-2 text-sm font-medium text-white hover:bg-meta-1/90 disabled:opacity-60">
+            {isPending ? "Deleting…" : "Delete"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -393,7 +498,9 @@ function LedgerTab({ terms, accounts }: { terms: AcademicTerm[]; accounts: Finan
   const [filters, setFilters] = useState<RecordFilters>({});
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<FinancialRecord | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; label: string } | null>(null);
+
+  const addBtnRef = useRef<HTMLButtonElement>(null);
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["financial-records", filters],
@@ -407,45 +514,55 @@ function LedgerTab({ terms, accounts }: { terms: AcademicTerm[]; accounts: Finan
       queryClient.invalidateQueries({ queryKey: ["financial-summary"] });
       setConfirmDelete(null);
     },
+    onError: (err) => {
+      toast.error(errMsg(err, "Failed to delete record"));
+    },
   });
 
   const totalIncome = useMemo(() => (records as FinancialRecord[]).filter((r) => r.type === "income").reduce((s, r) => s + r.amount, 0), [records]);
   const totalExpense = useMemo(() => (records as FinancialRecord[]).filter((r) => r.type === "expense").reduce((s, r) => s + r.amount, 0), [records]);
+
+  const dateRangeError =
+    filters.startDate && filters.endDate && filters.startDate > filters.endDate;
 
   return (
     <div className="space-y-4">
       {/* Filter row */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className={labelCls}>Type</label>
-          <select value={filters.type ?? ""} onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value as "income" | "expense" || undefined }))} className={inputCls + " w-36"}>
+          <label htmlFor="ledger-filter-type" className={labelCls}>Type</label>
+          <select id="ledger-filter-type" value={filters.type ?? ""} onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value as "income" | "expense" || undefined }))} className={inputCls + " w-36"}>
             <option value="">All types</option>
             <option value="income">Income</option>
             <option value="expense">Expense</option>
           </select>
         </div>
         <div>
-          <label className={labelCls}>Term</label>
-          <select value={filters.termId ?? ""} onChange={(e) => setFilters((f) => ({ ...f, termId: e.target.value || undefined }))} className={inputCls + " w-48"}>
+          <label htmlFor="ledger-filter-term" className={labelCls}>Term</label>
+          <select id="ledger-filter-term" value={filters.termId ?? ""} onChange={(e) => setFilters((f) => ({ ...f, termId: e.target.value || undefined }))} className={inputCls + " w-48"}>
             <option value="">All terms</option>
             {terms.map((t) => <option key={t._id} value={t._id}>{termLabel(t)}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelCls}>From</label>
-          <input type="date" value={filters.startDate ?? ""} onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined }))} className={inputCls + " w-36"} />
+          <label htmlFor="ledger-filter-from" className={labelCls}>From</label>
+          <input id="ledger-filter-from" type="date" value={filters.startDate ?? ""} onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined }))} className={inputCls + " w-36"} />
         </div>
         <div>
-          <label className={labelCls}>To</label>
-          <input type="date" value={filters.endDate ?? ""} onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined }))} className={inputCls + " w-36"} />
+          <label htmlFor="ledger-filter-to" className={labelCls}>To</label>
+          <input id="ledger-filter-to" type="date" value={filters.endDate ?? ""} onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined }))} className={inputCls + " w-36"} />
         </div>
         <button onClick={() => setFilters({})} className="rounded-lg border border-stroke px-3 py-2 text-xs text-body hover:bg-stroke dark:border-strokedark dark:hover:bg-meta-4">Clear</button>
         <div className="ml-auto">
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90">
+          <button ref={addBtnRef} onClick={() => setShowAdd(true)} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90">
             <Plus className="h-4 w-4" /> Add Record
           </button>
         </div>
       </div>
+
+      {dateRangeError && (
+        <p className="text-xs text-meta-1">Start date must be before end date</p>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-stroke dark:border-strokedark">
@@ -470,7 +587,7 @@ function LedgerTab({ terms, accounts }: { terms: AcademicTerm[]; accounts: Finan
                   <td className="px-4 py-3 text-xs font-medium text-black dark:text-white">{r.category}</td>
                   <td className="max-w-[160px] px-4 py-3 text-xs text-body truncate">{r.description || "—"}</td>
                   <td className={`whitespace-nowrap px-4 py-3 text-xs font-semibold ${r.type === "income" ? "text-meta-3" : "text-meta-1"}`}>NLe {fmt(r.amount)}</td>
-                  <td className="px-4 py-3 text-xs text-body capitalize">{r.paymentMethod?.replace("_", " ") || "—"}</td>
+                  <td className="px-4 py-3 text-xs text-body">{PAYMENT_METHOD_LABELS[r.paymentMethod ?? ""] || "—"}</td>
                   <td className="px-4 py-3 text-xs text-body">{r.reference || "—"}</td>
                   <td className="px-4 py-3 text-xs text-body">
                     {r.termId && typeof r.termId === "object" ? `${r.termId.name}` : "—"}
@@ -478,7 +595,13 @@ function LedgerTab({ terms, accounts }: { terms: AcademicTerm[]; accounts: Finan
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <button onClick={() => setEditing(r)} className="rounded p-1 text-body hover:text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => setConfirmDelete(r._id)} className="rounded p-1 text-body hover:text-meta-1 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <button
+                        onClick={() => setConfirmDelete({
+                          id: r._id,
+                          label: `${r.category} — NLe ${fmt(r.amount)} on ${fmtDate(r.date)}`,
+                        })}
+                        className="rounded p-1 text-body hover:text-meta-1 transition-colors"
+                      ><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   </td>
                 </tr>
@@ -507,18 +630,54 @@ function LedgerTab({ terms, accounts }: { terms: AcademicTerm[]; accounts: Finan
       )}
 
       {confirmDelete && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark">
-            <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">Delete record?</h3>
-            <p className="mb-5 text-xs text-body">This cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 rounded-lg border border-stroke py-2 text-sm text-black hover:bg-stroke dark:border-strokedark dark:text-white dark:hover:bg-meta-4">Cancel</button>
-              <button onClick={() => deleteMutation.mutate(confirmDelete)} disabled={deleteMutation.isPending} className="flex-1 rounded-lg bg-meta-1 py-2 text-sm font-medium text-white hover:bg-meta-1/90 disabled:opacity-60">{deleteMutation.isPending ? "Deleting…" : "Delete"}</button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteDialog
+          title="Delete record?"
+          body="This cannot be undone."
+          itemLabel={confirmDelete.label}
+          isPending={deleteMutation.isPending}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => deleteMutation.mutate(confirmDelete.id)}
+        />
       )}
     </div>
+  );
+}
+
+// ─── Budget Row (module-scope) ────────────────────────────────────────────────
+
+function BudgetRow({
+  b,
+  setConfirmDelete,
+}: {
+  b: FinancialBudget;
+  setConfirmDelete: (v: { id: string; label: string } | null) => void;
+}) {
+  const actual = b.actual ?? 0;
+  const pct = b.budgetedAmount > 0 ? Math.min((actual / b.budgetedAmount) * 100, 100) : 0;
+  const variance = b.budgetedAmount - actual;
+  const barColor = pct >= 100 ? "bg-meta-1" : pct >= 80 ? "bg-yellow-500" : "bg-meta-3";
+  return (
+    <tr className="hover:bg-stroke/20 dark:hover:bg-meta-4/20">
+      <td className="px-4 py-3 text-xs font-medium text-black dark:text-white">{b.category}</td>
+      <td className="px-4 py-3"><Badge variant={b.type === "income" ? "success" : "danger"}>{b.type}</Badge></td>
+      <td className="whitespace-nowrap px-4 py-3 text-xs text-body">NLe {fmtCurrency(b.budgetedAmount)}</td>
+      <td className="whitespace-nowrap px-4 py-3 text-xs text-black dark:text-white">NLe {fmtCurrency(actual)}</td>
+      <td className={`whitespace-nowrap px-4 py-3 text-xs font-medium ${variance >= 0 ? "text-meta-3" : "text-meta-1"}`}>{variance >= 0 ? "+" : ""}NLe {fmtCurrency(variance)}</td>
+      <td className="px-4 py-3 min-w-[120px]">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-2 rounded-full bg-stroke dark:bg-strokedark overflow-hidden">
+            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+          </div>
+          <span className="text-[10px] text-body w-8 text-right">{Math.round(pct)}%</span>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <button
+          onClick={() => setConfirmDelete({ id: b._id, label: `${b.category} (${b.type})` })}
+          className="rounded p-1 text-body hover:text-meta-1 transition-colors"
+        ><Trash2 className="h-3.5 w-3.5" /></button>
+      </td>
+    </tr>
   );
 }
 
@@ -529,7 +688,7 @@ function BudgetTab({ terms }: { terms: AcademicTerm[] }) {
   const currentTerm = terms.find((t) => t.isCurrent);
   const [termId, setTermId] = useState(currentTerm?._id ?? "");
   const [showAdd, setShowAdd] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; label: string } | null>(null);
 
   const { data: budgets = [], isLoading } = useQuery({
     queryKey: ["financial-budgets", termId],
@@ -539,44 +698,20 @@ function BudgetTab({ terms }: { terms: AcademicTerm[] }) {
   const deleteMutation = useMutation({
     mutationFn: financialApi.deleteBudget,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["financial-budgets"] }); setConfirmDelete(null); },
+    onError: (err) => {
+      toast.error(errMsg(err, "Failed to remove budget"));
+    },
   });
 
   const incomeRows = (budgets as FinancialBudget[]).filter((b) => b.type === "income");
   const expenseRows = (budgets as FinancialBudget[]).filter((b) => b.type === "expense");
 
-  const BudgetRow = ({ b }: { b: FinancialBudget }) => {
-    const actual = b.actual ?? 0;
-    const pct = b.budgetedAmount > 0 ? Math.min((actual / b.budgetedAmount) * 100, 100) : 0;
-    const variance = b.budgetedAmount - actual;
-    const barColor = pct >= 100 ? "bg-meta-1" : pct >= 80 ? "bg-yellow-500" : "bg-meta-3";
-    return (
-      <tr className="hover:bg-stroke/20 dark:hover:bg-meta-4/20">
-        <td className="px-4 py-3 text-xs font-medium text-black dark:text-white">{b.category}</td>
-        <td className="px-4 py-3"><Badge variant={b.type === "income" ? "success" : "danger"}>{b.type}</Badge></td>
-        <td className="whitespace-nowrap px-4 py-3 text-xs text-body">NLe {fmt(b.budgetedAmount)}</td>
-        <td className="whitespace-nowrap px-4 py-3 text-xs text-black dark:text-white">NLe {fmt(actual)}</td>
-        <td className={`whitespace-nowrap px-4 py-3 text-xs font-medium ${variance >= 0 ? "text-meta-3" : "text-meta-1"}`}>{variance >= 0 ? "+" : ""}NLe {fmt(variance)}</td>
-        <td className="px-4 py-3 min-w-[120px]">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 rounded-full bg-stroke dark:bg-strokedark overflow-hidden">
-              <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-            </div>
-            <span className="text-[10px] text-body w-8 text-right">{Math.round(pct)}%</span>
-          </div>
-        </td>
-        <td className="px-4 py-3">
-          <button onClick={() => setConfirmDelete(b._id)} className="rounded p-1 text-body hover:text-meta-1 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
-        </td>
-      </tr>
-    );
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className={labelCls}>Term</label>
-          <select value={termId} onChange={(e) => setTermId(e.target.value)} className={inputCls + " w-56"}>
+          <label htmlFor="budget-filter-term" className={labelCls}>Term</label>
+          <select id="budget-filter-term" value={termId} onChange={(e) => setTermId(e.target.value)} className={inputCls + " w-56"}>
             <option value="">All terms</option>
             {terms.map((t) => <option key={t._id} value={t._id}>{termLabel(t)}</option>)}
           </select>
@@ -604,8 +739,8 @@ function BudgetTab({ terms }: { terms: AcademicTerm[] }) {
               <tr><td colSpan={7} className="py-10 text-center text-xs text-body">No budgets set. Click "Set Budget" to get started.</td></tr>
             ) : (
               <>
-                {incomeRows.map((b) => <BudgetRow key={b._id} b={b} />)}
-                {expenseRows.map((b) => <BudgetRow key={b._id} b={b} />)}
+                {incomeRows.map((b) => <BudgetRow key={b._id} b={b} setConfirmDelete={setConfirmDelete} />)}
+                {expenseRows.map((b) => <BudgetRow key={b._id} b={b} setConfirmDelete={setConfirmDelete} />)}
               </>
             )}
           </tbody>
@@ -614,15 +749,13 @@ function BudgetTab({ terms }: { terms: AcademicTerm[] }) {
 
       {showAdd && <BudgetModal terms={terms} onClose={() => setShowAdd(false)} />}
       {confirmDelete && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark">
-            <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">Remove budget?</h3>
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 rounded-lg border border-stroke py-2 text-sm text-black hover:bg-stroke dark:border-strokedark dark:text-white dark:hover:bg-meta-4">Cancel</button>
-              <button onClick={() => deleteMutation.mutate(confirmDelete)} disabled={deleteMutation.isPending} className="flex-1 rounded-lg bg-meta-1 py-2 text-sm font-medium text-white hover:bg-meta-1/90 disabled:opacity-60">{deleteMutation.isPending ? "Removing…" : "Remove"}</button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteDialog
+          title="Remove budget?"
+          itemLabel={confirmDelete.label}
+          isPending={deleteMutation.isPending}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => deleteMutation.mutate(confirmDelete.id)}
+        />
       )}
     </div>
   );
@@ -634,7 +767,7 @@ function AccountsTab() {
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<FinancialAccount | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; label: string } | null>(null);
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ["financial-accounts"],
@@ -644,6 +777,9 @@ function AccountsTab() {
   const deleteMutation = useMutation({
     mutationFn: financialApi.deleteAccount,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["financial-accounts"] }); setConfirmDelete(null); },
+    onError: (err) => {
+      toast.error(errMsg(err, "Failed to delete account"));
+    },
   });
 
   const typeIcon = (t: string) => {
@@ -682,7 +818,10 @@ function AccountsTab() {
                   </div>
                   <div className="flex gap-1">
                     <button onClick={() => setEditing(acc)} className="rounded p-1 text-body hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
-                    <button onClick={() => setConfirmDelete(acc._id)} className="rounded p-1 text-body hover:text-meta-1"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button
+                      onClick={() => setConfirmDelete({ id: acc._id, label: acc.name })}
+                      className="rounded p-1 text-body hover:text-meta-1"
+                    ><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 divide-x divide-stroke dark:divide-strokedark">
@@ -705,25 +844,20 @@ function AccountsTab() {
 
       {(showAdd || editing) && <AccountModal editing={editing ?? undefined} onClose={() => { setShowAdd(false); setEditing(null); }} />}
       {confirmDelete && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl border border-stroke bg-white p-6 shadow-xl dark:border-strokedark dark:bg-boxdark">
-            <h3 className="mb-2 text-sm font-semibold text-black dark:text-white">Delete account?</h3>
-            <p className="mb-4 text-xs text-body">Linked records will remain but will no longer be associated with this account.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 rounded-lg border border-stroke py-2 text-sm text-black dark:border-strokedark dark:text-white">Cancel</button>
-              <button onClick={() => deleteMutation.mutate(confirmDelete)} disabled={deleteMutation.isPending} className="flex-1 rounded-lg bg-meta-1 py-2 text-sm text-white disabled:opacity-60">{deleteMutation.isPending ? "Deleting…" : "Delete"}</button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteDialog
+          title="Delete account?"
+          body="Linked records will remain but will no longer be associated with this account."
+          itemLabel={confirmDelete.label}
+          isPending={deleteMutation.isPending}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => deleteMutation.mutate(confirmDelete.id)}
+        />
       )}
     </div>
   );
 }
 
 // ─── Reports Tab ──────────────────────────────────────────────────────────────
-
-const INCOME_COLORS  = ["#10b981","#3c50e0","#8b5cf6","#f59e0b","#06b6d4","#84cc16"];
-const EXPENSE_COLORS = ["#fb5454","#f59e0b","#8b5cf6","#3c50e0","#ec4899","#f97316","#14b8a6","#06b6d4","#a78bfa"];
 
 function KpiCard({
   icon, iconBg, value, label, sub,
@@ -744,6 +878,7 @@ function KpiCard({
 
 function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
   const [termId, setTermId] = useState("");
+  const isDark = useIsDark();
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ["financial-summary", termId],
@@ -764,104 +899,10 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
   const expenseRatio = summary && summary.totalIncome > 0
     ? Math.round((summary.totalExpense / summary.totalIncome) * 100) : null;
 
-  // ── Chart: Income vs Expense grouped bar (per term) ───────────────────────
-  const termBarOptions = useMemo((): ApexCharts.ApexOptions => ({
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "bar" },
-    plotOptions: { bar: { borderRadius: 4, columnWidth: "50%" } },
-    colors: [C.success, C.danger],
-    xaxis: {
-      categories: termComparison.map((t) => t.term),
-      labels: { style: { fontSize: "11px", colors: C.body }, rotate: -25 },
-      axisBorder: { show: false }, axisTicks: { show: false },
-    },
-    yaxis: { labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v) } },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-    legend: { position: "top", fontSize: "12px" },
-  }), [termComparison]);
-
-  const termBarSeries = useMemo(() => [
-    { name: "Income",  data: termComparison.map((t) => t.income) },
-    { name: "Expense", data: termComparison.map((t) => t.expense) },
-  ], [termComparison]);
-
-  // ── Chart: Net balance area trend ─────────────────────────────────────────
-  const netTrendOptions = useMemo((): ApexCharts.ApexOptions => ({
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "area" },
-    stroke: { curve: "smooth", width: 2.5 },
-    fill: { type: "gradient", gradient: { opacityFrom: 0.3, opacityTo: 0.03 } },
-    colors: [C.primary],
-    xaxis: {
-      categories: termComparison.map((t) => t.term),
-      labels: { style: { fontSize: "11px", colors: C.body }, rotate: -25 },
-      axisBorder: { show: false }, axisTicks: { show: false },
-    },
-    yaxis: { labels: { style: { fontSize: "11px", colors: C.body }, formatter: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v) } },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-    annotations: {
-      yaxis: [{ y: 0, borderColor: C.danger, strokeDashArray: 5, label: { text: "Break-even", style: { fontSize: "10px", color: C.body, background: "transparent" } } }],
-    },
-  }), [termComparison]);
-
-  const netTrendSeries = useMemo(() => [
-    { name: "Net Balance", data: termComparison.map((t) => t.income - t.expense) },
-  ], [termComparison]);
-
-  // ── Chart: Income breakdown donut ─────────────────────────────────────────
-  const incomeDonutOptions = useMemo((): ApexCharts.ApexOptions => ({
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "donut" },
-    labels: incomeByCategory.map((c) => c.category),
-    colors: INCOME_COLORS,
-    legend: { position: "bottom", fontSize: "11px" },
-    dataLabels: { enabled: true, formatter: (v: number | string) => `${Number(v).toFixed(0)}%` },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: "62%",
-          labels: {
-            show: true,
-            total: {
-              show: true, label: "Income", fontSize: "12px", color: C.body,
-              formatter: () => `NLe ${incomeByCategory.reduce((s, c) => s + c.total, 0).toLocaleString()}`,
-            },
-          },
-        },
-      },
-    },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-  }), [incomeByCategory]);
-
-  // ── Chart: Expense breakdown donut ────────────────────────────────────────
-  const expenseDonutOptions = useMemo((): ApexCharts.ApexOptions => ({
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "donut" },
-    labels: expenseByCategory.map((c) => c.category),
-    colors: EXPENSE_COLORS,
-    legend: { position: "bottom", fontSize: "11px" },
-    dataLabels: { enabled: true, formatter: (v: number | string) => `${Number(v).toFixed(0)}%` },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: "62%",
-          labels: {
-            show: true,
-            total: {
-              show: true, label: "Expenses", fontSize: "12px", color: C.body,
-              formatter: () => `NLe ${expenseByCategory.reduce((s, c) => s + c.total, 0).toLocaleString()}`,
-            },
-          },
-        },
-      },
-    },
-    tooltip: { y: { formatter: (v) => `NLe ${v.toLocaleString()}` } },
-  }), [expenseByCategory]);
-
   // ── Chart: Top categories horizontal bar ──────────────────────────────────
   const topCatOptions = useMemo((): ApexCharts.ApexOptions => ({
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "bar" },
+    ...baseChart(isDark),
+    chart: { ...baseChart(isDark).chart, type: "bar" },
     plotOptions: { bar: { horizontal: true, barHeight: "65%", borderRadius: 4, distributed: true } },
     colors: allCategories.map((c) => c.type === "income" ? C.success : C.danger),
     legend: { show: false },
@@ -872,12 +913,13 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
     },
     yaxis: { labels: { style: { fontSize: "11px", colors: C.body } } },
     tooltip: {
+      theme: isDark ? "dark" : "light",
       y: { formatter: (v) => `NLe ${v.toLocaleString()}` },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       x: { formatter: (_: string, opts: any) => { const c = allCategories[opts?.dataPointIndex]; return c ? `${c.type === "income" ? "Income" : "Expense"}: ${c.category}` : ""; } },
     },
-    grid: { ...baseChart.grid, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
-  }), [allCategories]);
+    grid: { ...baseChart(isDark).grid, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+  }), [allCategories, isDark]);
 
   const topCatSeries = useMemo(() => [{ name: "Amount", data: allCategories.map((c) => c.total) }], [allCategories]);
 
@@ -891,8 +933,8 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
   }, [summary]);
 
   const radialOptions = useMemo((): ApexCharts.ApexOptions => ({
-    ...baseChart,
-    chart: { ...baseChart.chart, type: "radialBar" },
+    ...baseChart(isDark),
+    chart: { ...baseChart(isDark).chart, type: "radialBar" },
     plotOptions: {
       radialBar: {
         startAngle: -135, endAngle: 135,
@@ -914,15 +956,15 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
     },
     colors: [C.success, C.danger],
     labels: ["Income", "Expense"],
-  }), [summary]);
+  }), [summary, isDark]);
 
   return (
     <div className="space-y-6">
       {/* Filters + export */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className={labelCls}>Term</label>
-          <select value={termId} onChange={(e) => setTermId(e.target.value)} className={inputCls + " w-56"}>
+          <label htmlFor="reports-filter-term" className={labelCls}>Term</label>
+          <select id="reports-filter-term" value={termId} onChange={(e) => setTermId(e.target.value)} className={inputCls + " w-56"}>
             <option value="">All time</option>
             {terms.map((t) => <option key={t._id} value={t._id}>{termLabel(t)}</option>)}
           </select>
@@ -983,12 +1025,7 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
               <Card className="lg:col-span-2">
                 <CardHeader><span className="text-sm font-semibold text-black dark:text-white">Income vs Expense — by Term</span></CardHeader>
                 <CardContent className="pt-0">
-                  <ReactApexChart
-                    type="bar"
-                    options={termBarOptions}
-                    series={termBarSeries}
-                    height={280}
-                  />
+                  <IncomeExpenseBar termComparison={termComparison} height={280} />
                 </CardContent>
               </Card>
               <Card>
@@ -1010,12 +1047,7 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
             <Card>
               <CardHeader><span className="text-sm font-semibold text-black dark:text-white">Net Balance Trend</span></CardHeader>
               <CardContent className="pt-0">
-                <ReactApexChart
-                  type="area"
-                  options={netTrendOptions}
-                  series={netTrendSeries}
-                  height={200}
-                />
+                <NetBalanceTrend termComparison={termComparison} height={200} />
               </CardContent>
             </Card>
           )}
@@ -1027,12 +1059,7 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
                 <CardHeader><span className="text-sm font-semibold text-black dark:text-white">Income by Category</span></CardHeader>
                 <CardContent className="pt-0">
                   {incomeByCategory.length > 0 ? (
-                    <ReactApexChart
-                      type="donut"
-                      options={incomeDonutOptions}
-                      series={incomeByCategory.map((c) => c.total)}
-                      height={290}
-                    />
+                    <CategoryDonut categories={incomeByCategory} type="income" height={290} />
                   ) : (
                     <p className="py-10 text-center text-xs text-body">No income data.</p>
                   )}
@@ -1042,12 +1069,7 @@ function ReportsTab({ terms }: { terms: AcademicTerm[] }) {
                 <CardHeader><span className="text-sm font-semibold text-black dark:text-white">Expense by Category</span></CardHeader>
                 <CardContent className="pt-0">
                   {expenseByCategory.length > 0 ? (
-                    <ReactApexChart
-                      type="donut"
-                      options={expenseDonutOptions}
-                      series={expenseByCategory.map((c) => c.total)}
-                      height={290}
-                    />
+                    <CategoryDonut categories={expenseByCategory} type="expense" height={290} />
                   ) : (
                     <p className="py-10 text-center text-xs text-body">No expense data.</p>
                   )}
@@ -1139,6 +1161,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function FinancialRecordsPage() {
   const [tab, setTab] = useState<Tab>("ledger");
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const { data: terms = [] } = useQuery({
     queryKey: ["academic-terms"],
@@ -1149,6 +1172,22 @@ export default function FinancialRecordsPage() {
     queryKey: ["financial-accounts"],
     queryFn: financialApi.getAccounts,
   });
+
+  const handleTabKeyDown = useCallback((e: React.KeyboardEvent, currentId: Tab) => {
+    const ids = TABS.map((t) => t.id);
+    const currentIndex = ids.indexOf(currentId);
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const next = ids[(currentIndex + 1) % ids.length];
+      setTab(next);
+      tabRefs.current[next]?.focus();
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prev = ids[(currentIndex - 1 + ids.length) % ids.length];
+      setTab(prev);
+      tabRefs.current[prev]?.focus();
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -1164,11 +1203,21 @@ export default function FinancialRecordsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl border border-stroke bg-stroke/20 p-1 dark:border-strokedark dark:bg-meta-4/20">
+      <div
+        role="tablist"
+        aria-label="Financial management sections"
+        className="flex gap-1 rounded-xl border border-stroke bg-stroke/20 p-1 dark:border-strokedark dark:bg-meta-4/20"
+      >
         {TABS.map(({ id, label }) => (
           <button
             key={id}
+            ref={(el) => { tabRefs.current[id] = el; }}
+            role="tab"
+            aria-selected={tab === id}
+            aria-controls={`tabpanel-${id}`}
+            id={`tab-${id}`}
             onClick={() => setTab(id)}
+            onKeyDown={(e) => handleTabKeyDown(e, id)}
             className={[
               "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
               tab === id
@@ -1182,10 +1231,17 @@ export default function FinancialRecordsPage() {
       </div>
 
       {/* Tab content */}
-      {tab === "ledger" && <LedgerTab terms={terms as AcademicTerm[]} accounts={accounts as FinancialAccount[]} />}
-      {tab === "budget" && <BudgetTab terms={terms as AcademicTerm[]} />}
-      {tab === "accounts" && <AccountsTab />}
-      {tab === "reports" && <ReportsTab terms={terms as AcademicTerm[]} />}
+      <div
+        role="tabpanel"
+        id={`tabpanel-${tab}`}
+        aria-labelledby={`tab-${tab}`}
+        tabIndex={0}
+      >
+        {tab === "ledger" && <LedgerTab terms={terms as AcademicTerm[]} accounts={accounts as FinancialAccount[]} />}
+        {tab === "budget" && <BudgetTab terms={terms as AcademicTerm[]} />}
+        {tab === "accounts" && <AccountsTab />}
+        {tab === "reports" && <ReportsTab terms={terms as AcademicTerm[]} />}
+      </div>
     </div>
   );
 }
