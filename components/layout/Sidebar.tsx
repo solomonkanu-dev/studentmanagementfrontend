@@ -93,6 +93,7 @@ const adminNav: NavItem[] = [
     children: [
       { label: "Overview", href: "/admin/students" },
       { label: "All Students", href: "/admin/students/list" },
+      { label: "ID Cards", href: "/admin/students/id-cards" },
     ],
   },
   { label: "Parents", href: "/admin/parents", icon: Heart, group: "People" },
@@ -112,7 +113,16 @@ const adminNav: NavItem[] = [
   { label: "Academic Calendar", href: "/admin/academic-calendar",  icon: CalendarDays,    group: "Academics" },
   { label: "Assignments",       href: "/admin/assignments",        icon: ClipboardList,   group: "Academics" },
   { label: "Attendance",        href: "/admin/attendance",         icon: CalendarCheck,   group: "Academics" },
-  { label: "Results",           href: "/admin/results",            icon: FileText,        group: "Academics" },
+  {
+    label: "Results",
+    href: "/admin/results",
+    icon: FileText,
+    group: "Academics",
+    children: [
+      { label: "All Results",   href: "/admin/results" },
+      { label: "Report Cards",  href: "/admin/results/report-cards" },
+    ],
+  },
   { label: "Exams",             href: "/admin/exams",              icon: ClipboardCheck,  group: "Academics" },
   { label: "Promote Students",  href: "/admin/promote",            icon: GraduationCap,   group: "Academics" },
 
@@ -547,9 +557,10 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
 
                   {/* Section items — animated */}
                   <div
-                    className="overflow-hidden transition-all duration-300 ease-in-out"
-                    style={{ maxHeight: sidebarCollapsed || isSectionOpen ? "9999px" : "0px" }}
+                    className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+                    style={{ gridTemplateRows: sidebarCollapsed || isSectionOpen ? "1fr" : "0fr" }}
                   >
+                  <div className="min-h-0 overflow-hidden">
                     <ul className="space-y-0.5">
                       {items.map((item) => {
                         const { label, href, icon: Icon, children } = item;
@@ -590,13 +601,14 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
                                 />
                               </button>
                               <div
-                                className="overflow-hidden transition-all duration-200"
+                                className="grid transition-[grid-template-rows,opacity] duration-200 ease-in-out"
                                 style={{
-                                  maxHeight: !sidebarCollapsed && isOpen ? `${children.length * 40 + 8}px` : "0px",
-                                  marginTop: !sidebarCollapsed && isOpen ? "2px" : "0px",
+                                  gridTemplateRows: !sidebarCollapsed && isOpen ? "1fr" : "0fr",
+                                  opacity: !sidebarCollapsed && isOpen ? 1 : 0,
                                 }}
                               >
-                                <ul className="space-y-0.5 pl-4">
+                                <div className="min-h-0 overflow-hidden">
+                                <ul className="space-y-0.5 pl-4 pt-0.5">
                                   {children.map((child) => {
                                     const childActive = pathname === child.href;
                                     return (
@@ -619,6 +631,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
                                     );
                                   })}
                                 </ul>
+                                </div>
                               </div>
                             </li>
                           );
@@ -669,6 +682,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
                         );
                       })}
                     </ul>
+                  </div>
                   </div>
                 </Fragment>
               );

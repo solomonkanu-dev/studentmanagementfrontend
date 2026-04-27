@@ -34,6 +34,16 @@ export interface EmailLogEntry {
   recipientUser?: { fullName: string };
 }
 
+export interface SmsLogEntry {
+  _id: string;
+  recipientPhone: string;
+  type: string;
+  status: 'sent' | 'failed';
+  error?: string;
+  sentAt: string;
+  recipientUser?: { fullName: string };
+}
+
 export const notificationSettingsApi = {
   getSettings: async (): Promise<NotificationSettings> => {
     const { data } = await apiClient.get('/admin/notification-settings');
@@ -59,6 +69,11 @@ export const notificationSettingsApi = {
 
   getLogs: async (page = 1): Promise<{ logs: EmailLogEntry[]; total: number; pages: number }> => {
     const { data } = await apiClient.get(`/admin/notification-settings/logs?page=${page}`);
+    return data;
+  },
+
+  getSmsLogs: async (page = 1): Promise<{ logs: SmsLogEntry[]; total: number; pages: number }> => {
+    const { data } = await apiClient.get(`/admin/notification-settings/sms-logs?page=${page}`);
     return data;
   },
 };

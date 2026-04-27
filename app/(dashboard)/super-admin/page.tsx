@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { superAdminApi } from "@/lib/api/superAdmin";
 import { monitorApi } from "@/lib/api/monitor";
+import { auditLogApi } from "@/lib/api/auditLog";
+import { planApi } from "@/lib/api/plan";
+import { adminParentApi } from "@/lib/api/parent";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -21,8 +24,13 @@ import {
   TrendingUp,
   Activity,
   CheckCircle2,
+  UserCheck,
+  CreditCard,
+  BookOpen,
+  Zap,
+  Users2,
 } from "lucide-react";
-import type { PendingAdmin, InstituteHealthReport, GrowthTrends, FeeRevenueReport, SalaryExpenditureReport, SystemOverview } from "@/lib/types";
+import type { PendingAdmin, InstituteHealthReport, GrowthTrends, FeeRevenueReport, SalaryExpenditureReport, SystemOverview, AuditLog, Plan, AuditLogSummary } from "@/lib/types";
 import { errMsg } from "@/lib/utils/errMsg";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -287,6 +295,381 @@ function InstituteHealthBars({ institutes }: { institutes: InstituteHealthReport
   );
 }
 
+// ─── Plan Distribution ────────────────────────────────────────────────────────
+
+function PlanDistributionSection({ plans, isLoading }: { plans: Plan[]; isLoading: boolean }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-primary" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-black dark:text-white">Plan Distribution</h2>
+          </div>
+          <Link href="/super-admin/plans" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            Manage Plans <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+          </div>
+        ) : plans.length === 0 ? (
+          <p className="py-6 text-center text-sm text-body">No plans configured.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <div
+                key={plan._id}
+                className="rounded-sm border border-stroke bg-whiter p-4 dark:border-strokedark dark:bg-meta-4"
+              >
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-black dark:text-white">
+                      {plan.displayName ?? plan.name}
+                    </p>
+                    {plan.description && (
+                      <p className="mt-0.5 text-xs text-body line-clamp-2">{plan.description}</p>
+                    )}
+                  </div>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                    {plan.price ? `NLe ${plan.price}/yr` : "Free"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-stroke bg-white px-2 py-0.5 text-[10px] font-medium text-body dark:border-strokedark dark:bg-boxdark">
+                    {plan.limits.maxStudents} Students
+                  </span>
+                  <span className="rounded-full border border-stroke bg-white px-2 py-0.5 text-[10px] font-medium text-body dark:border-strokedark dark:bg-boxdark">
+                    {plan.limits.maxLecturers} Teachers
+                  </span>
+                  <span className="rounded-full border border-stroke bg-white px-2 py-0.5 text-[10px] font-medium text-body dark:border-strokedark dark:bg-boxdark">
+                    {plan.limits.maxClasses} Classes
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Parent Portal Adoption ───────────────────────────────────────────────────
+
+interface ParentRecord {
+  _id: string;
+  linkedStudents?: unknown[];
+}
+
+function ParentAdoptionCard({
+  parents,
+  isLoading,
+  totalStudents,
+}: {
+  parents: ParentRecord[];
+  isLoading: boolean;
+  totalStudents: number;
+}) {
+  const totalParents = parents.length;
+  const linkedStudents = parents.reduce((sum, p) => sum + (p.linkedStudents?.length ?? 0), 0);
+  const adoptionRate = Math.min(Math.round((totalParents / Math.max(totalStudents, 1)) * 100), 100);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-primary" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-black dark:text-white">Parent Portal Adoption</h2>
+          </div>
+          <Link href="/admin/parents" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            View Parents <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {[
+                { label: "Total Parents", value: totalParents, color: "text-primary" },
+                { label: "Students Linked", value: linkedStudents, color: "text-meta-3" },
+                { label: "Total Students", value: totalStudents, color: "text-black dark:text-white" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-xs text-body">{label}</span>
+                  <span className={`text-sm font-bold ${color}`}>{value.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs text-body">Adoption Rate</span>
+                <span className="text-xs font-bold text-primary">{adoptionRate}%</span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-stroke dark:bg-strokedark">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${adoptionRate}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Platform Activity Chart ──────────────────────────────────────────────────
+
+function formatActionLabel(action: string) {
+  return action
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function PlatformActivityChart({
+  summary,
+  isLoading,
+}: {
+  summary: AuditLogSummary | undefined;
+  isLoading: boolean;
+}) {
+  const top8 = useMemo(() => (summary?.byAction ?? []).slice(0, 8), [summary]);
+  const totalEvents = useMemo(
+    () => (summary?.byAction ?? []).reduce((s, a) => s + a.count, 0),
+    [summary]
+  );
+
+  const options: ApexCharts.ApexOptions = useMemo(
+    () => ({
+      ...baseChart,
+      chart: { ...baseChart.chart, type: "bar" },
+      plotOptions: { bar: { horizontal: true, barHeight: "60%", borderRadius: 3 } },
+      colors: [C.primary],
+      xaxis: {
+        labels: { style: { fontSize: "11px", colors: C.body } },
+        axisBorder: { show: false },
+      },
+      yaxis: {
+        labels: {
+          style: { fontSize: "10px", colors: C.body },
+          formatter: (v: string | number) => formatActionLabel(String(v)),
+        },
+      },
+      tooltip: { y: { formatter: (v: number) => `${v} events` } },
+      categories: top8.map((a) => a.action),
+    }),
+    [top8]
+  );
+
+  const series = useMemo(
+    () => [{ name: "Events", data: top8.map((a) => ({ x: a.action, y: a.count })) }],
+    [top8]
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-black dark:text-white">
+              Platform Activity
+              {totalEvents > 0 && (
+                <span className="ml-1.5 text-xs font-normal text-body">({totalEvents.toLocaleString()} total events)</span>
+              )}
+            </h2>
+          </div>
+          <Link href="/super-admin/audit-logs" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            View All Logs <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-60">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+          </div>
+        ) : top8.length === 0 ? (
+          <p className="py-10 text-center text-sm text-body">No activity data available.</p>
+        ) : (
+          <ReactApexChart type="bar" series={series} options={options} height={260} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Recent Audit Feed ────────────────────────────────────────────────────────
+
+function auditBadgeClass(action: string): string {
+  if (action === "LOGIN") return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300";
+  if (action.startsWith("CREATE_")) return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300";
+  if (action.startsWith("DELETE_") || action.startsWith("SUSPEND_") || action.startsWith("ARCHIVE_"))
+    return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300";
+  if (
+    action.startsWith("UPDATE_") ||
+    action.startsWith("RESET_") ||
+    action.startsWith("UNSUSPEND_") ||
+    action.startsWith("RESTORE_")
+  )
+    return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300";
+  return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+}
+
+function relativeTime(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function RecentAuditFeed({
+  logs,
+  isLoading,
+}: {
+  logs: AuditLog[];
+  isLoading: boolean;
+}) {
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-black dark:text-white">Recent Audit Feed</h2>
+          </div>
+          <Link href="/super-admin/audit-logs" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            View All <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+          </div>
+        ) : logs.length === 0 ? (
+          <p className="py-8 text-center text-sm text-body">No recent activity.</p>
+        ) : (
+          <ul className="divide-y divide-stroke dark:divide-strokedark">
+            {logs.map((log) => (
+              <li key={log._id} className="flex items-center gap-3 px-5 py-3">
+                <span
+                  className={`shrink-0 max-w-[100px] truncate rounded px-1.5 py-0.5 text-[10px] font-semibold ${auditBadgeClass(log.action)}`}
+                  title={log.action}
+                >
+                  {log.action}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-medium text-black dark:text-white">
+                    {log.userFullName}
+                  </p>
+                  <p className="truncate text-[10px] text-body">{log.userEmail}</p>
+                </div>
+                <span className="shrink-0 text-[10px] text-body">{relativeTime(log.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Newly Onboarded Institutes ───────────────────────────────────────────────
+
+function NewInstitutesList({
+  growth,
+  institutes,
+}: {
+  growth: GrowthTrends | undefined;
+  institutes: InstituteHealthReport[];
+}) {
+  const recent6 = useMemo(() => {
+    if (!growth) return [];
+    return growth.institutes.slice(-6);
+  }, [growth]);
+
+  const maxCount = useMemo(() => Math.max(...recent6.map((p) => p.count), 1), [recent6]);
+
+  return (
+    <Card className="lg:col-span-1">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users2 className="h-4 w-4 text-primary" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-black dark:text-white">Institute Onboarding</h2>
+          </div>
+          <Link href="/super-admin/institutes" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            View All <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {recent6.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-body">Last 6 Months</p>
+            <div className="flex items-end gap-1" style={{ height: 48 }}>
+              {recent6.map((p) => {
+                const barH = Math.max(Math.round((p.count / maxCount) * 100), 8);
+                const label = `${MONTH_NAMES[(p.month ?? 1) - 1]} ${String(p.year ?? "").slice(2)}`;
+                return (
+                  <div key={`${p.year}-${p.month}`} className="flex flex-1 flex-col items-center gap-0.5">
+                    <span className="text-[9px] font-bold text-primary">{p.count}</span>
+                    <div
+                      className="w-full rounded-t bg-primary/70"
+                      style={{ height: `${barH}%` }}
+                      title={`${label}: ${p.count}`}
+                    />
+                    <span className="text-[8px] text-body">{MONTH_NAMES[(p.month ?? 1) - 1]}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {institutes.length === 0 ? (
+          <p className="py-4 text-center text-xs text-body">No institutes found.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {institutes.slice(0, 6).map((r) => {
+              const feeRate = pct(r.fees.totalCollected, r.fees.totalBilled);
+              const feeColor =
+                feeRate >= 80 ? "bg-meta-3" : feeRate >= 50 ? "bg-warning" : "bg-meta-1";
+              return (
+                <li key={r.institute.id} className="flex items-center justify-between gap-2">
+                  <span className="truncate text-xs font-medium text-black dark:text-white">
+                    {r.institute.name}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-[10px] text-body">{r.users.students} stu</span>
+                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white ${feeColor}`}>
+                      {feeRate}%
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function SuperAdminDashboard() {
@@ -299,6 +682,23 @@ export default function SuperAdminDashboard() {
   const { data: salary, isLoading: salaryLoading } = useQuery<SalaryExpenditureReport>({ queryKey: ["monitor-salary"], queryFn: monitorApi.getSalaryExpenditure });
   const { data: institutes = [] } = useQuery<InstituteHealthReport[]>({ queryKey: ["monitor-institutes"], queryFn: monitorApi.getInstitutes });
   const { data: pendingList = [] } = useQuery({ queryKey: ["pending-admins"], queryFn: superAdminApi.getPendingAdmins });
+
+  const { data: auditFeed, isLoading: auditFeedLoading } = useQuery({
+    queryKey: ["audit-feed"],
+    queryFn: () => auditLogApi.getAll({ limit: 8, page: 1 }),
+  });
+  const { data: auditSummary, isLoading: auditSummaryLoading } = useQuery({
+    queryKey: ["audit-summary"],
+    queryFn: auditLogApi.getSummary,
+  });
+  const { data: plans = [], isLoading: plansLoading } = useQuery<Plan[]>({
+    queryKey: ["plans-all"],
+    queryFn: planApi.getAll,
+  });
+  const { data: parentsRaw = [], isLoading: parentsLoading } = useQuery<ParentRecord[]>({
+    queryKey: ["admin-parents"],
+    queryFn: adminParentApi.getAll as () => Promise<ParentRecord[]>,
+  });
 
   const pendingAdmins = (pendingList as PendingAdmin[]).filter((a) => !a.approved);
 
@@ -604,6 +1004,35 @@ export default function SuperAdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+
+      {/* ── Row A: Parent Adoption + Platform Activity ─────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ParentAdoptionCard
+          parents={parentsRaw}
+          isLoading={parentsLoading}
+          totalStudents={overview?.students.total ?? 0}
+        />
+        <PlatformActivityChart
+          summary={auditSummary}
+          isLoading={auditSummaryLoading}
+        />
+      </div>
+
+      {/* ── Row B: Recent Audit Feed + New Institutes ──────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <RecentAuditFeed
+          logs={auditFeed?.data ?? []}
+          isLoading={auditFeedLoading}
+        />
+        <NewInstitutesList
+          growth={growth}
+          institutes={institutes}
+        />
+      </div>
+
+      {/* ── Row C: Plan Distribution ───────────────────────────────────────── */}
+      <PlanDistributionSection plans={plans} isLoading={plansLoading} />
 
     </div>
   );

@@ -1,0 +1,521 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e113]:
+    - complementary [ref=e114]:
+      - link "EduPulse" [ref=e116] [cursor=pointer]:
+        - /url: /
+        - img [ref=e117]
+        - generic [ref=e121]: EduPulse
+      - navigation [ref=e122]:
+        - list [ref=e123]:
+          - listitem [ref=e124]:
+            - link "Dashboard" [ref=e125] [cursor=pointer]:
+              - /url: /admin
+              - img [ref=e126]
+              - generic [ref=e131]: Dashboard
+          - listitem [ref=e132]:
+            - button "People" [ref=e133]:
+              - generic [ref=e134]: People
+              - img [ref=e135]
+          - list [ref=e139]:
+            - listitem [ref=e140]:
+              - button "Teachers" [ref=e141]:
+                - generic [ref=e142]:
+                  - img [ref=e143]
+                  - generic [ref=e148]: Teachers
+                - img [ref=e149]
+              - list [ref=e151]:
+                - listitem [ref=e152]:
+                  - link "Overview" [ref=e153] [cursor=pointer]:
+                    - /url: /admin/lecturers
+                    - text: Overview
+                - listitem [ref=e155]:
+                  - link "All Teachers" [ref=e156] [cursor=pointer]:
+                    - /url: /admin/lecturers/list
+                    - text: All Teachers
+            - listitem [ref=e158]:
+              - button "Forms" [ref=e159]:
+                - generic [ref=e160]:
+                  - img [ref=e161]
+                  - generic [ref=e166]: Forms
+                - img [ref=e167]
+              - list [ref=e169]:
+                - listitem [ref=e170]:
+                  - link "Overview" [ref=e171] [cursor=pointer]:
+                    - /url: /admin/classes
+                    - text: Overview
+                - listitem [ref=e173]:
+                  - link "All Forms" [ref=e174] [cursor=pointer]:
+                    - /url: /admin/classes/list
+                    - text: All Forms
+            - listitem [ref=e176]:
+              - button "Students" [ref=e177]:
+                - generic [ref=e178]:
+                  - img [ref=e179]
+                  - generic [ref=e182]: Students
+                - img [ref=e183]
+              - list [ref=e185]:
+                - listitem [ref=e186]:
+                  - link "Overview" [ref=e187] [cursor=pointer]:
+                    - /url: /admin/students
+                    - text: Overview
+                - listitem [ref=e189]:
+                  - link "All Students" [ref=e190] [cursor=pointer]:
+                    - /url: /admin/students/list
+                    - text: All Students
+                - listitem [ref=e192]:
+                  - link "ID Cards" [ref=e193] [cursor=pointer]:
+                    - /url: /admin/students/id-cards
+                    - text: ID Cards
+            - listitem [ref=e195]:
+              - link "Parents" [ref=e196] [cursor=pointer]:
+                - /url: /admin/parents
+                - img [ref=e197]
+                - generic [ref=e199]: Parents
+          - listitem [ref=e200]:
+            - button "Academics" [ref=e201]:
+              - generic [ref=e202]: Academics
+              - img [ref=e203]
+          - list [ref=e207]:
+            - listitem [ref=e208]:
+              - button "Subjects" [ref=e209]:
+                - generic [ref=e210]:
+                  - img [ref=e211]
+                  - generic [ref=e213]: Subjects
+                - img [ref=e214]
+              - list [ref=e216]:
+                - listitem [ref=e217]:
+                  - link "Overview" [ref=e218] [cursor=pointer]:
+                    - /url: /admin/subjects
+                    - text: Overview
+                - listitem [ref=e220]:
+                  - link "All Subjects" [ref=e221] [cursor=pointer]:
+                    - /url: /admin/subjects/list
+                    - text: All Subjects
+            - listitem [ref=e223]:
+              - link "Timetable" [ref=e224] [cursor=pointer]:
+                - /url: /admin/timetable
+                - img [ref=e225]
+                - generic [ref=e227]: Timetable
+            - listitem [ref=e228]:
+              - link "Academic Calendar" [ref=e229] [cursor=pointer]:
+                - /url: /admin/academic-calendar
+                - img [ref=e230]
+                - generic [ref=e232]: Academic Calendar
+            - listitem [ref=e233]:
+              - link "Assignments" [ref=e234] [cursor=pointer]:
+                - /url: /admin/assignments
+                - img [ref=e235]
+                - generic [ref=e238]: Assignments
+            - listitem [ref=e239]:
+              - link "Attendance" [ref=e240] [cursor=pointer]:
+                - /url: /admin/attendance
+                - img [ref=e241]
+                - generic [ref=e244]: Attendance
+            - listitem [ref=e245]:
+              - button "Results" [ref=e246]:
+                - generic [ref=e247]:
+                  - img [ref=e248]
+                  - generic [ref=e251]: Results
+                - img [ref=e252]
+              - list [ref=e254]:
+                - listitem [ref=e255]:
+                  - link "All Results" [ref=e256] [cursor=pointer]:
+                    - /url: /admin/results
+                    - text: All Results
+                - listitem [ref=e258]:
+                  - link "Report Cards" [ref=e259] [cursor=pointer]:
+                    - /url: /admin/results/report-cards
+                    - text: Report Cards
+            - listitem [ref=e261]:
+              - link "Exams" [ref=e262] [cursor=pointer]:
+                - /url: /admin/exams
+                - img [ref=e263]
+                - generic [ref=e267]: Exams
+            - listitem [ref=e268]:
+              - link "Promote Students" [ref=e269] [cursor=pointer]:
+                - /url: /admin/promote
+                - img [ref=e270]
+                - generic [ref=e273]: Promote Students
+          - listitem [ref=e274]:
+            - button "Finance" [ref=e275]:
+              - generic [ref=e276]: Finance
+              - img [ref=e277]
+          - list [ref=e281]:
+            - listitem [ref=e282]:
+              - link "Fees" [ref=e283] [cursor=pointer]:
+                - /url: /admin/fees
+                - img [ref=e284]
+                - generic [ref=e286]: Fees
+            - listitem [ref=e287]:
+              - link "Terms" [ref=e288] [cursor=pointer]:
+                - /url: /admin/terms
+                - img [ref=e289]
+                - generic [ref=e291]: Terms
+            - listitem [ref=e292]:
+              - link "Salary" [ref=e293] [cursor=pointer]:
+                - /url: /admin/salary
+                - img [ref=e294]
+                - generic [ref=e296]: Salary
+            - listitem [ref=e297]:
+              - link "Financial Records" [ref=e298] [cursor=pointer]:
+                - /url: /admin/financial-records
+                - img [ref=e299]
+                - generic [ref=e301]: Financial Records
+            - listitem [ref=e302]:
+              - link "Plan & Billing" [ref=e303] [cursor=pointer]:
+                - /url: /admin/plan
+                - img [ref=e304]
+                - generic [ref=e306]: Plan & Billing
+          - listitem [ref=e307]:
+            - button "Communication" [ref=e308]:
+              - generic [ref=e309]: Communication
+              - img [ref=e310]
+          - list [ref=e314]:
+            - listitem [ref=e315]:
+              - link "Messages 1" [ref=e316] [cursor=pointer]:
+                - /url: /admin/messages
+                - img [ref=e317]
+                - generic [ref=e319]: Messages
+                - generic [ref=e320]: "1"
+            - listitem [ref=e321]:
+              - link "Announcements" [ref=e322] [cursor=pointer]:
+                - /url: /admin/announcements
+                - img [ref=e323]
+                - generic [ref=e326]: Announcements
+            - listitem [ref=e327]:
+              - link "Gallery" [ref=e328] [cursor=pointer]:
+                - /url: /admin/gallery
+                - img [ref=e329]
+                - generic [ref=e334]: Gallery
+          - listitem [ref=e335]:
+            - button "Administration" [ref=e336]:
+              - generic [ref=e337]: Administration
+              - img [ref=e338]
+          - list [ref=e342]:
+            - listitem [ref=e343]:
+              - link "Institute" [ref=e344] [cursor=pointer]:
+                - /url: /admin/institute
+                - img [ref=e345]
+                - generic [ref=e349]: Institute
+            - listitem [ref=e350]:
+              - link "AI Analytics" [ref=e351] [cursor=pointer]:
+                - /url: /admin/ai-analytics
+                - img [ref=e352]
+                - generic [ref=e355]: AI Analytics
+            - listitem [ref=e356]:
+              - link "Audit Logs" [ref=e357] [cursor=pointer]:
+                - /url: /admin/audit-logs
+                - img [ref=e358]
+                - generic [ref=e360]: Audit Logs
+            - listitem [ref=e361]:
+              - link "Archive" [ref=e362] [cursor=pointer]:
+                - /url: /admin/archive
+                - img [ref=e363]
+                - generic [ref=e366]: Archive
+            - listitem [ref=e367]:
+              - link "Theme" [ref=e368] [cursor=pointer]:
+                - /url: /admin/theme
+                - img [ref=e369]
+                - generic [ref=e375]: Theme
+            - listitem [ref=e376]:
+              - button "Settings" [ref=e377]:
+                - generic [ref=e378]:
+                  - img [ref=e379]
+                  - generic [ref=e382]: Settings
+                - img [ref=e383]
+              - list [ref=e385]:
+                - listitem [ref=e386]:
+                  - link "Fees Particulars" [ref=e387] [cursor=pointer]:
+                    - /url: /admin/settings/fees
+                    - text: Fees Particulars
+                - listitem [ref=e389]:
+                  - link "Invoice Accounts" [ref=e390] [cursor=pointer]:
+                    - /url: /admin/settings/accounts
+                    - text: Invoice Accounts
+                - listitem [ref=e392]:
+                  - link "Marks Grading" [ref=e393] [cursor=pointer]:
+                    - /url: /admin/settings/grading
+                    - text: Marks Grading
+                - listitem [ref=e395]:
+                  - link "Document Templates" [ref=e396] [cursor=pointer]:
+                    - /url: /admin/settings/documents
+                    - text: Document Templates
+                - listitem [ref=e398]:
+                  - link "Email Notifications" [ref=e399] [cursor=pointer]:
+                    - /url: /admin/settings/notifications
+                    - text: Email Notifications
+                - listitem [ref=e401]:
+                  - link "Rules & Regulations" [ref=e402] [cursor=pointer]:
+                    - /url: /admin/settings/rules
+                    - text: Rules & Regulations
+                - listitem [ref=e404]:
+                  - link "My Plan" [ref=e405] [cursor=pointer]:
+                    - /url: /admin/settings/plan
+                    - text: My Plan
+                - listitem [ref=e407]:
+                  - link "Account Settings" [ref=e408] [cursor=pointer]:
+                    - /url: /admin/settings/account
+                    - text: Account Settings
+      - generic [ref=e411]:
+        - img "Solomon Kanu" [ref=e413]
+        - generic [ref=e414]:
+          - paragraph [ref=e415]: Solomon Kanu
+          - paragraph [ref=e416]: admin
+        - button "Logout" [ref=e417]:
+          - img [ref=e418]
+    - generic [ref=e421]:
+      - banner [ref=e422]:
+        - generic [ref=e423]:
+          - button "Collapse sidebar" [ref=e424]:
+            - img [ref=e425]
+          - generic [ref=e426]:
+            - img "Provedence International High School" [ref=e427]
+            - generic [ref=e428]: Provedence International High School
+          - heading "Admin" [level=1] [ref=e429]
+        - generic [ref=e430]:
+          - list [ref=e431]:
+            - listitem [ref=e432]:
+              - generic [ref=e433]:
+                - checkbox [ref=e434] [cursor=pointer]
+                - img [ref=e437]
+          - button "Notifications" [ref=e440]:
+            - img [ref=e441]
+          - button "Profile options" [ref=e445]:
+            - img "Solomon Kanu" [ref=e446]
+      - main [ref=e447]:
+        - generic [ref=e449]:
+          - generic [ref=e451]:
+            - generic [ref=e452]:
+              - img [ref=e454]
+              - generic [ref=e459]:
+                - paragraph [ref=e460]: Good afternoon
+                - heading "Solomon 👋" [level=1] [ref=e461]
+                - paragraph [ref=e462]: Here's what's happening at your school today.
+            - generic [ref=e463]:
+              - paragraph [ref=e464]: 12:49:30
+              - paragraph [ref=e465]: Monday, 27 April 2026
+          - generic [ref=e466]:
+            - generic [ref=e467]:
+              - img [ref=e469]
+              - generic [ref=e472]:
+                - generic [ref=e473]:
+                  - heading "0" [level=4] [ref=e474]
+                  - text: Total Students
+                - img [ref=e476]
+            - generic [ref=e478]:
+              - img [ref=e480]
+              - generic [ref=e485]:
+                - generic [ref=e486]:
+                  - heading "0" [level=4] [ref=e487]
+                  - text: Teachers
+                - img [ref=e489]
+            - generic [ref=e491]:
+              - img [ref=e493]
+              - generic [ref=e498]:
+                - generic [ref=e499]:
+                  - heading "0" [level=4] [ref=e500]
+                  - text: Forms
+                - img [ref=e502]
+            - generic [ref=e504]:
+              - img [ref=e506]
+              - generic [ref=e508]:
+                - generic [ref=e509]:
+                  - heading "0" [level=4] [ref=e510]
+                  - text: Assignments
+                - img [ref=e512]
+            - generic [ref=e514]:
+              - img [ref=e516]
+              - generic [ref=e518]:
+                - generic [ref=e519]:
+                  - heading "0" [level=4] [ref=e520]
+                  - text: Parents
+                - img [ref=e522]
+          - generic [ref=e524]:
+            - generic [ref=e525]:
+              - generic [ref=e526]:
+                - heading "Students per Forms" [level=2] [ref=e527]
+                - paragraph [ref=e528]: Enrollment breakdown by class
+              - paragraph [ref=e530]: No class data yet.
+            - generic [ref=e531]:
+              - generic [ref=e532]:
+                - heading "Assignment Status" [level=2] [ref=e533]
+                - paragraph [ref=e534]: Overdue vs active
+              - paragraph [ref=e536]: No assignments yet.
+          - generic [ref=e537]:
+            - generic [ref=e539]:
+              - generic [ref=e540]:
+                - img [ref=e541]
+                - heading "Today's Attendance" [level=2] [ref=e543]
+              - generic [ref=e544]: Monday, April 27, 2026
+            - generic [ref=e545]:
+              - generic [ref=e546]:
+                - generic [ref=e547]:
+                  - img [ref=e549]
+                  - paragraph [ref=e554]: Total Marked
+                  - paragraph [ref=e555]: "0"
+                - generic [ref=e556]:
+                  - img [ref=e558]
+                  - paragraph [ref=e562]: Present
+                  - paragraph [ref=e563]: "0"
+                - generic [ref=e564]:
+                  - img [ref=e566]
+                  - paragraph [ref=e571]: Absent
+                  - paragraph [ref=e572]: "0"
+                - generic [ref=e573]:
+                  - img [ref=e575]
+                  - paragraph [ref=e578]: Rate
+                  - paragraph [ref=e579]: 0%
+              - generic [ref=e580]:
+                - img [ref=e581]
+                - paragraph [ref=e583]: No classes found.
+          - generic [ref=e584]:
+            - heading "Fee Analysis" [level=2] [ref=e585]
+            - paragraph [ref=e586]: Overview of fee collection across the institution
+          - generic [ref=e587]:
+            - generic [ref=e588]:
+              - generic [ref=e589]:
+                - heading "Fee Status Breakdown" [level=2] [ref=e590]
+                - paragraph [ref=e591]: Distribution by payment status
+              - paragraph [ref=e593]: No fee data yet.
+            - generic [ref=e594]:
+              - generic [ref=e595]:
+                - heading "Collection Trend" [level=2] [ref=e596]
+                - paragraph [ref=e597]: Last 0 months — billed vs collected
+              - paragraph [ref=e599]: No trend data yet.
+          - generic [ref=e600]:
+            - heading "Staff Analytics" [level=2] [ref=e601]
+            - paragraph [ref=e602]: Teacher workload and salary distribution
+          - generic [ref=e603]:
+            - generic [ref=e604]:
+              - generic [ref=e605]:
+                - heading "Teacher Workload" [level=2] [ref=e606]
+                - paragraph [ref=e607]: Number of subjects assigned per teacher
+              - paragraph [ref=e609]: No subject assignments yet.
+            - generic [ref=e610]:
+              - generic [ref=e611]:
+                - heading "Salary Overview" [level=2] [ref=e612]
+                - paragraph [ref=e613]: Status of all salary records
+              - paragraph [ref=e615]: No salary records yet.
+          - generic [ref=e616]:
+            - generic [ref=e617]:
+              - heading "Financial Overview" [level=2] [ref=e618]
+              - paragraph [ref=e619]: School-wide income, expenses and balance
+            - link "Full report" [ref=e620] [cursor=pointer]:
+              - /url: /admin/financial-records
+              - text: Full report
+              - img [ref=e621]
+          - generic [ref=e623]:
+            - img [ref=e624]
+            - paragraph [ref=e626]: No financial records yet.
+            - link "Add first record" [ref=e627] [cursor=pointer]:
+              - /url: /admin/financial-records
+              - text: Add first record
+              - img [ref=e628]
+          - generic [ref=e630]:
+            - generic [ref=e631]:
+              - generic [ref=e632]:
+                - heading "Top Defaulters" [level=2] [ref=e633]
+                - paragraph [ref=e634]: Students with highest outstanding balance
+              - paragraph [ref=e636]: No defaulters found.
+            - generic [ref=e637]:
+              - heading "Recent Students" [level=2] [ref=e639]
+              - paragraph [ref=e641]: No students yet.
+          - generic [ref=e642]:
+            - generic [ref=e644]:
+              - generic [ref=e645]:
+                - img [ref=e646]
+                - heading "Academic Calendar" [level=2] [ref=e648]
+              - generic [ref=e649]:
+                - button [ref=e650]:
+                  - img [ref=e651]
+                - generic [ref=e653]: April 2026
+                - button [ref=e654]:
+                  - img [ref=e655]
+            - generic [ref=e657]:
+              - generic [ref=e658]:
+                - generic [ref=e659]: Mo
+                - generic [ref=e660]: Tu
+                - generic [ref=e661]: We
+                - generic [ref=e662]: Th
+                - generic [ref=e663]: Fr
+                - generic [ref=e664]: Sa
+                - generic [ref=e665]: Su
+              - generic [ref=e666]:
+                - generic [ref=e670]: "1"
+                - generic [ref=e672]: "2"
+                - generic [ref=e674]: "3"
+                - generic [ref=e678]: "4"
+                - generic [ref=e682]: "5"
+                - generic [ref=e686]: "6"
+                - generic [ref=e690]: "7"
+                - generic [ref=e692]: "8"
+                - generic [ref=e694]: "9"
+                - generic [ref=e696]: "10"
+                - generic [ref=e700]: "11"
+                - generic [ref=e702]: "12"
+                - generic [ref=e704]: "13"
+                - generic [ref=e706]: "14"
+                - generic [ref=e708]: "15"
+                - generic [ref=e710]: "16"
+                - generic [ref=e712]: "17"
+                - generic [ref=e714]: "18"
+                - generic [ref=e716]: "19"
+                - generic [ref=e718]: "20"
+                - generic [ref=e720]: "21"
+                - generic [ref=e722]: "22"
+                - generic [ref=e724]: "23"
+                - generic [ref=e728]: "24"
+                - generic [ref=e732]: "25"
+                - generic [ref=e736]: "26"
+                - generic [ref=e740]: "27"
+                - generic [ref=e744]: "28"
+                - generic [ref=e748]: "29"
+                - generic [ref=e752]: "30"
+              - generic [ref=e756]:
+                - generic [ref=e759]: Holiday
+                - generic [ref=e762]: Exam
+                - generic [ref=e765]: Event
+                - generic [ref=e768]: Term
+              - generic [ref=e769]:
+                - paragraph [ref=e770]: April events
+                - generic [ref=e771]:
+                  - generic [ref=e774]:
+                    - paragraph [ref=e775]: Mid Term Exams
+                    - paragraph [ref=e776]: 23 Apr – 29 Apr
+                  - generic [ref=e777]: Exam
+    - button "Open admin assistant" [ref=e778]:
+      - img [ref=e779]
+    - dialog "AI admin assistant":
+      - generic:
+        - generic:
+          - generic:
+            - img
+          - generic:
+            - paragraph: Admin Assistant
+            - paragraph: Online · Live data
+        - button "Close chat":
+          - img
+      - generic:
+        - generic:
+          - generic:
+            - img
+          - generic:
+            - generic:
+              - paragraph: Hi! I'm your admin assistant. Ask me about your institution's fees, attendance, enrollment, salary, or any other school data.
+        - generic:
+          - paragraph: Try asking
+          - button "Give me an overview of my institution"
+          - button "What is our fee collection rate?"
+          - button "Which students have outstanding fees?"
+          - button "How is student attendance this month?"
+      - generic:
+        - generic:
+          - textbox "Chat input":
+            - /placeholder: Ask about fees, attendance, enrollment…
+          - button "Send message" [disabled]:
+            - img
+        - paragraph: Powered by Claude · Live institutional data
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e108] [cursor=pointer]:
+    - img [ref=e109]
+  - alert [ref=e112]

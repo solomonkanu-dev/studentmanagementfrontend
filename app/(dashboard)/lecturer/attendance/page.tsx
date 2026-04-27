@@ -387,6 +387,26 @@ export default function LecturerAttendancePage() {
 
   const students = attendanceData?.students ?? [];
 
+  // Fetch already-saved attendance for the selected class + date
+  const { data: existingAttendance } = useQuery({
+    queryKey: ["attendance-existing", selectedClass, selectedSubject, markDate],
+    queryFn: () => attendanceApi.getSubjectAttendance({ classId: selectedClass, date: markDate }),
+    enabled: !!selectedClass && !!selectedSubject && tab === "manual",
+  });
+
+  // Pre-populate statuses from saved records whenever the query result changes
+  useEffect(() => {
+    const docs = Array.isArray(existingAttendance) ? existingAttendance : existingAttendance ? [existingAttendance] : [];
+    const initial: Record<string, StudentStatus> = {};
+    docs.forEach((doc: { records?: { student: { _id: string } | string; status: string }[] }) => {
+      (doc.records ?? []).forEach((r) => {
+        const id = typeof r.student === "string" ? r.student : r.student._id;
+        initial[id] = r.status as StudentStatus;
+      });
+    });
+    setStatuses(initial);
+  }, [existingAttendance]);
+
   const stats = useMemo(() => {
     const vals = Object.values(statuses);
     return {
@@ -409,7 +429,7 @@ export default function LecturerAttendancePage() {
     mutationFn: attendanceApi.mark,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
-      setStatuses({});
+      queryClient.invalidateQueries({ queryKey: ["attendance-existing", selectedClass, selectedSubject, markDate] });
       setFormError("");
     },
     onError: (err: unknown) => {

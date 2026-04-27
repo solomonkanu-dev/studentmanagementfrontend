@@ -27,11 +27,41 @@ function pctGrade(pct: number): string {
   return "F";
 }
 
-interface Props {
-  data: ReportCardData;
+export interface ReportCardStyle {
+  primaryColor: string;
+  headerTextColor: string;
+  stripeColor: string;
+  cardBg: string;
+  reportTitle: string;
+  showPhoto: boolean;
+  showAttendance: boolean;
+  showPosition: boolean;
+  showTermBreakdown: boolean;
+  signatureLabels: [string, string, string];
+  footerNote: string;
 }
 
-export function ReportCardView({ data }: Props) {
+export const DEFAULT_REPORT_STYLE: ReportCardStyle = {
+  primaryColor: "#3c50e0",
+  headerTextColor: "#ffffff",
+  stripeColor: "#f8fafc",
+  cardBg: "#ffffff",
+  reportTitle: "Report Card",
+  showPhoto: true,
+  showAttendance: true,
+  showPosition: true,
+  showTermBreakdown: true,
+  signatureLabels: ["Class Teacher", "Head of Academics", "Principal / Director"],
+  footerNote: "",
+};
+
+interface Props {
+  data: ReportCardData;
+  style?: Partial<ReportCardStyle>;
+}
+
+export function ReportCardView({ data, style: styleProp }: Props) {
+  const s: ReportCardStyle = { ...DEFAULT_REPORT_STYLE, ...styleProp };
   const { student, institute, terms, results, attendance, position } = data;
 
   // Group results by subject
@@ -59,7 +89,6 @@ export function ReportCardView({ data }: Props) {
 
   const subjectRows = Array.from(subjectMap.values());
 
-  // Only show columns for terms that have at least one result for this student
   const allConfiguredTerms: ReportCardTerm[] = terms.length > 0
     ? terms
     : Array.from(
@@ -70,7 +99,6 @@ export function ReportCardView({ data }: Props) {
         ).values()
       );
 
-  // Terms where this student actually has marks
   const termsWithResults = allConfiguredTerms.filter((t) =>
     subjectRows.some((row) => row.termMarks.has(t._id))
   );
@@ -78,11 +106,8 @@ export function ReportCardView({ data }: Props) {
   const displayTerms = termsWithResults;
   const hasTerms = displayTerms.length > 0;
 
-  // Annual average is only shown when ALL configured terms have results
-  // (i.e., Term 3 has been completed — final term of the year)
   const showAnnualAvg = allConfiguredTerms.length > 0 && termsWithResults.length === allConfiguredTerms.length;
 
-  // Calculate annual average per subject (average percentage across ALL terms)
   function annualAvg(termMarks: Map<string, { marksObtained: number; totalScore: number }>): number | null {
     const entries = Array.from(termMarks.values());
     if (entries.length === 0) return null;
@@ -90,7 +115,6 @@ export function ReportCardView({ data }: Props) {
     return Math.round(totalPct / entries.length);
   }
 
-  // Overall annual average across all subjects (only meaningful at end of year)
   const allSubjectAvgs = subjectRows
     .map((r) => annualAvg(r.termMarks))
     .filter((v): v is number => v !== null);
@@ -99,9 +123,8 @@ export function ReportCardView({ data }: Props) {
     : 0;
   const overallAnnualGrade = pctGrade(overallAnnualPct);
 
-  // Flat totals (for summary box — sum of all marks obtained / sum of all totals)
-  const totalMarksObtained = results.reduce((s, r) => s + (r.marksObtained ?? 0), 0);
-  const totalMaxMarks = results.reduce((s, r) => s + (r.totalScore ?? 100), 0);
+  const totalMarksObtained = results.reduce((sum, r) => sum + (r.marksObtained ?? 0), 0);
+  const totalMaxMarks = results.reduce((sum, r) => sum + (r.totalScore ?? 100), 0);
   const overallPct = totalMaxMarks > 0 ? Math.round((totalMarksObtained / totalMaxMarks) * 100) : 0;
 
   const classObj = typeof student.class === "object" ? student.class : null;
@@ -114,6 +137,20 @@ export function ReportCardView({ data }: Props) {
     year: "numeric", month: "long", day: "numeric",
   });
 
+  const thStyle: React.CSSProperties = {
+    padding: "7px 10px",
+    textAlign: "left",
+    fontWeight: "bold",
+    fontSize: "10px",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  };
+
+  const tdStyle: React.CSSProperties = {
+    padding: "7px 10px",
+    borderBottom: "1px solid #e2e8f0",
+  };
+
   return (
     <div
       id="report-card"
@@ -121,7 +158,7 @@ export function ReportCardView({ data }: Props) {
         width: "210mm",
         minHeight: "297mm",
         margin: "0 auto",
-        background: "#fff",
+        background: s.cardBg,
         color: "#1e293b",
         fontFamily: "'Arial', sans-serif",
         fontSize: "12px",
@@ -130,14 +167,14 @@ export function ReportCardView({ data }: Props) {
       }}
     >
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px", borderBottom: "3px solid #3c50e0", paddingBottom: "12px", marginBottom: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", borderBottom: `3px solid ${s.primaryColor}`, paddingBottom: "12px", marginBottom: "16px" }}>
         <div style={{ flexShrink: 0 }}>
           {institute?.logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={institute.logo} alt="Logo" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />
           ) : (
-            <div style={{ width: 64, height: 64, background: "#eff1ff", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Building2 style={{ width: 32, height: 32, color: "#3c50e0" }} />
+            <div style={{ width: 64, height: 64, background: s.primaryColor + "22", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Building2 style={{ width: 32, height: 32, color: s.primaryColor }} />
             </div>
           )}
         </div>
@@ -156,25 +193,27 @@ export function ReportCardView({ data }: Props) {
           )}
         </div>
         <div style={{ flexShrink: 0, textAlign: "right" }}>
-          <div style={{ background: "#3c50e0", color: "#fff", padding: "4px 10px", borderRadius: 4, fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Report Card
+          <div style={{ background: s.primaryColor, color: s.headerTextColor, padding: "4px 10px", borderRadius: 4, fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            {s.reportTitle}
           </div>
           <p style={{ margin: "6px 0 0", fontSize: "10px", color: "#64748b" }}>{generatedDate}</p>
         </div>
       </div>
 
       {/* ── Student Info ── */}
-      <div style={{ display: "flex", gap: "16px", marginBottom: "16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px" }}>
-        <div style={{ flexShrink: 0 }}>
-          {student.profilePhoto ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={student.profilePhoto} alt={student.fullName} style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: "2px solid #e2e8f0" }} />
-          ) : (
-            <div style={{ width: 72, height: 72, background: "#3c50e0", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: "bold", color: "#fff", textTransform: "uppercase" }}>
-              {student.fullName?.charAt(0) ?? "?"}
-            </div>
-          )}
-        </div>
+      <div style={{ display: "flex", gap: "16px", marginBottom: "16px", background: s.stripeColor, border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px" }}>
+        {s.showPhoto && (
+          <div style={{ flexShrink: 0 }}>
+            {student.profilePhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={student.profilePhoto} alt={student.fullName} style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: "2px solid #e2e8f0" }} />
+            ) : (
+              <div style={{ width: 72, height: 72, background: s.primaryColor, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: "bold", color: s.headerTextColor, textTransform: "uppercase" }}>
+                {student.fullName?.charAt(0) ?? "?"}
+              </div>
+            )}
+          </div>
+        )}
         <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px 16px" }}>
           <InfoRow label="Full Name" value={student.fullName} />
           <InfoRow label="Class" value={className} />
@@ -186,15 +225,14 @@ export function ReportCardView({ data }: Props) {
       </div>
 
       {/* ── Results Table (term columns) ── */}
-      <h3 style={{ margin: "0 0 8px", fontSize: "12px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", color: "#3c50e0" }}>
+      <h3 style={{ margin: "0 0 8px", fontSize: "12px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", color: s.primaryColor }}>
         Academic Results {hasTerms && `— ${displayTerms[0]?.academicYear ?? ""}`}
       </h3>
 
       {hasTerms ? (
-        // ── Term-column layout ──
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "11px" }}>
           <thead>
-            <tr style={{ background: "#3c50e0", color: "#fff" }}>
+            <tr style={{ background: s.primaryColor, color: s.headerTextColor }}>
               <th style={thStyle}>Subject</th>
               {displayTerms.map((t) => (
                 <th key={t._id} style={{ ...thStyle, textAlign: "center", whiteSpace: "nowrap" }}>{t.name}</th>
@@ -217,7 +255,7 @@ export function ReportCardView({ data }: Props) {
                 const avg = annualAvg(row.termMarks);
                 const annualGrade = avg !== null ? pctGrade(avg) : null;
                 return (
-                  <tr key={row.subject._id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                  <tr key={row.subject._id} style={{ background: i % 2 === 0 ? s.cardBg : s.stripeColor }}>
                     <td style={tdStyle}>
                       <span style={{ fontWeight: 600 }}>{row.subject.name}</span>
                       {row.subject.code && <span style={{ marginLeft: 4, color: "#94a3b8", fontSize: "10px" }}>({row.subject.code})</span>}
@@ -243,7 +281,6 @@ export function ReportCardView({ data }: Props) {
                       </td>
                     )}
                     <td style={{ ...tdStyle, textAlign: "center" }}>
-                      {/* In Term 3, grade is based on annual avg. Before that, grade is per-term. */}
                       {showAnnualAvg ? (
                         annualGrade ? (
                           <span style={{ background: gradeColor(annualGrade) + "22", color: gradeColor(annualGrade), fontWeight: "bold", padding: "2px 8px", borderRadius: 4 }}>
@@ -252,7 +289,6 @@ export function ReportCardView({ data }: Props) {
                         ) : "—"
                       ) : (
                         (() => {
-                          // Grade from the most recent term that has a result
                           const latestEntry = displayTerms.slice().reverse()
                             .map((t) => row.termMarks.get(t._id))
                             .find(Boolean);
@@ -277,8 +313,8 @@ export function ReportCardView({ data }: Props) {
                 if (termResults.length === 0) {
                   return <td key={t._id} style={{ ...tdStyle, textAlign: "center", color: "#9ca3af" }}>—</td>;
                 }
-                const obtained = termResults.reduce((s, r) => s + r.marksObtained, 0);
-                const possible = termResults.reduce((s, r) => s + r.totalScore, 0);
+                const obtained = termResults.reduce((sum, r) => sum + r.marksObtained, 0);
+                const possible = termResults.reduce((sum, r) => sum + r.totalScore, 0);
                 const pct = possible > 0 ? Math.round((obtained / possible) * 100) : 0;
                 return (
                   <td key={t._id} style={{ ...tdStyle, textAlign: "center", color: "#fff" }}>
@@ -299,10 +335,9 @@ export function ReportCardView({ data }: Props) {
           </tfoot>
         </table>
       ) : (
-        // ── Flat fallback (no terms configured) ──
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px", fontSize: "11px" }}>
           <thead>
-            <tr style={{ background: "#3c50e0", color: "#fff" }}>
+            <tr style={{ background: s.primaryColor, color: s.headerTextColor }}>
               <th style={thStyle}>Subject</th>
               <th style={thStyle}>Code</th>
               <th style={{ ...thStyle, textAlign: "center" }}>Marks</th>
@@ -324,7 +359,7 @@ export function ReportCardView({ data }: Props) {
                 const total = r.totalScore ?? 100;
                 const pct = Math.round((r.marksObtained / total) * 100);
                 return (
-                  <tr key={r._id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                  <tr key={r._id} style={{ background: i % 2 === 0 ? s.cardBg : s.stripeColor }}>
                     <td style={tdStyle}>{subj?.name ?? "—"}</td>
                     <td style={tdStyle}>{subj?.code ?? "—"}</td>
                     <td style={{ ...tdStyle, textAlign: "center", fontWeight: "bold" }}>{r.marksObtained}</td>
@@ -357,41 +392,45 @@ export function ReportCardView({ data }: Props) {
       )}
 
       {/* ── Summary Row ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px", marginBottom: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: s.showPosition && s.showAttendance ? "1fr 1fr 1fr 1fr" : s.showAttendance || s.showPosition ? "1fr 1fr 1fr" : "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
         <SummaryBox
           label={showAnnualAvg ? "Annual Average" : `${displayTerms[displayTerms.length - 1]?.name ?? "Term"} Score`}
           value={`${overallAnnualPct}%`}
           sub={showAnnualAvg ? `across ${allConfiguredTerms.length} terms` : undefined}
-          accent="#3c50e0"
+          accent={s.primaryColor}
         />
         <SummaryBox
           label="Total Score"
           value={`${totalMarksObtained} / ${totalMaxMarks}`}
-          accent="#3c50e0"
+          accent={s.primaryColor}
         />
-        <SummaryBox
-          label="Attendance"
-          value={`${attendance.percentage}%`}
-          sub={`${attendance.present} / ${attendance.total} days`}
-          accent={attendance.percentage >= 75 ? "#10b981" : "#ef4444"}
-        />
-        <SummaryBox
-          label="Class Position"
-          value={position.outOf > 0 ? ordinal(position.rank) : "—"}
-          sub={position.outOf > 0 ? `out of ${position.outOf} students` : ""}
-          accent="#f59e0b"
-        />
+        {s.showAttendance && (
+          <SummaryBox
+            label="Attendance"
+            value={`${attendance.percentage}%`}
+            sub={`${attendance.present} / ${attendance.total} days`}
+            accent={attendance.percentage >= 75 ? "#10b981" : "#ef4444"}
+          />
+        )}
+        {s.showPosition && (
+          <SummaryBox
+            label="Class Position"
+            value={position.outOf > 0 ? ordinal(position.rank) : "—"}
+            sub={position.outOf > 0 ? `out of ${position.outOf} students` : ""}
+            accent="#f59e0b"
+          />
+        )}
       </div>
 
-      {/* ── Term breakdown legend — shown when more than one term has results ── */}
-      {hasTerms && displayTerms.length > 1 && (
+      {/* ── Term breakdown legend ── */}
+      {s.showTermBreakdown && hasTerms && displayTerms.length > 1 && (
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
           {displayTerms.map((t, i) => {
             const termResults = results.filter((r) => r.term?._id === t._id);
-            const obtained = termResults.reduce((s, r) => s + r.marksObtained, 0);
-            const possible = termResults.reduce((s, r) => s + r.totalScore, 0);
+            const obtained = termResults.reduce((sum, r) => sum + r.marksObtained, 0);
+            const possible = termResults.reduce((sum, r) => sum + r.totalScore, 0);
             const pct = possible > 0 ? Math.round((obtained / possible) * 100) : null;
-            const colors = ["#3c50e0", "#10b981", "#f59e0b"];
+            const colors = [s.primaryColor, "#10b981", "#f59e0b"];
             const accent = colors[i % colors.length];
             return (
               <div key={t._id} style={{ border: `1.5px solid ${accent}40`, borderRadius: 6, padding: "6px 12px", background: `${accent}08`, minWidth: 100, textAlign: "center" }}>
@@ -413,7 +452,7 @@ export function ReportCardView({ data }: Props) {
 
       {/* ── Signature Footer ── */}
       <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginTop: "8px" }}>
-        {["Class Teacher", "Head of Academics", "Principal / Director"].map((title) => (
+        {s.signatureLabels.map((title) => (
           <div key={title} style={{ textAlign: "center" }}>
             <div style={{ borderBottom: "1px solid #1e293b", marginBottom: "4px", paddingBottom: "28px" }} />
             <p style={{ margin: 0, fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -423,29 +462,17 @@ export function ReportCardView({ data }: Props) {
         ))}
       </div>
 
-      {/* ── Tiny footer ── */}
+      {/* ── Footer ── */}
       <p style={{ marginTop: "12px", fontSize: "9px", color: "#94a3b8", textAlign: "center" }}>
-        This is an official document generated by {institute?.name ?? "the school"}. Generated on {generatedDate}.
+        {s.footerNote
+          ? s.footerNote
+          : `This is an official document generated by ${institute?.name ?? "the school"}. Generated on ${generatedDate}.`}
       </p>
     </div>
   );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const thStyle: React.CSSProperties = {
-  padding: "7px 10px",
-  textAlign: "left",
-  fontWeight: "bold",
-  fontSize: "10px",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "7px 10px",
-  borderBottom: "1px solid #e2e8f0",
-};
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (

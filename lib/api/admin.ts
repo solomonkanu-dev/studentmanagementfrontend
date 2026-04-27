@@ -29,8 +29,18 @@ export interface PromotionEligibilityEntry {
 export const adminApi = {
   // Students
   getStudents: async (): Promise<AuthUser[]> => {
-    const { data } = await apiClient.get("/admin/students");
-    return data.data ?? data;
+    // Backend caps at 100/page — fetch all pages to get the full list
+    let all: AuthUser[] = [];
+    let page = 1;
+    while (true) {
+      const { data } = await apiClient.get("/admin/students", { params: { page, limit: 100 } });
+      const records: AuthUser[] = data.data ?? [];
+      all = all.concat(records);
+      const totalPages: number = data.pagination?.pages ?? 1;
+      if (page >= totalPages) break;
+      page++;
+    }
+    return all;
   },
   getStudent: async (id: string): Promise<AuthUser> => {
     const { data } = await apiClient.get(`/admin/students/${id}`);

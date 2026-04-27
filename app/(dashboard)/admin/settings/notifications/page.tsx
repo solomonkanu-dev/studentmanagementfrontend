@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   notificationSettingsApi,
   type NotificationSettings,
   type SmtpConfig,
   type EmailLogEntry,
+  type SmsLogEntry,
 } from "@/lib/api/notificationSettings";
 import {
   Mail,
@@ -26,6 +27,7 @@ import {
   Settings,
   Eye,
   EyeOff,
+  MessageSquare,
 } from "lucide-react";
 
 // ─── Notification type metadata ──────────────────────────────────────────────
@@ -94,7 +96,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 
-type Tab = "types" | "smtp" | "logs";
+type Tab = "types" | "smtp" | "logs" | "sms-logs";
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -112,7 +114,7 @@ export default function NotificationsSettingsPage() {
 
       {/* Tabs */}
       <div className="mb-6 flex gap-1 rounded-xl border border-stroke bg-white p-1 dark:border-strokedark dark:bg-boxdark">
-        {(["types", "smtp", "logs"] as Tab[]).map((tab) => (
+        {(["types", "smtp", "logs", "sms-logs"] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -123,16 +125,18 @@ export default function NotificationsSettingsPage() {
                 : "text-body hover:text-black dark:hover:text-white",
             ].join(" ")}
           >
-            {tab === "types" && "Notification Types"}
-            {tab === "smtp"  && "SMTP Setup"}
-            {tab === "logs"  && "Delivery Log"}
+            {tab === "types"    && "Notification Types"}
+            {tab === "smtp"     && "SMTP Setup"}
+            {tab === "logs"     && "Email Log"}
+            {tab === "sms-logs" && "SMS Log"}
           </button>
         ))}
       </div>
 
-      {activeTab === "types" && <TypesTab />}
-      {activeTab === "smtp"  && <SmtpTab />}
-      {activeTab === "logs"  && <LogsTab />}
+      {activeTab === "types"    && <TypesTab />}
+      {activeTab === "smtp"     && <SmtpTab />}
+      {activeTab === "logs"     && <LogsTab />}
+      {activeTab === "sms-logs" && <SmsLogsTab />}
     </div>
   );
 }
@@ -639,9 +643,8 @@ function LogsTab() {
             </thead>
             <tbody>
               {logs.map((log) => (
-                <>
+                <Fragment key={log._id}>
                   <tr
-                    key={log._id}
                     className="border-b border-stroke last:border-0 dark:border-strokedark"
                   >
                     <td className="px-5 py-3">
@@ -678,7 +681,7 @@ function LogsTab() {
                     </td>
                   </tr>
                   {expandedRow === log._id && log.error && (
-                    <tr key={`${log._id}-err`} className="bg-meta-1/5">
+                    <tr className="bg-meta-1/5">
                       <td colSpan={5} className="px-5 py-2.5">
                         <p className="text-xs text-meta-1">
                           <strong>Error:</strong> {log.error}
@@ -686,7 +689,141 @@ function LogsTab() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-stroke px-5 py-3 dark:border-strokedark">
+          <span className="text-xs text-body">
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="flex h-7 w-7 items-center justify-center rounded border border-stroke text-body transition-colors hover:border-primary hover:text-primary disabled:opacity-40 dark:border-strokedark"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="flex h-7 w-7 items-center justify-center rounded border border-stroke text-body transition-colors hover:border-primary hover:text-primary disabled:opacity-40 dark:border-strokedark"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SMS Delivery Log tab ─────────────────────────────────────────────────────
+
+function SmsLogsTab() {
+  const [page, setPage] = useState(1);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["notification-sms-logs", page],
+    queryFn: () => notificationSettingsApi.getSmsLogs(page),
+  });
+
+  const logs: SmsLogEntry[] = data?.logs ?? [];
+  const totalPages = data?.pages ?? 1;
+
+  return (
+    <div className="rounded-xl border border-stroke bg-white dark:border-strokedark dark:bg-boxdark">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-stroke px-5 py-4 dark:border-strokedark">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-primary" />
+          <h2 className="text-base font-semibold text-black dark:text-white">SMS Delivery Log</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="flex items-center gap-1.5 rounded-lg border border-stroke px-3 py-1.5 text-xs font-medium text-body transition-colors hover:border-primary hover:text-primary dark:border-strokedark"
+        >
+          <RefreshCw className={["h-3.5 w-3.5", isFetching ? "animate-spin" : ""].join(" ")} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Table */}
+      {isLoading ? (
+        <div className="flex h-40 items-center justify-center text-body text-sm">
+          Loading logs...
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="flex h-40 flex-col items-center justify-center gap-2 text-body">
+          <MessageSquare className="h-8 w-8 opacity-40" />
+          <span className="text-sm">No SMS sent yet</span>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-stroke text-left dark:border-strokedark">
+                <th className="px-5 py-3 font-medium text-body">Recipient</th>
+                <th className="px-5 py-3 font-medium text-body">Type</th>
+                <th className="px-5 py-3 font-medium text-body">Status</th>
+                <th className="px-5 py-3 font-medium text-body">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => (
+                <Fragment key={log._id}>
+                  <tr className="border-b border-stroke last:border-0 dark:border-strokedark">
+                    <td className="px-5 py-3">
+                      <div className="font-medium text-black dark:text-white">
+                        {log.recipientUser?.fullName ?? log.recipientPhone}
+                      </div>
+                      {log.recipientUser && (
+                        <div className="text-xs text-body">{log.recipientPhone}</div>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-body">
+                      {TYPE_LABELS[log.type] ?? log.type}
+                    </td>
+                    <td className="px-5 py-3">
+                      {log.status === "sent" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-meta-3/10 px-2.5 py-1 text-xs font-medium text-meta-3">
+                          <CheckCircle className="h-3 w-3" /> Sent
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedRow(expandedRow === log._id ? null : log._id)}
+                          className="inline-flex items-center gap-1 rounded-full bg-meta-1/10 px-2.5 py-1 text-xs font-medium text-meta-1 hover:bg-meta-1/20"
+                        >
+                          <XCircle className="h-3 w-3" /> Failed
+                        </button>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3 text-body text-xs">
+                      {new Date(log.sentAt).toLocaleString()}
+                    </td>
+                  </tr>
+                  {expandedRow === log._id && log.error && (
+                    <tr className="bg-meta-1/5">
+                      <td colSpan={4} className="px-5 py-2.5">
+                        <p className="text-xs text-meta-1">
+                          <strong>Error:</strong> {log.error}
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>

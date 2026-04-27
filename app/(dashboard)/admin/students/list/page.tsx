@@ -20,6 +20,7 @@ import {
   Plus, Search, GraduationCap, Copy, CheckCircle2,
   Pencil, KeyRound, Eye, EyeOff, RefreshCw,
   ShieldOff, PlayCircle, Trash2, ShieldAlert, Download, Activity, Archive,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import type { AuthUser, Class } from "@/lib/types";
 import type { UseFormRegister, FieldErrors, Path } from "react-hook-form";
@@ -28,12 +29,15 @@ import {
   buildStudentProfile, buildGuardian, nextRegistrationNumber,
 } from "./_schemas";
 
+const PAGE_SIZE = 20;
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function StudentsListPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   // Modal open state — each stores the target student (or boolean for create)
   const [showCreate, setShowCreate] = useState(false);
@@ -69,6 +73,20 @@ export default function StudentsListPage() {
     return matchesSearch && matchesClass;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+
+  function handleClassFilterChange(value: string) {
+    setClassFilter(value);
+    setPage(1);
+  }
+
   return (
     <div className="space-y-6">
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
@@ -81,14 +99,14 @@ export default function StudentsListPage() {
               aria-label="Search students"
               placeholder="Search by name or email…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="h-9 w-full rounded border border-stroke bg-transparent pl-9 pr-3 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
             />
           </div>
           <select
             aria-label="Filter by class"
             value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
+            onChange={(e) => handleClassFilterChange(e.target.value)}
             className="h-9 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
           >
             <option value="">All Classes</option>
@@ -119,7 +137,7 @@ export default function StudentsListPage() {
           <p className="py-12 text-center text-sm text-meta-1">
             Failed to load students. Please refresh the page.
           </p>
-        ) : filtered.length === 0 ? (
+        ) : paginated.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4">
               <GraduationCap className="h-7 w-7 text-primary" aria-hidden="true" />
@@ -142,7 +160,7 @@ export default function StudentsListPage() {
               </tr>
             </TableHead>
             <TableBody>
-              {filtered.map((s: AuthUser) => {
+              {paginated.map((s: AuthUser) => {
                 const className = (classes as Class[]).find(
                   (c) =>
                     c._id ===
@@ -224,6 +242,36 @@ export default function StudentsListPage() {
               })}
             </TableBody>
           </Table>
+        )}
+        {filtered.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-stroke px-4 py-3 dark:border-strokedark">
+            <p className="text-xs text-body">
+              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length} students
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-meta-4"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="px-2 text-xs text-black dark:text-white">
+                {safePage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-meta-4"
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         )}
       </Card>
 

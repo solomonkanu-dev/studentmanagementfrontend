@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { attendanceApi } from "@/lib/api/attendance";
 import { adminApi } from "@/lib/api/admin";
@@ -129,11 +129,31 @@ function StudentAttendanceView({
     return students.filter((s: AuthUser) => studentIds.has(s._id));
   }, [classStudents, selectedClassData, students]);
 
+  // Fetch existing attendance for the selected class + date
+  const { data: existingAttendance } = useQuery({
+    queryKey: ["attendance-existing", selectedClass, markDate],
+    queryFn: () => attendanceApi.getSubjectAttendance({ classId: selectedClass, date: markDate }),
+    enabled: !!selectedClass,
+  });
+
+  // Pre-populate statuses from already-saved records
+  useEffect(() => {
+    const docs = Array.isArray(existingAttendance) ? existingAttendance : existingAttendance ? [existingAttendance] : [];
+    const initial: Record<string, StudentStatus> = {};
+    docs.forEach((doc: { records?: { student: { _id: string } | string; status: string }[] }) => {
+      (doc.records ?? []).forEach((r) => {
+        const id = typeof r.student === "string" ? r.student : r.student._id;
+        initial[id] = r.status as StudentStatus;
+      });
+    });
+    setStatuses(initial);
+  }, [existingAttendance]);
+
   const markMutation = useMutation({
     mutationFn: attendanceApi.mark,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
-      setStatuses({});
+      queryClient.invalidateQueries({ queryKey: ["attendance-existing", selectedClass, markDate] });
       setFormError("");
     },
     onError: (err: unknown) => {
