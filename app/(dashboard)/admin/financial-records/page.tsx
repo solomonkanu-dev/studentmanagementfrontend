@@ -1,5 +1,6 @@
 "use client";
 
+import { ModuleGuard } from "@/components/ui/ModuleGuard";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1159,7 +1160,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "reports", label: "Reports" },
 ];
 
-export default function FinancialRecordsPage() {
+function FinancialRecordsPageInner() {
   const [tab, setTab] = useState<Tab>("ledger");
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -1244,4 +1245,8 @@ export default function FinancialRecordsPage() {
       </div>
     </div>
   );
+}
+
+export default function FinancialRecordsPage() {
+  return <ModuleGuard moduleKey="financialRecords"><FinancialRecordsPageInner /></ModuleGuard>;
 }

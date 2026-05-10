@@ -1,5 +1,6 @@
 "use client";
 
+import { ModuleGuard } from "@/components/ui/ModuleGuard";
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -196,10 +197,14 @@ function FeesPage() {
   );
 }
 
-export default function ParentFeesPage() {
+function ParentFeesPageInner() {
   return (
     <Suspense>
       <FeesPage />
     </Suspense>
   );
+}
+
+export default function ParentFeesPage() {
+  return <ModuleGuard moduleKey="fees" redirect="/parent"><ParentFeesPageInner /></ModuleGuard>;
 }

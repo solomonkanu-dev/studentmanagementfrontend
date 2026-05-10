@@ -19,6 +19,7 @@ export interface AuthUser {
   lecturerProfile?: LecturerProfile;
   linkedStudents?: LinkedStudent[];
   emailOptOut?: string[];
+  moduleAccess?: string[];
   archivedAt?: string | null;
   archiveNote?: string;
   createdAt: string;
@@ -47,6 +48,14 @@ export interface LoginResponse {
 
 export type SchoolType = 'primary' | 'secondary';
 
+export interface InstituteChannelState {
+  instituteId: string;
+  name: string;
+  email?: string;
+  smsEnabled: boolean;
+  emailEnabled: boolean;
+}
+
 export interface Institute {
   _id: string;
   name: string;
@@ -56,6 +65,8 @@ export interface Institute {
   website?: string;
   country?: string;
   targetLine?: string;
+  founded?: string;
+  mission?: string;
   logo?: string;
   admin: string;
   schoolType?: SchoolType;
@@ -718,4 +729,84 @@ export interface PaginatedResponse<T> {
   total?: number;
   page?: number;
   limit?: number;
+}
+
+// ─── Module Toggles ──────────────────────────────────────────────────────────
+
+export type ModuleKey =
+  | 'teachers' | 'classes' | 'students' | 'parents'
+  | 'subjects' | 'timetable' | 'academicCalendar' | 'assignments'
+  | 'attendance' | 'results' | 'exams' | 'promote'
+  | 'fees' | 'terms' | 'salary' | 'financialRecords'
+  | 'messages' | 'announcements' | 'gallery'
+  | 'aiAnalytics' | 'auditLogs' | 'archive';
+
+export type ModuleToggles = Record<ModuleKey, boolean>;
+
+export interface InstituteModulesDoc {
+  _id: string;
+  institute: string;
+  modules: ModuleToggles;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LecturerModuleAccess {
+  lecturerId: string;
+  moduleAccess: string[];
+}
+
+// ─── Bulk Student Import ──────────────────────────────────────────────────────
+
+export interface BulkStudentRow {
+  fullName: string;
+  email: string;
+  classId: string;
+  registrationNumber?: string;
+  dateOfAdmission?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  mobileNumber?: string;
+  address?: string;
+  bloodGroup?: string;
+  religion?: string;
+  orphanStatus?: string;
+  previousSchool?: string;
+  familyType?: string;
+  medicalInfo?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianEmail?: string;
+  guardianAddress?: string;
+  guardianRelationship?: string;
+  guardianOccupation?: string;
+}
+
+export interface BulkStudentResult {
+  row: number;
+  fullName: string;
+  email: string;
+  reason?: string;
+  tempPassword?: string;
+}
+
+export interface BulkImportResponse {
+  summary: { total: number; added: number; failed: number; duplicates: number };
+  added: BulkStudentResult[];
+  failed: BulkStudentResult[];
+  duplicates: BulkStudentResult[];
+}
+
+export interface BulkParentRow {
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  linkedStudentEmails?: string;
+}
+
+export interface BulkParentImportResponse {
+  summary: { total: number; added: number; failed: number; duplicates: number };
+  added: BulkStudentResult[];
+  failed: BulkStudentResult[];
+  duplicates: BulkStudentResult[];
 }

@@ -20,8 +20,9 @@ import {
   Plus, Search, GraduationCap, Copy, CheckCircle2,
   Pencil, KeyRound, Eye, EyeOff, RefreshCw,
   ShieldOff, PlayCircle, Trash2, ShieldAlert, Download, Activity, Archive,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Upload,
 } from "lucide-react";
+import { BulkUploadModal } from "./_BulkUploadModal";
 import type { AuthUser, Class } from "@/lib/types";
 import type { UseFormRegister, FieldErrors, Path } from "react-hook-form";
 import {
@@ -47,6 +48,7 @@ export default function StudentsListPage() {
   const [deleteTarget, setDeleteTarget] = useState<AuthUser | null>(null);
   const [lifecycleTarget, setLifecycleTarget] = useState<AuthUser | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<AuthUser | null>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { data: students = [], isLoading, isError } = useQuery({
     queryKey: ["admin-students"],
@@ -119,6 +121,10 @@ export default function StudentsListPage() {
           <Button variant="ghost" onClick={() => exportApi.students()}>
             <Download className="h-4 w-4" aria-hidden="true" />
             Export CSV
+          </Button>
+          <Button variant="ghost" onClick={() => setShowBulkImport(true)}>
+            <Upload className="h-4 w-4" aria-hidden="true" />
+            Bulk Import
           </Button>
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
@@ -276,6 +282,11 @@ export default function StudentsListPage() {
       </Card>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
+      <BulkUploadModal
+        open={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onSuccess={invalidateStudents}
+      />
       <CreateStudentModal
         open={showCreate}
         onClose={() => setShowCreate(false)}

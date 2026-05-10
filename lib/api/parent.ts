@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { LinkedStudent } from "../types";
+import type { LinkedStudent, BulkParentRow, BulkParentImportResponse } from "../types";
 
 export interface ChildAttendanceSummary {
   total: number;
@@ -124,6 +124,16 @@ export const adminParentApi = {
 
   restore: async (parentId: string): Promise<unknown> => {
     const { data } = await apiClient.patch(`/admin/parents/${parentId}/restore`);
+    return data;
+  },
+
+  update: async (parentId: string, payload: { fullName?: string; email?: string; phoneNumber?: string }): Promise<unknown> => {
+    const { data } = await apiClient.patch(`/admin/parents/${parentId}`, payload);
+    return data;
+  },
+
+  bulkImport: async (parents: BulkParentRow[]): Promise<BulkParentImportResponse> => {
+    const { data } = await apiClient.post("/admin/parents/bulk-import", { parents });
     return data;
   },
 };

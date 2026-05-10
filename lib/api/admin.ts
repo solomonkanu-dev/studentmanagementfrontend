@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { AuthUser, Institute, Class, Result, FeeSummary, FeeByClass, FeeByStatus, FeeDefaulter, FeeCollectionTrend } from "../types";
+import type { AuthUser, Institute, Class, Result, FeeSummary, FeeByClass, FeeByStatus, FeeDefaulter, FeeCollectionTrend, BulkStudentRow, BulkImportResponse } from "../types";
 
 export interface AcademicTerm {
   _id: string;
@@ -29,18 +29,20 @@ export interface PromotionEligibilityEntry {
 export const adminApi = {
   // Students
   getStudents: async (): Promise<AuthUser[]> => {
-    // Backend caps at 100/page — fetch all pages to get the full list
-    let all: AuthUser[] = [];
-    let page = 1;
-    while (true) {
-      const { data } = await apiClient.get("/admin/students", { params: { page, limit: 100 } });
-      const records: AuthUser[] = data.data ?? [];
-      all = all.concat(records);
-      const totalPages: number = data.pagination?.pages ?? 1;
-      if (page >= totalPages) break;
-      page++;
-    }
-    return all;
+    // Backend caps at 100/page — fetch page 1 to discover total pages, then
+    // fetch all remaining pages concurrently and concat results in order.
+    const { data: firstData } = await apiClient.get("/admin/students", { params: { page: 1, limit: 100 } });
+    const firstRecords: AuthUser[] = firstData.data ?? [];
+    const totalPages: number = firstData.pagination?.pages ?? 1;
+    if (totalPages <= 1) return firstRecords;
+    const remaining = Array.from({ length: totalPages - 1 }, (_, i) =>
+      apiClient.get("/admin/students", { params: { page: i + 2, limit: 100 } })
+    );
+    const results = await Promise.all(remaining);
+    return results.reduce(
+      (acc, { data }) => acc.concat(data.data ?? []),
+      firstRecords
+    );
   },
   getStudent: async (id: string): Promise<AuthUser> => {
     const { data } = await apiClient.get(`/admin/students/${id}`);
@@ -53,6 +55,11 @@ export const adminApi = {
   createStudent: async (payload: Record<string, unknown>): Promise<AuthUser> => {
     const { data } = await apiClient.post("/admin/create-student", payload);
     return data.data ?? data;
+  },
+
+  bulkImportStudents: async (students: BulkStudentRow[]): Promise<BulkImportResponse> => {
+    const { data } = await apiClient.post("/admin/students/bulk-import", { students });
+    return data;
   },
 
   // Lecturers
@@ -105,6 +112,16 @@ export const adminApi = {
   updateInstitute: async (payload: Partial<Institute>): Promise<Institute> => {
     const { data } = await apiClient.put("/admin/my-institute/update", payload);
     return data.data ?? data;
+  },
+  getInstituteProfile: async (): Promise<Institute | null> => {
+    try {
+      const { data } = await apiClient.get("/admin/institute-profile");
+      return data.data ?? data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) return null;
+      throw err;
+    }
   },
 
   // Results

@@ -47,6 +47,8 @@ import {
   Landmark,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useFeatures } from "@/context/FeaturesContext";
+import type { ModuleKey } from "@/lib/types";
 
 interface SubItem {
   label: string;
@@ -59,6 +61,7 @@ interface NavItem {
   icon: React.ElementType;
   children?: SubItem[];
   group?: string;
+  moduleKey?: ModuleKey;
 }
 
 const adminNav: NavItem[] = [
@@ -70,6 +73,7 @@ const adminNav: NavItem[] = [
     href: "/admin/lecturers",
     icon: Users,
     group: "People",
+    moduleKey: "teachers",
     children: [
       { label: "Overview", href: "/admin/lecturers" },
       { label: "All Teachers", href: "/admin/lecturers/list" },
@@ -80,6 +84,7 @@ const adminNav: NavItem[] = [
     href: "/admin/classes",
     icon: School,
     group: "People",
+    moduleKey: "classes",
     children: [
       { label: "Overview", href: "/admin/classes" },
       { label: "All Classes", href: "/admin/classes/list" },
@@ -90,13 +95,14 @@ const adminNav: NavItem[] = [
     href: "/admin/students",
     icon: GraduationCap,
     group: "People",
+    moduleKey: "students",
     children: [
       { label: "Overview", href: "/admin/students" },
       { label: "All Students", href: "/admin/students/list" },
       { label: "ID Cards", href: "/admin/students/id-cards" },
     ],
   },
-  { label: "Parents", href: "/admin/parents", icon: Heart, group: "People" },
+  { label: "Parents", href: "/admin/parents", icon: Heart, group: "People", moduleKey: "parents" },
 
   // ── Academics ──────────────────────────────────────────────────────────────
   {
@@ -104,45 +110,47 @@ const adminNav: NavItem[] = [
     href: "/admin/subjects",
     icon: BookOpen,
     group: "Academics",
+    moduleKey: "subjects",
     children: [
       { label: "Overview", href: "/admin/subjects" },
       { label: "All Subjects", href: "/admin/subjects/list" },
     ],
   },
-  { label: "Timetable",         href: "/admin/timetable",          icon: TableProperties, group: "Academics" },
-  { label: "Academic Calendar", href: "/admin/academic-calendar",  icon: CalendarDays,    group: "Academics" },
-  { label: "Assignments",       href: "/admin/assignments",        icon: ClipboardList,   group: "Academics" },
-  { label: "Attendance",        href: "/admin/attendance",         icon: CalendarCheck,   group: "Academics" },
+  { label: "Timetable",         href: "/admin/timetable",          icon: TableProperties, group: "Academics", moduleKey: "timetable" },
+  { label: "Academic Calendar", href: "/admin/academic-calendar",  icon: CalendarDays,    group: "Academics", moduleKey: "academicCalendar" },
+  { label: "Assignments",       href: "/admin/assignments",        icon: ClipboardList,   group: "Academics", moduleKey: "assignments" },
+  { label: "Attendance",        href: "/admin/attendance",         icon: CalendarCheck,   group: "Academics", moduleKey: "attendance" },
   {
     label: "Results",
     href: "/admin/results",
     icon: FileText,
     group: "Academics",
+    moduleKey: "results",
     children: [
       { label: "All Results",   href: "/admin/results" },
       { label: "Report Cards",  href: "/admin/results/report-cards" },
     ],
   },
-  { label: "Exams",             href: "/admin/exams",              icon: ClipboardCheck,  group: "Academics" },
-  { label: "Promote Students",  href: "/admin/promote",            icon: GraduationCap,   group: "Academics" },
+  { label: "Exams",             href: "/admin/exams",              icon: ClipboardCheck,  group: "Academics", moduleKey: "exams" },
+  { label: "Promote Students",  href: "/admin/promote",            icon: GraduationCap,   group: "Academics", moduleKey: "promote" },
 
   // ── Finance ────────────────────────────────────────────────────────────────
-  { label: "Fees",               href: "/admin/fees",               icon: CreditCard, group: "Finance" },
-  { label: "Terms",              href: "/admin/terms",              icon: CalendarDays, group: "Finance" },
-  { label: "Salary",             href: "/admin/salary",             icon: DollarSign,  group: "Finance" },
-  { label: "Financial Records",  href: "/admin/financial-records",  icon: Landmark,    group: "Finance" },
-  { label: "Plan & Billing",     href: "/admin/plan",               icon: CreditCard,  group: "Finance" },
+  { label: "Fees",               href: "/admin/fees",               icon: CreditCard,   group: "Finance", moduleKey: "fees" },
+  { label: "Terms",              href: "/admin/terms",              icon: CalendarDays, group: "Finance", moduleKey: "terms" },
+  { label: "Salary",             href: "/admin/salary",             icon: DollarSign,   group: "Finance", moduleKey: "salary" },
+  { label: "Financial Records",  href: "/admin/financial-records",  icon: Landmark,     group: "Finance", moduleKey: "financialRecords" },
+  { label: "Plan & Billing",     href: "/admin/plan",               icon: CreditCard,   group: "Finance" },
 
   // ── Communication ──────────────────────────────────────────────────────────
-  { label: "Messages",      href: "/admin/messages",      icon: MessageSquare, group: "Communication" },
-  { label: "Announcements", href: "/admin/announcements", icon: Megaphone,     group: "Communication" },
-  { label: "Gallery",       href: "/admin/gallery",       icon: Images,        group: "Communication" },
+  { label: "Messages",      href: "/admin/messages",      icon: MessageSquare, group: "Communication", moduleKey: "messages" },
+  { label: "Announcements", href: "/admin/announcements", icon: Megaphone,     group: "Communication", moduleKey: "announcements" },
+  { label: "Gallery",       href: "/admin/gallery",       icon: Images,        group: "Communication", moduleKey: "gallery" },
 
   // ── Administration ─────────────────────────────────────────────────────────
   { label: "Institute",     href: "/admin/institute",    icon: Building2, group: "Administration" },
-  { label: "AI Analytics",  href: "/admin/ai-analytics", icon: Sparkles,  group: "Administration" },
-  { label: "Audit Logs",    href: "/admin/audit-logs",   icon: Activity,  group: "Administration" },
-  { label: "Archive",       href: "/admin/archive",      icon: Archive,   group: "Administration" },
+  { label: "AI Analytics",  href: "/admin/ai-analytics", icon: Sparkles,  group: "Administration", moduleKey: "aiAnalytics" },
+  { label: "Audit Logs",    href: "/admin/audit-logs",   icon: Activity,  group: "Administration", moduleKey: "auditLogs" },
+  { label: "Archive",       href: "/admin/archive",      icon: Archive,   group: "Administration", moduleKey: "archive" },
   { label: "Theme",         href: "/admin/theme",        icon: Palette,   group: "Administration" },
   {
     label: "Settings",
@@ -164,48 +172,51 @@ const adminNav: NavItem[] = [
 
 const lecturerNav: NavItem[] = [
   { label: "Dashboard", href: "/lecturer", icon: LayoutDashboard },
-  { label: "Subjects", href: "/lecturer/subjects", icon: BookOpen },
-  { label: "Classes", href: "/lecturer/classes", icon: School },
-  { label: "Assignments", href: "/lecturer/assignments", icon: ClipboardList },
-  { label: "Attendance", href: "/lecturer/attendance", icon: CalendarCheck },
-  { label: "Results", href: "/lecturer/results", icon: FileText },
-  { label: "Exams", href: "/lecturer/exams", icon: ClipboardCheck },
-  { label: "Promote Students", href: "/lecturer/promote", icon: GraduationCap },
-  { label: "Timetable", href: "/lecturer/timetable", icon: TableProperties },
-  { label: "Academic Calendar", href: "/lecturer/academic-calendar", icon: CalendarDays },
-  { label: "Salary", href: "/lecturer/salary", icon: DollarSign },
-  { label: "Messages", href: "/lecturer/messages", icon: MessageSquare },
-  { label: "Announcements", href: "/lecturer/announcements", icon: Megaphone },
+  { label: "Subjects",          href: "/lecturer/subjects",           icon: BookOpen,       moduleKey: "subjects" },
+  { label: "Classes",           href: "/lecturer/classes",            icon: School,         moduleKey: "classes" },
+  { label: "Assignments",       href: "/lecturer/assignments",        icon: ClipboardList,  moduleKey: "assignments" },
+  { label: "Attendance",        href: "/lecturer/attendance",         icon: CalendarCheck,  moduleKey: "attendance" },
+  { label: "Results",           href: "/lecturer/results",            icon: FileText,       moduleKey: "results" },
+  { label: "Exams",             href: "/lecturer/exams",              icon: ClipboardCheck, moduleKey: "exams" },
+  { label: "Promote Students",  href: "/lecturer/promote",            icon: GraduationCap,  moduleKey: "promote" },
+  { label: "Timetable",         href: "/lecturer/timetable",          icon: TableProperties, moduleKey: "timetable" },
+  { label: "Academic Calendar", href: "/lecturer/academic-calendar",  icon: CalendarDays,   moduleKey: "academicCalendar" },
+  { label: "Salary",            href: "/lecturer/salary",             icon: DollarSign,     moduleKey: "salary" },
+  { label: "Messages",          href: "/lecturer/messages",           icon: MessageSquare,  moduleKey: "messages" },
+  { label: "Announcements",     href: "/lecturer/announcements",      icon: Megaphone,      moduleKey: "announcements" },
+  { label: "School Profile",    href: "/lecturer/school",             icon: Building2 },
 ];
 
 const studentNav: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: LayoutDashboard },
-  { label: "Subjects", href: "/student/subjects", icon: BookOpen },
-  { label: "Assignments", href: "/student/assignments", icon: ClipboardList },
-  { label: "Attendance", href: "/student/attendance", icon: CalendarCheck },
-  { label: "Results", href: "/student/results", icon: FileText },
-  { label: "Exams", href: "/student/exams", icon: ClipboardCheck },
-  { label: "Fees", href: "/student/fees", icon: CreditCard },
-  { label: "Documents", href: "/student/documents", icon: FolderOpen },
-  { label: "Notification Preferences", href: "/student/notification-preferences", icon: Settings },
-  { label: "Timetable", href: "/student/timetable", icon: TableProperties },
-  { label: "Academic Calendar", href: "/student/academic-calendar", icon: CalendarDays },
-  { label: "Messages", href: "/student/messages", icon: MessageSquare },
-  { label: "Rules & Regulations", href: "/student/rules", icon: ScrollText },
-  { label: "Gallery", href: "/student/gallery", icon: Images },
-  { label: "Announcements", href: "/student/announcements", icon: Megaphone },
+  { label: "Subjects",                  href: "/student/subjects",                  icon: BookOpen,       moduleKey: "subjects" },
+  { label: "Assignments",               href: "/student/assignments",               icon: ClipboardList,  moduleKey: "assignments" },
+  { label: "Attendance",                href: "/student/attendance",                icon: CalendarCheck,  moduleKey: "attendance" },
+  { label: "Results",                   href: "/student/results",                   icon: FileText,       moduleKey: "results" },
+  { label: "Exams",                     href: "/student/exams",                     icon: ClipboardCheck, moduleKey: "exams" },
+  { label: "Fees",                      href: "/student/fees",                      icon: CreditCard,     moduleKey: "fees" },
+  { label: "Documents",                 href: "/student/documents",                 icon: FolderOpen },
+  { label: "Notification Preferences",  href: "/student/notification-preferences",  icon: Settings },
+  { label: "Timetable",                 href: "/student/timetable",                 icon: TableProperties, moduleKey: "timetable" },
+  { label: "Academic Calendar",         href: "/student/academic-calendar",         icon: CalendarDays,   moduleKey: "academicCalendar" },
+  { label: "Messages",                  href: "/student/messages",                  icon: MessageSquare,  moduleKey: "messages" },
+  { label: "Rules & Regulations",       href: "/student/rules",                     icon: ScrollText },
+  { label: "Gallery",                   href: "/student/gallery",                   icon: Images,         moduleKey: "gallery" },
+  { label: "Announcements",             href: "/student/announcements",             icon: Megaphone,      moduleKey: "announcements" },
+  { label: "School Profile",            href: "/student/school",                    icon: Building2 },
 ];
 
 const parentNav: NavItem[] = [
-  { label: "Dashboard", href: "/parent", icon: LayoutDashboard },
-  { label: "Attendance", href: "/parent/attendance", icon: CalendarCheck },
-  { label: "Results", href: "/parent/results", icon: FileText },
-  { label: "Fees", href: "/parent/fees", icon: CreditCard },
-  { label: "Timetable", href: "/parent/timetable", icon: TableProperties },
-  { label: "Academic Calendar", href: "/parent/academic-calendar", icon: CalendarDays },
-  { label: "Messages", href: "/parent/messages", icon: MessageSquare },
-  { label: "Gallery", href: "/parent/gallery", icon: Images },
-  { label: "Announcements", href: "/parent/announcements", icon: Megaphone },
+  { label: "Dashboard",         href: "/parent",                    icon: LayoutDashboard },
+  { label: "Attendance",        href: "/parent/attendance",         icon: CalendarCheck,   moduleKey: "attendance" },
+  { label: "Results",           href: "/parent/results",            icon: FileText,        moduleKey: "results" },
+  { label: "Fees",              href: "/parent/fees",               icon: CreditCard,      moduleKey: "fees" },
+  { label: "Timetable",         href: "/parent/timetable",          icon: TableProperties, moduleKey: "timetable" },
+  { label: "Academic Calendar", href: "/parent/academic-calendar",  icon: CalendarDays,    moduleKey: "academicCalendar" },
+  { label: "Messages",          href: "/parent/messages",           icon: MessageSquare,   moduleKey: "messages" },
+  { label: "Gallery",           href: "/parent/gallery",            icon: Images,          moduleKey: "gallery" },
+  { label: "Announcements",     href: "/parent/announcements",      icon: Megaphone,       moduleKey: "announcements" },
+  { label: "School Profile",    href: "/parent/school",             icon: Building2 },
 ];
 
 const superAdminNav: NavItem[] = [
@@ -253,6 +264,8 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
     item.href === "/lecturer/classes" ? { ...item, label: `My ${classesLabel}` } : item
   ), [classesLabel]);
 
+  const { isModuleEnabled, isLoading: featuresLoading } = useFeatures();
+
   const role = user?.role;
   const navItems = useMemo<NavItem[]>(() =>
     role === "admin" ? dynamicAdminNav
@@ -262,17 +275,22 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
     : superAdminNav,
   [role, dynamicAdminNav, dynamicLecturerNav]);
 
+  const filteredNavItems = useMemo<NavItem[]>(() => {
+    if (featuresLoading) return navItems;
+    return navItems.filter((item) => !item.moduleKey || isModuleEnabled(item.moduleKey));
+  }, [navItems, isModuleEnabled, featuresLoading]);
+
   // Pre-group nav items for section-level collapsing
   const groupedNav = useMemo(() => {
     const sections: { group: string | null; items: NavItem[] }[] = [];
-    for (const item of navItems) {
+    for (const item of filteredNavItems) {
       const g = item.group ?? null;
       const last = sections[sections.length - 1];
       if (!last || last.group !== g) sections.push({ group: g, items: [item] });
       else last.items.push(item);
     }
-    return sections;
-  }, [navItems]);
+    return sections.filter((s) => s.group === null || s.items.length > 0);
+  }, [filteredNavItems]);
 
   const { data: announcements = [] } = useQuery({
     queryKey: ["announcements"],
@@ -400,7 +418,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
 
   // Auto-open the section containing the active route
   useEffect(() => {
-    navItems.forEach((item) => {
+    filteredNavItems.forEach((item) => {
       const isActive = pathname === item.href || item.children?.some((c) => pathname === c.href);
       if (isActive && item.group) {
         setOpenSections((prev) => {
@@ -411,11 +429,11 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
         });
       }
     });
-  }, [pathname, navItems]);
+  }, [pathname, filteredNavItems]);
 
   // Auto-open group when navigating into it
   useEffect(() => {
-    navItems.forEach((item) => {
+    filteredNavItems.forEach((item) => {
       if (item.children && pathname.startsWith(item.href)) {
         setOpenGroups((prev) => {
           if (prev.has(item.href)) return prev;
@@ -425,7 +443,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
         });
       }
     });
-  }, [pathname, navItems]);
+  }, [pathname, filteredNavItems]);
 
   // Close on Escape
   useEffect(() => {

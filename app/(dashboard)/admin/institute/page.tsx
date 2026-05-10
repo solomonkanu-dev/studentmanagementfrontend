@@ -23,6 +23,8 @@ import {
   CheckCircle2,
   Upload,
   Loader2,
+  CalendarDays,
+  BookOpen,
 } from "lucide-react";
 
 const schema = z.object({
@@ -33,6 +35,8 @@ const schema = z.object({
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   website: z.string().optional(),
   country: z.string().optional(),
+  founded: z.string().optional(),
+  mission: z.string().optional(),
   logo: z.string().optional(),
 });
 
@@ -84,6 +88,8 @@ export default function InstitutePage() {
       email: "",
       website: "",
       country: "",
+      founded: "",
+      mission: "",
       logo: "",
     },
   });
@@ -101,6 +107,8 @@ export default function InstitutePage() {
         email: institute.email ?? "",
         website: institute.website ?? "",
         country: institute.country ?? "",
+        founded: institute.founded ?? "",
+        mission: institute.mission ?? "",
         logo: institute.logo ?? "",
       });
     }
@@ -188,6 +196,26 @@ export default function InstitutePage() {
                 label="Country"
                 placeholder="Sierra Leone"
                 {...register("country")}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Year Founded"
+                placeholder="1990"
+                {...register("founded")}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-black dark:text-white">
+                Mission Statement
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Our mission is to provide quality education…"
+                className="w-full rounded-md border border-stroke bg-transparent px-3 py-2 text-sm text-black outline-none transition focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                {...register("mission")}
               />
             </div>
 
@@ -286,6 +314,8 @@ export default function InstitutePage() {
                         email: institute.email ?? "",
                         website: institute.website ?? "",
                         country: institute.country ?? "",
+                        founded: institute.founded ?? "",
+                        mission: institute.mission ?? "",
                         logo: institute.logo ?? "",
                       });
                     }
@@ -392,6 +422,23 @@ function PreviewCard({ watched }: { watched: Partial<FormValues> }) {
             value={watched.targetLine}
             placeholder="No tagline"
           />
+          <PreviewRow
+            icon={CalendarDays}
+            label="Founded"
+            value={watched.founded}
+            placeholder="Not specified"
+          />
+          {watched.mission && (
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-meta-2 dark:bg-meta-4">
+                <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1 pt-1">
+                <p className="text-[10px] uppercase tracking-wide text-body">Mission</p>
+                <p className="text-sm font-medium text-black dark:text-white">{watched.mission}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Visual card footer */}

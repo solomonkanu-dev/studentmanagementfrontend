@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
-import { Shield, AlertTriangle, Globe, Building2 } from "lucide-react";
-import type { InstituteHealthReport } from "@/lib/types";
+import { Shield, AlertTriangle, Globe, Building2, Mail, MessageSquare } from "lucide-react";
+import type { InstituteHealthReport, InstituteChannelState } from "@/lib/types";
 import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Toggle Global Maintenance ────────────────────────────────────────────────
@@ -234,6 +234,122 @@ function InstituteMaintenanceCard() {
   );
 }
 
+// ─── Per-Institute Notification Channels ──────────────────────────────────────
+
+function InstituteNotificationsCard() {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState("");
+
+  const { data: institutes = [], isLoading } = useQuery<InstituteChannelState[]>({
+    queryKey: ["institute-notification-channels"],
+    queryFn: systemConfigApi.getInstituteChannels,
+  });
+
+  const mutation = useMutation({
+    mutationFn: systemConfigApi.setInstituteChannels,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["institute-notification-channels"] });
+      setError("");
+    },
+    onError: (e: unknown) => setError(errMsg(e, "Failed to update notification channels.")),
+  });
+
+  const toggle = (inst: InstituteChannelState, channel: "smsEnabled" | "emailEnabled") => {
+    setError("");
+    mutation.mutate({ instituteId: inst.instituteId, [channel]: !inst[channel] });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-primary" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-black dark:text-white">Notification Channels</h2>
+        </div>
+        <p className="mt-0.5 text-xs text-body">
+          Enable or disable SMS and email notifications per institute. Overrides all per-type toggles.
+        </p>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+          </div>
+        ) : institutes.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-body">No institutes found.</p>
+        ) : (
+          <>
+            {error && (
+              <p className="mx-5 mb-3 rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{error}</p>
+            )}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHead>
+                  <tr>
+                    <Th>Institute</Th>
+                    <Th>
+                      <span className="flex items-center gap-1">
+                        <Mail className="h-3.5 w-3.5" aria-hidden="true" /> Email
+                      </span>
+                    </Th>
+                    <Th>
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" /> SMS
+                      </span>
+                    </Th>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {institutes.map((inst) => (
+                    <tr key={inst.instituteId}>
+                      <Td>
+                        <div>
+                          <p className="font-medium text-black dark:text-white">{inst.name}</p>
+                          {inst.email && <p className="text-xs text-body">{inst.email}</p>}
+                        </div>
+                      </Td>
+                      <Td>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={inst.emailEnabled ? "success" : "danger"}>
+                            {inst.emailEnabled ? "Enabled" : "Disabled"}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            isLoading={mutation.isPending}
+                            onClick={() => toggle(inst, "emailEnabled")}
+                          >
+                            {inst.emailEnabled ? "Disable" : "Enable"}
+                          </Button>
+                        </div>
+                      </Td>
+                      <Td>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={inst.smsEnabled ? "success" : "danger"}>
+                            {inst.smsEnabled ? "Enabled" : "Disabled"}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            isLoading={mutation.isPending}
+                            onClick={() => toggle(inst, "smsEnabled")}
+                          >
+                            {inst.smsEnabled ? "Disable" : "Enable"}
+                          </Button>
+                        </div>
+                      </Td>
+                    </tr>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SystemConfigPage() {
@@ -245,6 +361,7 @@ export default function SystemConfigPage() {
       </div>
       <GlobalMaintenanceCard />
       <InstituteMaintenanceCard />
+      <InstituteNotificationsCard />
     </div>
   );
 }

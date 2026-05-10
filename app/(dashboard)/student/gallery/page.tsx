@@ -1,5 +1,6 @@
 "use client";
 
+import { ModuleGuard } from "@/components/ui/ModuleGuard";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { galleryApi } from "@/lib/api/gallery";
@@ -173,7 +174,7 @@ function AlbumDetail({
   );
 }
 
-export default function StudentGalleryPage() {
+function StudentGalleryPageInner() {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
 
   const { data: albums = [], isLoading } = useQuery({
@@ -205,4 +206,8 @@ export default function StudentGalleryPage() {
       )}
     </div>
   );
+}
+
+export default function StudentGalleryPage() {
+  return <ModuleGuard moduleKey="gallery" redirect="/student"><StudentGalleryPageInner /></ModuleGuard>;
 }

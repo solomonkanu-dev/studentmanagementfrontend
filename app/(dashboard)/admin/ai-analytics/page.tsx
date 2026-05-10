@@ -1,5 +1,6 @@
 "use client";
 
+import { ModuleGuard } from "@/components/ui/ModuleGuard";
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
@@ -171,7 +172,7 @@ function QuickInsights() {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function AdminAiAnalyticsPage() {
+function AdminAiAnalyticsPageInner() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<QueryResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -622,4 +623,8 @@ function formatInline(text: string): React.ReactNode {
       })}
     </>
   );
+}
+
+export default function AdminAiAnalyticsPage() {
+  return <ModuleGuard moduleKey="aiAnalytics"><AdminAiAnalyticsPageInner /></ModuleGuard>;
 }

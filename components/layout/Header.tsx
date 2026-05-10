@@ -212,7 +212,7 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
 
   return (
     <>
-    <header id="app-header" className="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-b border-stroke bg-white px-4 shadow-sm dark:border-strokedark dark:bg-boxdark md:px-6">
+    <header id="app-header" className="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-b border-stroke bg-white px-4 py-5 shadow-sm dark:border-strokedark dark:bg-boxdark md:px-6">
       <div className="flex items-center gap-3">
         {/* Hamburger — mobile only */}
         <button

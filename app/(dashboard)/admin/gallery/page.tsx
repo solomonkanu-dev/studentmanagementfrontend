@@ -1,5 +1,6 @@
 "use client";
 
+import { ModuleGuard } from "@/components/ui/ModuleGuard";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -166,7 +167,7 @@ function AlbumCard({ album }: { album: GalleryAlbum }) {
   );
 }
 
-export default function AdminGalleryPage() {
+function AdminGalleryPageInner() {
   const [showCreate, setShowCreate] = useState(false);
 
   const { data: albums = [], isLoading } = useQuery({
@@ -229,4 +230,8 @@ export default function AdminGalleryPage() {
       {showCreate && <CreateAlbumModal onClose={() => setShowCreate(false)} />}
     </div>
   );
+}
+
+export default function AdminGalleryPage() {
+  return <ModuleGuard moduleKey="gallery"><AdminGalleryPageInner /></ModuleGuard>;
 }

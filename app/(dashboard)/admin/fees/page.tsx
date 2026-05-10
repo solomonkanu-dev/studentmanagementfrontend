@@ -1,5 +1,6 @@
 "use client";
 
+import { ModuleGuard } from "@/components/ui/ModuleGuard";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray, type Resolver } from "react-hook-form";
@@ -1044,7 +1045,7 @@ function StudentPaymentsTab({ classes }: { classes: Class[] }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function FeesPage() {
+function FeesPageInner() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"structures" | "payments">("structures");
   const [showCreate, setShowCreate] = useState(false);
@@ -1294,4 +1295,8 @@ export default function FeesPage() {
       )}
     </div>
   );
+}
+
+export default function FeesPage() {
+  return <ModuleGuard moduleKey="fees"><FeesPageInner /></ModuleGuard>;
 }

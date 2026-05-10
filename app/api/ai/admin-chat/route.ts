@@ -213,8 +213,13 @@ async function runTool(
   token: string
 ): Promise<unknown> {
   switch (name) {
-    case "get_institute_overview":
-      return callBackend("/admin/my-institute", token);
+    case "get_institute_overview": {
+      const [institute, enrollment] = await Promise.all([
+        callBackend("/admin/my-institute", token),
+        callBackend("/analytics/enrollment-trends", token),
+      ]);
+      return { ...(institute as object), enrollment };
+    }
     case "get_fee_summary":
       return callBackend("/admin/fee-analysis/summary", token);
     case "get_fee_defaulters":

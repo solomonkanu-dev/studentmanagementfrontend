@@ -9,6 +9,7 @@ import { StudentChatWidget } from "@/components/ui/StudentChatWidget";
 import { LecturerChatWidget } from "@/components/ui/LecturerChatWidget";
 import { AdminChatWidget } from "@/components/ui/AdminChatWidget";
 import { SocketProvider } from "@/context/SocketContext";
+import { FeaturesProvider } from "@/context/FeaturesContext";
 import { DashboardErrorBoundary } from "@/components/ui/DashboardErrorBoundary";
 import useColorMode from "@/hooks/useColorMode";
 import { PageTitleProvider } from "@/context/PageTitleContext";
@@ -61,6 +62,7 @@ export default function DashboardLayout({
   return (
     <PageTitleProvider>
     <SocketProvider>
+    <FeaturesProvider>
     <div className="flex h-screen overflow-hidden bg-whiten dark:bg-boxdark-2">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} sidebarCollapsed={sidebarCollapsed} />
       <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
@@ -80,6 +82,7 @@ export default function DashboardLayout({
       {user.role === "admin" && <AdminChatWidget />}
 
     </div>
+    </FeaturesProvider>
     </SocketProvider>
     </PageTitleProvider>
   );

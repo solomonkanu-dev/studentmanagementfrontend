@@ -1,5 +1,6 @@
 "use client";
 
+import { ModuleGuard } from "@/components/ui/ModuleGuard";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { studentApi } from "@/lib/api/student";
 import type { FeePayment } from "@/lib/api/student";
@@ -26,7 +27,7 @@ function formatMethod(method: string): string {
   return map[method] ?? method;
 }
 
-export default function StudentFeesPage() {
+function StudentFeesPageInner() {
   const [feesQuery, accountsQuery] = useQueries({
     queries: [
       { queryKey: ["my-fees"], queryFn: studentApi.getMyFees },
@@ -257,4 +258,8 @@ export default function StudentFeesPage() {
       </Card>
     </div>
   );
+}
+
+export default function StudentFeesPage() {
+  return <ModuleGuard moduleKey="fees" redirect="/student"><StudentFeesPageInner /></ModuleGuard>;
 }

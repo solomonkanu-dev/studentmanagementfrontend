@@ -18,13 +18,15 @@ import {
   Plus,
   UserPlus,
   Link2,
-  Link2Off,
   ShieldOff,
   ShieldCheck,
   Users,
   Search,
+  Pencil,
+  Upload,
 } from "lucide-react";
 import type { AuthUser } from "@/lib/types";
+import { BulkParentUploadModal } from "./_BulkUploadModal";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -36,6 +38,13 @@ const createSchema = z.object({
   linkedStudents: z.string().optional(), // comma-separated IDs, resolved via UI
 });
 type CreateForm = z.infer<typeof createSchema>;
+
+const editSchema = z.object({
+  fullName: z.string().min(2, "Name required"),
+  email: z.string().email("Valid email required"),
+  phoneNumber: z.string().optional(),
+});
+type EditForm = z.infer<typeof editSchema>;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,6 +63,8 @@ interface Parent {
 export default function ParentsPage() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [editTarget, setEditTarget] = useState<Parent | null>(null);
   const [linkModal, setLinkModal] = useState<{ parentId: string; parentName: string } | null>(null);
   const [search, setSearch] = useState("");
   const [actionError, setActionError] = useState("");
@@ -85,6 +96,16 @@ export default function ParentsPage() {
       setShowCreate(false);
       reset();
     },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ parentId, data }: { parentId: string; data: EditForm }) =>
+      adminParentApi.update(parentId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-parents"] });
+      setEditTarget(null);
+    },
+    onError: (err) => setActionError(errMsg(err, "Failed to update parent")),
   });
 
   const revokeMutation = useMutation({
@@ -119,9 +140,14 @@ export default function ParentsPage() {
             <p className="text-sm text-body">Manage parent/guardian accounts</p>
           </div>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Add Parent
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2">
+            <Upload className="h-4 w-4" /> Bulk Import
+          </Button>
+          <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Add Parent
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -207,6 +233,13 @@ export default function ParentsPage() {
                     <Td>
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => setEditTarget(parent)}
+                          title="Edit parent"
+                          className="rounded p-1 text-body hover:bg-stroke/50 transition-colors dark:hover:bg-strokedark"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => setLinkModal({ parentId: parent._id, parentName: parent.fullName })}
                           title="Link a student"
                           className="rounded p-1 text-primary hover:bg-primary/10 transition-colors"
@@ -250,6 +283,12 @@ export default function ParentsPage() {
           <p className="mt-3 rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{actionError}</p>
         )}
       </Card>
+
+      <BulkParentUploadModal
+        open={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onSuccess={() => qc.invalidateQueries({ queryKey: ["admin-parents"] })}
+      />
 
       {/* Create modal */}
       <Modal open={showCreate} onClose={() => { setShowCreate(false); reset(); }} title="Add Parent Account">
@@ -297,6 +336,17 @@ export default function ParentsPage() {
         </form>
       </Modal>
 
+      {/* Edit parent modal */}
+      {editTarget && (
+        <EditParentModal
+          parent={editTarget}
+          onClose={() => { setEditTarget(null); setActionError(""); }}
+          onSave={(data) => updateMutation.mutate({ parentId: editTarget._id, data })}
+          isSaving={updateMutation.isPending}
+          error={actionError}
+        />
+      )}
+
       {/* Link student modal */}
       {linkModal && (
         <LinkStudentModal
@@ -323,6 +373,59 @@ async function unlinkConfirm(parentId: string, studentId: string, qc: ReturnType
   } catch {
     alert("Failed to unlink student");
   }
+}
+
+// ─── Edit parent modal ────────────────────────────────────────────────────────
+
+function EditParentModal({
+  parent,
+  onClose,
+  onSave,
+  isSaving,
+  error,
+}: {
+  parent: Parent;
+  onClose: () => void;
+  onSave: (data: EditForm) => void;
+  isSaving: boolean;
+  error: string;
+}) {
+  const { register, handleSubmit, formState: { errors } } = useForm<EditForm>({
+    resolver: zodResolver(editSchema),
+    defaultValues: {
+      fullName: parent.fullName,
+      email: parent.email,
+      phoneNumber: parent.phoneNumber ?? "",
+    },
+  });
+
+  return (
+    <Modal open onClose={onClose} title={`Edit — ${parent.fullName}`}>
+      <form onSubmit={handleSubmit(onSave)} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">Full Name</label>
+          <Input {...register("fullName")} placeholder="e.g. Mrs. Amara Johnson" />
+          {errors.fullName && <p className="mt-1 text-xs text-meta-1">{errors.fullName.message}</p>}
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">Email</label>
+          <Input {...register("email")} type="email" placeholder="parent@example.com" />
+          {errors.email && <p className="mt-1 text-xs text-meta-1">{errors.email.message}</p>}
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-black dark:text-white">
+            Phone Number <span className="font-normal text-body">(optional)</span>
+          </label>
+          <Input {...register("phoneNumber")} type="tel" placeholder="e.g. +23276123456" />
+        </div>
+        {error && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{error}</p>}
+        <div className="flex justify-end gap-3 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit" isLoading={isSaving}>Save Changes</Button>
+        </div>
+      </form>
+    </Modal>
+  );
 }
 
 // ─── Link student modal ───────────────────────────────────────────────────────

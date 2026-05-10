@@ -2,9 +2,11 @@
 
 import { use, useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 import { subjectApi } from "@/lib/api/subject";
+import { featuresApi } from "@/lib/api/features";
+import { useFeatures } from "@/context/FeaturesContext";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import {
@@ -19,8 +21,11 @@ import {
   Calendar,
   Heart,
   GraduationCap,
+  Save,
+  Loader2,
+  ShieldCheck,
 } from "lucide-react";
-import type { AuthUser, Subject } from "@/lib/types";
+import type { AuthUser, Subject, ModuleKey } from "@/lib/types";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -31,7 +36,7 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export default function LecturerDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"overview" | "profile">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "profile" | "modules">("overview");
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: lecturer, isLoading } = useQuery({
@@ -112,7 +117,7 @@ export default function LecturerDetailPage({ params }: PageProps) {
       {/* Tab nav */}
       <div className="border-b border-stroke dark:border-strokedark">
         <nav className="-mb-px flex gap-6">
-          {(["overview", "profile"] as const).map((tab) => (
+          {(["overview", "profile", "modules"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -123,7 +128,7 @@ export default function LecturerDetailPage({ params }: PageProps) {
                   : "text-body hover:text-black dark:hover:text-white",
               ].join(" ")}
             >
-              {tab}
+              {tab === "modules" ? "Module Access" : tab}
             </button>
           ))}
         </nav>
@@ -241,6 +246,10 @@ export default function LecturerDetailPage({ params }: PageProps) {
             </Card>
           </div>
         </div>
+      )}
+
+      {activeTab === "modules" && (
+        <ModulesTab lecturerId={id} />
       )}
 
       {/* Edit Modal */}
@@ -450,6 +459,161 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+// ─── Module Access Tab ────────────────────────────────────────────────────────
+
+const LECTURER_DEFAULT_MODULES = new Set<ModuleKey>([
+  "subjects", "classes", "assignments", "attendance", "results",
+  "exams", "promote", "timetable", "academicCalendar", "salary",
+  "messages", "announcements",
+]);
+
+const MODULE_LABELS: Partial<Record<ModuleKey, string>> = {
+  teachers: "Teachers", classes: "Classes", students: "Students", parents: "Parents",
+  subjects: "Subjects", timetable: "Timetable", academicCalendar: "Academic Calendar",
+  assignments: "Assignments", attendance: "Attendance", results: "Results & Report Cards",
+  exams: "Exams", promote: "Promote Students",
+  fees: "Fees", terms: "Terms", salary: "Salary", financialRecords: "Financial Records",
+  messages: "Messages", announcements: "Announcements", gallery: "Gallery",
+  aiAnalytics: "AI Analytics", auditLogs: "Audit Logs", archive: "Archive",
+};
+
+function ModulesTab({ lecturerId }: { lecturerId: string }) {
+  const queryClient = useQueryClient();
+  const { modules: instituteModules } = useFeatures();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["lecturer-module-access", lecturerId],
+    queryFn: () => featuresApi.getLecturerAccess(lecturerId),
+  });
+
+  const [localAccess, setLocalAccess] = useState<string[] | null>(null);
+
+  const currentAccess: string[] = localAccess ?? data?.moduleAccess ?? [];
+
+  const granted = new Set(currentAccess.filter((k) => !k.startsWith("!")));
+  const restricted = new Set(currentAccess.filter((k) => k.startsWith("!")).map((k) => k.slice(1)));
+
+  const instituteEnabled = new Set<ModuleKey>(
+    Object.entries(instituteModules ?? {})
+      .filter(([, v]) => v)
+      .map(([k]) => k as ModuleKey)
+  );
+
+  const grantableKeys = Array.from(instituteEnabled).filter(
+    (k) => !LECTURER_DEFAULT_MODULES.has(k)
+  );
+  const restrictableKeys = Array.from(LECTURER_DEFAULT_MODULES).filter(
+    (k) => instituteEnabled.has(k)
+  );
+
+  const toggleGrant = (key: ModuleKey) => {
+    const next = new Set(granted);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    const nextRestricted = new Set(restricted);
+    setLocalAccess([
+      ...Array.from(next),
+      ...Array.from(nextRestricted).map((k) => `!${k}`),
+    ]);
+  };
+
+  const toggleRestrict = (key: string) => {
+    const nextRestricted = new Set(restricted);
+    if (nextRestricted.has(key)) nextRestricted.delete(key); else nextRestricted.add(key);
+    setLocalAccess([
+      ...Array.from(granted),
+      ...Array.from(nextRestricted).map((k) => `!${k}`),
+    ]);
+  };
+
+  const { mutate, isPending, isSuccess, reset } = useMutation({
+    mutationFn: (access: string[]) => featuresApi.setLecturerAccess(lecturerId, access),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lecturer-module-access", lecturerId] });
+      setLocalAccess(null);
+      setTimeout(reset, 2000);
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-12 text-body">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Loading module access…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-black dark:text-white">Module Access Overrides</h2>
+        </div>
+        <p className="mt-1 text-xs text-body">
+          Grant this lecturer access to modules outside their default role, or restrict their default access.
+        </p>
+      </div>
+
+      {grantableKeys.length > 0 && (
+        <div className="rounded-sm border border-stroke bg-white p-5 dark:border-strokedark dark:bg-boxdark">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-body">Grant Additional Access</h3>
+          <p className="mb-4 text-xs text-body">These modules are not in the lecturer's default navigation. Check to grant access.</p>
+          <div className="space-y-3">
+            {grantableKeys.map((key) => (
+              <label key={key} className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={granted.has(key)}
+                  onChange={() => toggleGrant(key)}
+                  className="h-4 w-4 rounded border-stroke"
+                />
+                <span className="text-sm text-black dark:text-white">{MODULE_LABELS[key] ?? key}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {restrictableKeys.length > 0 && (
+        <div className="rounded-sm border border-stroke bg-white p-5 dark:border-strokedark dark:bg-boxdark">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-body">Restrict Default Access</h3>
+          <p className="mb-4 text-xs text-body">These modules are in the lecturer's default navigation. Uncheck to restrict for this individual.</p>
+          <div className="space-y-3">
+            {restrictableKeys.map((key) => (
+              <label key={key} className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={!restricted.has(key)}
+                  onChange={() => toggleRestrict(key)}
+                  className="h-4 w-4 rounded border-stroke"
+                />
+                <span className="text-sm text-black dark:text-white">{MODULE_LABELS[key] ?? key}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-end gap-3">
+        {isSuccess && localAccess === null && (
+          <span className="text-sm text-meta-3">Saved.</span>
+        )}
+        <button
+          onClick={() => mutate(currentAccess)}
+          disabled={localAccess === null || isPending}
+          className="flex items-center gap-2 rounded bg-primary px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-opacity-90 disabled:opacity-50"
+        >
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save Access
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Profile row helper ───────────────────────────────────────────────────────
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (

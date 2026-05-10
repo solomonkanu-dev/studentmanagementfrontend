@@ -10,6 +10,7 @@ const tabs = [
   { label: "Marks Grading", href: "/admin/settings/grading" },
   { label: "Rules & Regulations", href: "/admin/settings/rules" },
   { label: "Theme", href: "/admin/settings/theme" },
+  { label: "Modules", href: "/admin/settings/modules" },
   { label: "Account Settings", href: "/admin/settings/account" },
 ];
 
