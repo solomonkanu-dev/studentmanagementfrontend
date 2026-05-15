@@ -306,7 +306,9 @@ export async function POST(req: NextRequest) {
     }));
 
   // Audit log (userId + message count, no message content logged)
-  console.log(`[student-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[student-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
+  }
 
   try {
     const reply = await runAgentLoop(safeMessages, token);

@@ -6,6 +6,7 @@ import { adminApi, type AcademicTerm } from "@/lib/api/admin";
 import { ReportCardView, type ReportCardStyle, DEFAULT_REPORT_STYLE } from "@/components/report-card/ReportCardView";
 import type { ReportCardData } from "@/lib/api/student";
 import type { AuthUser } from "@/lib/types";
+import { escapeHtml } from "@/lib/utils/htmlEscape";
 import {
   Palette,
   FileText,
@@ -471,7 +472,7 @@ function GeneratedCard({
     const win = window.open("", "_blank", "width=900,height=800");
     if (!win) return;
     win.document.write(`
-      <html><head><title>Report Card – ${student.fullName}</title>
+      <html><head><title>Report Card – ${escapeHtml(student.fullName)}</title>
       <style>
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
         @page { size: A4; margin: 0; }

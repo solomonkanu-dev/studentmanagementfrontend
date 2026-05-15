@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { escapeHtml } from "@/lib/utils/htmlEscape";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -57,33 +58,37 @@ export async function POST(req: NextRequest) {
         timeStyle: "short",
       });
 
+      const safeFullName = escapeHtml(String(fullName));
+      const safeEmail = escapeHtml(String(email));
+      const safeSubmittedAt = escapeHtml(submittedAt);
+
       await transporter.sendMail({
-        from: `"EduPulse" <${process.env.SMTP_USER}>`,
+        from: `"EduSalone" <${process.env.SMTP_USER}>`,
         to: superAdminEmail,
-        subject: `New Admin Request — ${fullName}`,
+        subject: `New Admin Request — ${String(fullName).replace(/[\r\n]+/g, " ").slice(0, 200)}`,
         html: `
           <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
             <div style="background:#0F6E56;padding:24px 32px;border-radius:8px 8px 0 0">
-              <h1 style="margin:0;color:#fff;font-size:20px">EduPulse</h1>
+              <h1 style="margin:0;color:#fff;font-size:20px">EduSalone</h1>
               <p style="margin:4px 0 0;color:#9FE1CB;font-size:13px">School Management System</p>
             </div>
             <div style="border:1px solid #e5e7eb;border-top:none;padding:32px;border-radius:0 0 8px 8px">
               <h2 style="margin:0 0 8px;font-size:18px">New admin request received</h2>
               <p style="margin:0 0 24px;color:#6b7280;font-size:14px">
-                A new user has requested admin access to EduPulse.
+                A new user has requested admin access to EduSalone.
               </p>
               <table style="width:100%;border-collapse:collapse;font-size:14px">
                 <tr>
                   <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;width:120px">Full name</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;font-weight:600">${fullName}</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;font-weight:600">${safeFullName}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280">Email</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6">${email}</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6">${safeEmail}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;color:#6b7280">Submitted</td>
-                  <td style="padding:10px 0">${submittedAt}</td>
+                  <td style="padding:10px 0">${safeSubmittedAt}</td>
                 </tr>
               </table>
               <div style="margin-top:28px">
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
                 </a>
               </div>
               <p style="margin-top:28px;font-size:12px;color:#9ca3af">
-                You are receiving this because you are a super admin on EduPulse.
+                You are receiving this because you are a super admin on EduSalone.
               </p>
             </div>
           </div>

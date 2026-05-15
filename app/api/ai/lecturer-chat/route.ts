@@ -333,7 +333,9 @@ export async function POST(req: NextRequest) {
       content: typeof m.content === "string" ? m.content.trim() : m.content,
     }));
 
-  console.log(`[lecturer-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[lecturer-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
+  }
 
   try {
     const reply = await runAgentLoop(safeMessages, token, userId);

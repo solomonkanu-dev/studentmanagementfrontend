@@ -422,7 +422,9 @@ export async function POST(req: NextRequest) {
     }));
 
   // Audit log (no message content, just metadata)
-  console.log(`[super-admin-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[super-admin-chat] userId=${userId} turns=${safeMessages.length} ts=${new Date().toISOString()}`);
+  }
 
   try {
     const { reply, toolsUsed } = await runAgentLoop(safeMessages, token);

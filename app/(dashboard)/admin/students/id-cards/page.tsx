@@ -18,6 +18,7 @@ import {
   Search,
 } from "lucide-react";
 import type { AuthUser, Institute } from "@/lib/types";
+import { escapeHtml } from "@/lib/utils/htmlEscape";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -321,9 +322,11 @@ function CardPair({
     const win = window.open("", "_blank", "width=900,height=500");
     if (!win) return;
     win.document.write(`
-      <html><head><title>ID Card – ${student.fullName}</title>
+      <html><head><title>ID Card – ${escapeHtml(student.fullName)}</title>
       <style>
         body { margin: 0; padding: 20px; display: flex; gap: 24px; font-family: sans-serif; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .no-print { display: none !important; }
         @media print { body { padding: 10px; } }
       </style></head><body>
       ${el.innerHTML}
@@ -336,7 +339,7 @@ function CardPair({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="no-print flex items-center justify-between">
         <p className="text-xs font-semibold text-black dark:text-white">
           {cardIndex + 1}. {student.fullName}
           {student.studentProfile?.registrationNumber && (
@@ -449,6 +452,8 @@ export default function IDCardsPage() {
       <style>
         body { margin: 0; padding: 20px; font-family: sans-serif; }
         .card-pair { display: flex; gap: 20px; margin-bottom: 32px; flex-wrap: wrap; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .no-print { display: none !important; }
         @media print { body { padding: 10px; } .card-pair { page-break-inside: avoid; } }
       </style></head><body>
       ${el.innerHTML}

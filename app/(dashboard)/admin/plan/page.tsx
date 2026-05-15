@@ -41,6 +41,13 @@ export default function PlanPage() {
   const checkout = useMutation({
     mutationFn: (planId: string) => planApi.createCheckout(planId),
     onSuccess: ({ checkoutUrl, sessionId }) => {
+      let host = "";
+      try { host = new URL(checkoutUrl).hostname; } catch { /* invalid URL */ }
+      const isMonime = host === "monime.io" || host.endsWith(".monime.io");
+      if (!isMonime) {
+        console.error("Refusing checkout redirect to untrusted host:", host);
+        return;
+      }
       localStorage.setItem("monime_session_id", sessionId);
       window.location.href = checkoutUrl;
     },
