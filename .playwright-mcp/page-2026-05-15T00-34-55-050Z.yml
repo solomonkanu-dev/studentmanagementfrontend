@@ -1,0 +1,481 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e6]
+          - generic [ref=e10]: EduPulse
+        - generic [ref=e11]:
+          - link "Features" [ref=e12] [cursor=pointer]:
+            - /url: "#features"
+          - link "AI Assistant" [ref=e13] [cursor=pointer]:
+            - /url: "#ai-assistant"
+          - link "How It Works" [ref=e14] [cursor=pointer]:
+            - /url: "#how-it-works"
+          - link "Roles" [ref=e15] [cursor=pointer]:
+            - /url: "#roles"
+          - link "Testimonials" [ref=e16] [cursor=pointer]:
+            - /url: "#testimonials"
+        - generic [ref=e17]:
+          - link "Sign in" [ref=e18] [cursor=pointer]:
+            - /url: /login
+          - link "Get Started" [ref=e19] [cursor=pointer]:
+            - /url: /admin-request
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]: Smart School Management · Now with AI Assistant
+          - heading "Smart school management powered by AI." [level=1] [ref=e27]:
+            - text: Smart school
+            - text: management
+            - text: powered by AI.
+          - paragraph [ref=e28]: EduPulse is the smart way to run your school — enrolment, exams, fees, attendance, timetables, assignments, real-time chat, photo galleries and a built-in AI assistant. One platform. Every role. Sierra Leone.
+          - generic [ref=e29]:
+            - link "Get Started Free" [ref=e30] [cursor=pointer]:
+              - /url: /admin-request
+              - text: Get Started Free
+              - img [ref=e31]
+            - link "Sign In" [ref=e33] [cursor=pointer]:
+              - /url: /login
+              - text: Sign In
+              - img [ref=e34]
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - generic [ref=e38]: JO
+              - generic [ref=e39]: AK
+              - generic [ref=e40]: EM
+              - generic [ref=e41]: FK
+              - generic [ref=e42]: BI
+            - generic [ref=e43]:
+              - generic [ref=e44]:
+                - img [ref=e45]
+                - img [ref=e47]
+                - img [ref=e49]
+                - img [ref=e51]
+                - img [ref=e53]
+              - paragraph [ref=e55]: Trusted by 500+ institutions
+        - generic [ref=e57]:
+          - generic [ref=e72]:
+            - generic [ref=e73]:
+              - generic [ref=e74]:
+                - paragraph [ref=e75]: Students
+                - paragraph [ref=e76]: 1,248
+              - generic [ref=e77]:
+                - paragraph [ref=e78]: Teachers
+                - paragraph [ref=e79]: "64"
+              - generic [ref=e80]:
+                - paragraph [ref=e81]: Classes
+                - paragraph [ref=e82]: "18"
+            - generic [ref=e98]:
+              - generic [ref=e99]:
+                - generic [ref=e100]: J
+                - generic [ref=e102]: A
+              - generic [ref=e103]:
+                - generic [ref=e104]: A
+                - generic [ref=e106]: B+
+              - generic [ref=e107]:
+                - generic [ref=e108]: E
+                - generic [ref=e110]: A-
+          - generic [ref=e113]:
+            - img [ref=e115]
+            - generic [ref=e118]:
+              - paragraph [ref=e119]: Payment Received
+              - paragraph [ref=e120]: NLe 45,000 · just now
+          - generic [ref=e123]:
+            - img [ref=e125]
+            - generic [ref=e128]:
+              - paragraph [ref=e129]: Result Published
+              - paragraph [ref=e130]: Mathematics · Grade A
+          - generic [ref=e132]:
+            - paragraph [ref=e133]: Attendance
+            - paragraph [ref=e145]: 90% this term
+      - paragraph [ref=e147]: Scroll to explore
+    - generic [ref=e151]:
+      - generic [ref=e152]: Student Enrolment
+      - generic [ref=e154]: Fee Management
+      - generic [ref=e156]: Results & Grading
+      - generic [ref=e158]: Attendance Tracking
+      - generic [ref=e160]: Exams Scheduling
+      - generic [ref=e162]: Timetable Builder
+      - generic [ref=e164]: Academic Calendar
+      - generic [ref=e166]: Assignments & Submissions
+      - generic [ref=e168]: Real-time Messaging
+      - generic [ref=e170]: Photo Gallery
+      - generic [ref=e172]: ID Card Printing
+      - generic [ref=e174]: Document Generation
+      - generic [ref=e176]: Email Notifications
+      - generic [ref=e178]: Salary & Payslips
+      - generic [ref=e180]: Parent Portal
+      - generic [ref=e182]: Audit Logs
+      - generic [ref=e184]: Student Promotion
+      - generic [ref=e186]: Custom Branding
+      - generic [ref=e188]: Analytics Dashboard
+      - generic [ref=e190]: AI Assistant
+      - generic [ref=e192]: Student Enrolment
+      - generic [ref=e194]: Fee Management
+      - generic [ref=e196]: Results & Grading
+      - generic [ref=e198]: Attendance Tracking
+      - generic [ref=e200]: Exams Scheduling
+      - generic [ref=e202]: Timetable Builder
+      - generic [ref=e204]: Academic Calendar
+      - generic [ref=e206]: Assignments & Submissions
+      - generic [ref=e208]: Real-time Messaging
+      - generic [ref=e210]: Photo Gallery
+      - generic [ref=e212]: ID Card Printing
+      - generic [ref=e214]: Document Generation
+      - generic [ref=e216]: Email Notifications
+      - generic [ref=e218]: Salary & Payslips
+      - generic [ref=e220]: Parent Portal
+      - generic [ref=e222]: Audit Logs
+      - generic [ref=e224]: Student Promotion
+      - generic [ref=e226]: Custom Branding
+      - generic [ref=e228]: Analytics Dashboard
+      - generic [ref=e230]: AI Assistant
+    - generic [ref=e234]:
+      - generic [ref=e235]:
+        - paragraph [ref=e236]:
+          - generic [ref=e237]: 0+
+        - paragraph [ref=e238]: Students Managed
+      - generic [ref=e239]:
+        - paragraph [ref=e240]:
+          - generic [ref=e241]: 0+
+        - paragraph [ref=e242]: Institutions
+      - generic [ref=e243]:
+        - paragraph [ref=e244]:
+          - generic [ref=e245]: 0+
+        - paragraph [ref=e246]: Documents Generated
+      - generic [ref=e247]:
+        - paragraph [ref=e248]:
+          - generic [ref=e249]: 0.9%
+        - paragraph [ref=e250]: Uptime
+    - generic [ref=e252]:
+      - generic [ref=e253]:
+        - generic [ref=e254]: Everything You Need
+        - heading "A complete toolkit for modern schools" [level=2] [ref=e255]
+        - paragraph [ref=e256]: Twenty modules in one platform — academics, finance, communication and AI. No spreadsheets, no integrations, no separate tools.
+      - generic [ref=e257]:
+        - generic [ref=e259]:
+          - img [ref=e261]
+          - generic [ref=e264]:
+            - heading "Student Management" [level=3] [ref=e265]
+            - paragraph [ref=e266]: Full student lifecycle — enrolment, profiles, year-end promotions, alumni status and document generation.
+        - generic [ref=e268]:
+          - img [ref=e270]
+          - generic [ref=e272]:
+            - heading "Results & Grading" [level=3] [ref=e273]
+            - paragraph [ref=e274]: Assign marks, auto-calculate grades, generate report cards with class rankings and performance analytics.
+        - generic [ref=e276]:
+          - img [ref=e278]
+          - generic [ref=e282]:
+            - heading "Exams Management" [level=3] [ref=e283]
+            - paragraph [ref=e284]: Schedule exams, define grading scales, publish results and lock terms when reporting is complete.
+        - generic [ref=e286]:
+          - img [ref=e288]
+          - generic [ref=e293]:
+            - heading "Staff & Salaries" [level=3] [ref=e294]
+            - paragraph [ref=e295]: Manage lecturer profiles, class assignments, monthly salary records and payslip downloads.
+        - generic [ref=e297]:
+          - img [ref=e299]
+          - generic [ref=e301]:
+            - heading "Fee Management" [level=3] [ref=e302]
+            - paragraph [ref=e303]: Assign fee structures, record payments, auto-issue receipts and track outstanding balances by class or student.
+        - generic [ref=e305]:
+          - img [ref=e307]
+          - generic [ref=e310]:
+            - heading "Attendance Tracking" [level=3] [ref=e311]
+            - paragraph [ref=e312]: Mark daily attendance per subject, monitor trends and automatically alert students below 75%.
+        - generic [ref=e314]:
+          - img [ref=e316]
+          - generic [ref=e319]:
+            - heading "Assignments" [level=3] [ref=e320]
+            - paragraph [ref=e321]: Create assignments with attachments, set due dates, grade submissions and allow resubmissions.
+        - generic [ref=e323]:
+          - img [ref=e325]
+          - generic [ref=e327]:
+            - heading "Timetable Builder" [level=3] [ref=e328]
+            - paragraph [ref=e329]: Visual weekly timetables per class and teacher with conflict detection and shareable views.
+        - generic [ref=e331]:
+          - img [ref=e333]
+          - generic [ref=e335]:
+            - heading "Academic Calendar" [level=3] [ref=e336]
+            - paragraph [ref=e337]: Plan terms, holidays, exam windows and events — visible to every role at a glance.
+        - generic [ref=e339]:
+          - img [ref=e341]
+          - generic [ref=e343]:
+            - heading "Real-time Messages" [level=3] [ref=e344]
+            - paragraph [ref=e345]: Direct chat between admins, teachers, students and parents with live unread badges and socket delivery.
+        - generic [ref=e347]:
+          - img [ref=e349]
+          - generic [ref=e352]:
+            - heading "Announcements" [level=3] [ref=e353]
+            - paragraph [ref=e354]: Broadcast school-wide or role-targeted notices with read receipts and email fan-out.
+        - generic [ref=e356]:
+          - img [ref=e358]
+          - generic [ref=e363]:
+            - heading "Photo Gallery" [level=3] [ref=e364]
+            - paragraph [ref=e365]: Curate school albums and event photos — students, parents and admins all share the same memories.
+        - generic [ref=e367]:
+          - img [ref=e369]
+          - generic [ref=e372]:
+            - heading "Official Documents" [level=3] [ref=e373]
+            - paragraph [ref=e374]: Generate branded PDFs — Admission Letters, Transfer Certificates, Attestations and report cards.
+        - generic [ref=e376]:
+          - img [ref=e378]
+          - generic [ref=e382]:
+            - heading "Student ID Cards" [level=3] [ref=e383]
+            - paragraph [ref=e384]: Print branded student ID cards in bulk with photos, barcodes and institute colours.
+        - generic [ref=e386]:
+          - img [ref=e388]
+          - generic [ref=e390]:
+            - heading "Parent Portal" [level=3] [ref=e391]
+            - paragraph [ref=e392]: Parents track results, attendance, fees and announcements for every child they're linked to.
+        - generic [ref=e394]:
+          - img [ref=e396]
+          - generic [ref=e399]:
+            - heading "Email Notifications" [level=3] [ref=e400]
+            - paragraph [ref=e401]: Automated emails for receipts, results, assignments and attendance alerts via your own SMTP.
+        - generic [ref=e403]:
+          - img [ref=e405]
+          - generic [ref=e407]:
+            - heading "Audit Logs" [level=3] [ref=e408]
+            - paragraph [ref=e409]: Every sensitive action is logged with actor, timestamp and IP — full accountability and compliance.
+        - generic [ref=e411]:
+          - img [ref=e413]
+          - generic [ref=e419]:
+            - heading "Custom Theme" [level=3] [ref=e420]
+            - paragraph [ref=e421]: Match your institution's branding — colours, logos and dark mode across every dashboard.
+        - generic [ref=e423]:
+          - img [ref=e425]
+          - generic [ref=e427]:
+            - heading "Role-Based Access" [level=3] [ref=e428]
+            - paragraph [ref=e429]: Super Admin, Admin, Teacher, Student and Parent roles each with tailored dashboards and permissions.
+        - generic [ref=e431]:
+          - img [ref=e433]
+          - generic [ref=e436]:
+            - heading "AI Assistant" [level=3] [ref=e437]
+            - paragraph [ref=e438]: Built-in AI chat for every role — admins query live data, teachers get insights, students ask about results and fees.
+    - generic [ref=e441]:
+      - generic [ref=e442]:
+        - generic [ref=e443]:
+          - img [ref=e444]
+          - text: Powered by Claude AI
+        - heading "Your school has its own AI assistant" [level=2] [ref=e447]:
+          - text: Your school has its own
+          - text: AI assistant
+        - paragraph [ref=e448]: Every role gets a context-aware AI that knows your live school data — no copy-paste, no switching tabs.
+        - generic [ref=e449]:
+          - generic [ref=e450]:
+            - img [ref=e452]
+            - generic [ref=e455]:
+              - paragraph [ref=e456]: Admin AI — Data on demand
+              - paragraph [ref=e457]: Query fee collection rates, attendance trends, student performance and more in plain English.
+          - generic [ref=e458]:
+            - img [ref=e460]
+            - generic [ref=e462]:
+              - paragraph [ref=e463]: Teacher AI — Class insights
+              - paragraph [ref=e464]: Ask about class averages, struggling students, or assignment submission rates instantly.
+          - generic [ref=e465]:
+            - img [ref=e467]
+            - generic [ref=e470]:
+              - paragraph [ref=e471]: Student AI — Personal guide
+              - paragraph [ref=e472]: Students can ask about results, attendance, fees, or upcoming deadlines at any time.
+      - generic [ref=e474]:
+        - generic [ref=e476]:
+          - generic [ref=e477]:
+            - img [ref=e479]
+            - generic [ref=e482]:
+              - paragraph [ref=e483]: EduPulse AI
+              - paragraph [ref=e484]: Always available · Role-aware
+            - generic [ref=e485]: Online
+          - generic [ref=e487]:
+            - generic [ref=e488]:
+              - generic [ref=e489]: A
+              - generic [ref=e490]: Admin
+            - paragraph [ref=e493]: How many students haven't paid fees this term?
+            - generic [ref=e494]:
+              - img [ref=e496]
+              - paragraph [ref=e500]: 15 students have outstanding balances totalling NLe 45,000. Class 3B has the highest default rate at 40%.
+          - generic [ref=e501]:
+            - textbox [ref=e502]: Ask anything about your school…
+            - button [ref=e503]:
+              - img [ref=e504]
+        - generic [ref=e507]:
+          - button [ref=e508]
+          - button [ref=e509]
+          - button [ref=e510]
+    - generic [ref=e512]:
+      - generic [ref=e513]:
+        - generic [ref=e514]: Simple Onboarding
+        - heading "Up and running in minutes" [level=2] [ref=e515]
+      - generic [ref=e516]:
+        - generic [ref=e519]:
+          - generic [ref=e520]:
+            - img [ref=e521]
+            - generic [ref=e524]: "1"
+          - heading "Request Admin Access" [level=3] [ref=e525]
+          - paragraph [ref=e526]: Submit your institution's details. Your account is reviewed and approved by a super admin.
+        - generic [ref=e528]:
+          - generic [ref=e529]:
+            - img [ref=e530]
+            - generic [ref=e532]: "2"
+          - heading "Set Up Your Institution" [level=3] [ref=e533]
+          - paragraph [ref=e534]: Add classes, subjects, fee structures, lecturers and students — all from one dashboard.
+        - generic [ref=e536]:
+          - generic [ref=e537]:
+            - img [ref=e538]
+            - generic [ref=e541]: "3"
+          - heading "Everything Runs Smoothly" [level=3] [ref=e542]
+          - paragraph [ref=e543]: Manage daily operations — attendance, results, payments, documents — while stakeholders stay informed.
+    - generic [ref=e545]:
+      - generic [ref=e546]:
+        - generic [ref=e547]: Built for Every Role
+        - heading "Tailored dashboards for everyone" [level=2] [ref=e548]
+        - paragraph [ref=e549]: Each user type gets a purpose-built experience with exactly what they need.
+      - generic [ref=e550]:
+        - generic [ref=e552]:
+          - generic [ref=e553]:
+            - generic [ref=e554]: 🏫
+            - generic [ref=e555]: Admin
+          - list [ref=e556]:
+            - listitem [ref=e557]:
+              - img [ref=e558]
+              - text: Full institution control & branding
+            - listitem [ref=e561]:
+              - img [ref=e562]
+              - text: Students, teachers, classes, subjects
+            - listitem [ref=e565]:
+              - img [ref=e566]
+              - text: Fees, salaries & financial records
+            - listitem [ref=e569]:
+              - img [ref=e570]
+              - text: Timetables, exams & report cards
+            - listitem [ref=e573]:
+              - img [ref=e574]
+              - text: Audit logs, archive & AI analytics
+        - generic [ref=e578]:
+          - generic [ref=e579]:
+            - generic [ref=e580]: 👨‍🏫
+            - generic [ref=e581]: Teacher
+          - list [ref=e582]:
+            - listitem [ref=e583]:
+              - img [ref=e584]
+              - text: Manage assigned classes & subjects
+            - listitem [ref=e587]:
+              - img [ref=e588]
+              - text: Mark attendance & publish results
+            - listitem [ref=e591]:
+              - img [ref=e592]
+              - text: Create assignments & grade submissions
+            - listitem [ref=e595]:
+              - img [ref=e596]
+              - text: Schedule and run exams
+            - listitem [ref=e599]:
+              - img [ref=e600]
+              - text: Chat with students, parents & admin
+        - generic [ref=e604]:
+          - generic [ref=e605]:
+            - generic [ref=e606]: 🎓
+            - generic [ref=e607]: Student
+          - list [ref=e608]:
+            - listitem [ref=e609]:
+              - img [ref=e610]
+              - text: Results, report cards & rankings
+            - listitem [ref=e613]:
+              - img [ref=e614]
+              - text: Attendance, timetable & exam schedule
+            - listitem [ref=e617]:
+              - img [ref=e618]
+              - text: Submit assignments & track grades
+            - listitem [ref=e621]:
+              - img [ref=e622]
+              - text: View fees, pay status & download receipts
+            - listitem [ref=e625]:
+              - img [ref=e626]
+              - text: Photo gallery, messages & announcements
+        - generic [ref=e630]:
+          - generic [ref=e631]:
+            - generic [ref=e632]: 👨‍👩‍👧
+            - generic [ref=e633]: Parent
+          - list [ref=e634]:
+            - listitem [ref=e635]:
+              - img [ref=e636]
+              - text: Monitor every child from one account
+            - listitem [ref=e639]:
+              - img [ref=e640]
+              - text: Track results, attendance & timetables
+            - listitem [ref=e643]:
+              - img [ref=e644]
+              - text: View fee balances & download receipts
+            - listitem [ref=e647]:
+              - img [ref=e648]
+              - text: Direct chat with teachers & admin
+            - listitem [ref=e651]:
+              - img [ref=e652]
+              - text: Receive announcements & email alerts
+    - generic [ref=e656]:
+      - generic [ref=e657]:
+        - generic [ref=e658]: Testimonials
+        - heading "Schools love EduPulse" [level=2] [ref=e659]
+      - generic [ref=e660]:
+        - generic [ref=e662]:
+          - generic [ref=e663]:
+            - img [ref=e664]
+            - img [ref=e666]
+            - img [ref=e668]
+            - img [ref=e670]
+            - img [ref=e672]
+          - paragraph [ref=e674]: "\"EduPulse transformed how we manage our 1,200 students. The report card generation alone saves us 3 days every term.\""
+          - generic [ref=e675]:
+            - generic [ref=e676]: M
+            - generic [ref=e677]:
+              - paragraph [ref=e678]: Mr. Abu Bangura
+              - paragraph [ref=e679]: School Principal, Freetown
+        - generic [ref=e681]:
+          - generic [ref=e682]:
+            - img [ref=e683]
+            - img [ref=e685]
+            - img [ref=e687]
+            - img [ref=e689]
+            - img [ref=e691]
+          - paragraph [ref=e693]: "\"Fee tracking used to be a nightmare. Now we see exactly who has paid, who owes, and receipts go out automatically.\""
+          - generic [ref=e694]:
+            - generic [ref=e695]: M
+            - generic [ref=e696]:
+              - paragraph [ref=e697]: Mrs. Aminata Koroma
+              - paragraph [ref=e698]: Admin Officer, Bo
+        - generic [ref=e700]:
+          - generic [ref=e701]:
+            - img [ref=e702]
+            - img [ref=e704]
+            - img [ref=e706]
+            - img [ref=e708]
+            - img [ref=e710]
+          - paragraph [ref=e712]: "\"Teachers adapted in one day. Marking attendance and publishing results is now a 2-minute job per class.\""
+          - generic [ref=e713]:
+            - generic [ref=e714]: M
+            - generic [ref=e715]:
+              - paragraph [ref=e716]: Mr. Ibrahim Sesay
+              - paragraph [ref=e717]: Head of Academics, Kenema
+    - generic [ref=e723]:
+      - img [ref=e725]
+      - heading "Ready to modernise your school?" [level=2] [ref=e729]
+      - paragraph [ref=e730]: Join hundreds of institutions already using EduPulse. Request admin access today — setup takes less than 10 minutes.
+      - generic [ref=e731]:
+        - link "Request Access" [ref=e732] [cursor=pointer]:
+          - /url: /admin-request
+          - text: Request Access
+          - img [ref=e733]
+        - link "Sign In" [ref=e735] [cursor=pointer]:
+          - /url: /login
+    - contentinfo [ref=e736]:
+      - generic [ref=e738]:
+        - generic [ref=e739]:
+          - img [ref=e740]
+          - generic [ref=e744]: EduPulse
+        - paragraph [ref=e745]: © 2026 EduPulse. Built for schools that want to do more.
+        - generic [ref=e746]:
+          - link "Sign In" [ref=e747] [cursor=pointer]:
+            - /url: /login
+          - link "Get Started" [ref=e748] [cursor=pointer]:
+            - /url: /admin-request
+  - region "Notifications alt+T"

@@ -73,7 +73,7 @@ export default function StudentReceiptPage() {
         @media print {
           @page { size: A5; margin: 0; }
           body * { visibility: hidden; }
-          #receipt, #receipt * { visibility: visible; }
+          #receipt, #receipt * { visibility: visible; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           #receipt { position: fixed; top: 0; left: 0; width: 100%; }
         }
       `}</style>

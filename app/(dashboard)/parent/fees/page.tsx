@@ -7,7 +7,9 @@ import { useQuery } from "@tanstack/react-query";
 import { parentApi } from "@/lib/api/parent";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { CreditCard, GraduationCap } from "lucide-react";
+import { CreditCard, GraduationCap, Receipt } from "lucide-react";
+import Link from "next/link";
+import type { ChildPayment } from "@/lib/api/parent";
 import { groupFeesByTerm } from "@/lib/utils/feeGrouping";
 import type { LinkedStudent } from "@/lib/types";
 
@@ -96,7 +98,14 @@ function FeesPage() {
     enabled: !!childId,
   });
 
+  const { data: payments = [], isLoading: paymentsLoading } = useQuery({
+    queryKey: ["parent-child-payments", childId],
+    queryFn: () => parentApi.getChildPayments(childId!),
+    enabled: !!childId,
+  });
+
   const typedFees = fees as unknown as ChildFeeRecord[];
+  const paymentList = payments as ChildPayment[];
   const grouped = groupFeesByTerm(typedFees);
   const showHeadings = grouped.size > 1;
 
@@ -191,6 +200,51 @@ function FeesPage() {
               <span className="text-sm font-medium text-meta-3">All fees paid — no outstanding balance.</span>
             </div>
           )}
+
+          {/* Payment history */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-body" />
+                <span className="text-sm font-semibold text-black dark:text-white">Payment History</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {paymentsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+                </div>
+              ) : paymentList.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-8 text-center">
+                  <Receipt className="h-7 w-7 text-body" />
+                  <p className="text-sm text-body">No payments recorded yet.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-stroke dark:divide-strokedark">
+                  {paymentList.map((payment) => (
+                    <div key={payment._id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                      <div>
+                        <p className="font-mono text-xs font-medium text-black dark:text-white">{payment.receiptNumber}</p>
+                        <p className="text-[11px] text-body">
+                          {new Date(payment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {" · "}{payment.method.replace(/_/g, " ")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-meta-3">NLe {payment.amount.toLocaleString()}</span>
+                        <Link
+                          href={`/parent/fees/receipt?studentId=${childId}&paymentId=${payment._id}`}
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <Receipt className="h-3 w-3" /> Receipt
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

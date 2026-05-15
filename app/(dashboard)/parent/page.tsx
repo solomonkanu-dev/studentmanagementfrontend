@@ -114,9 +114,19 @@ function FeeHistoryCard({ fees, childId }: { fees: FeeRecord[]; childId?: string
                         </p>
                       )}
                     </div>
-                    <Badge variant={STATUS_VARIANT[fee.status] ?? "default"}>
-                      {fee.status}
-                    </Badge>
+                    <div className="flex items-center gap-3">
+                      {fee.status === "paid" && childId && (
+                        <Link
+                          href={`/parent/fees?child=${childId}`}
+                          className="text-[11px] text-primary hover:underline shrink-0"
+                        >
+                          See Receipt
+                        </Link>
+                      )}
+                      <Badge variant={STATUS_VARIANT[fee.status] ?? "default"}>
+                        {fee.status}
+                      </Badge>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -331,6 +341,14 @@ export default function ParentDashboard() {
               <span>{new Date(latestPromotion.promotedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
             </p>
           </div>
+          {childId && (
+            <Link
+              href={`/parent/results?child=${childId}`}
+              className="shrink-0 text-xs text-meta-3 underline hover:no-underline"
+            >
+              See Report
+            </Link>
+          )}
         </div>
       )}
 

@@ -1,31 +1,19 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
-import { adminApi } from "@/lib/api/admin";
-import { ReceiptView } from "@/components/report-card/ReceiptView";
+import { studentApi } from "@/lib/api/student";
+import { useAuth } from "@/context/AuthContext";
+import { FullReceiptView } from "@/components/report-card/FullReceiptView";
 import { Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import type { ReceiptData } from "@/lib/api/student";
 
-export default function AdminReceiptPage() {
-  const params = useSearchParams();
-  const paymentId = params.get("paymentId") ?? "";
+export default function StudentFullReceiptPage() {
+  const { user } = useAuth();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["payment-receipt", paymentId],
-    queryFn: () => adminApi.getPaymentReceipt(paymentId),
-    enabled: !!paymentId,
+    queryKey: ["my-full-receipt"],
+    queryFn: studentApi.getMyFullReceipt,
   });
-
-  if (!paymentId) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-24 text-center">
-        <p className="text-sm text-meta-1">No payment selected.</p>
-        <Link href="/admin/fees" className="text-xs text-primary underline">Back to Fees</Link>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -39,18 +27,18 @@ export default function AdminReceiptPage() {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-center">
         <p className="text-sm text-meta-1">Failed to load receipt.</p>
-        <Link href="/admin/fees" className="text-xs text-primary underline">Back to Fees</Link>
+        <Link href="/student/fees" className="text-xs text-primary underline">Back to Fees</Link>
       </div>
     );
   }
 
-  const receipt = data as ReceiptData;
+  const totalPaid = data.payments.reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <>
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link
-          href="/admin/fees"
+          href="/student/fees"
           className="flex items-center gap-1.5 text-sm text-body hover:text-black dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -58,7 +46,7 @@ export default function AdminReceiptPage() {
         </Link>
         <div className="flex items-center gap-2">
           <span className="text-sm text-body">
-            Receipt {receipt.payment?.receiptNumber}
+            {data.payments.length} payment{data.payments.length !== 1 ? "s" : ""} · Total: {totalPaid.toLocaleString()}
           </span>
           <button
             onClick={() => window.print()}
@@ -71,15 +59,15 @@ export default function AdminReceiptPage() {
       </div>
 
       <div className="overflow-auto print:overflow-visible">
-        <ReceiptView data={receipt} />
+        <FullReceiptView data={data} student={user} />
       </div>
 
       <style>{`
         @media print {
-          @page { size: A5; margin: 0; }
+          @page { size: A4; margin: 0; }
           body * { visibility: hidden; }
-          #receipt, #receipt * { visibility: visible; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          #receipt { position: fixed; top: 0; left: 0; width: 100%; }
+          #full-receipt, #full-receipt * { visibility: visible; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          #full-receipt { position: fixed; top: 0; left: 0; width: 100%; }
         }
       `}</style>
     </>

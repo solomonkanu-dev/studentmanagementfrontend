@@ -198,9 +198,20 @@ function StudentFeesPageInner() {
 
       {/* Payment History */}
       <Card>
-        <div className="flex items-center gap-2 border-b border-stroke px-5 py-4 dark:border-strokedark">
-          <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
-          <h2 className="text-sm font-semibold text-black dark:text-white">Payment History</h2>
+        <div className="flex items-center justify-between border-b border-stroke px-5 py-4 dark:border-strokedark">
+          <div className="flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-black dark:text-white">Payment History</h2>
+          </div>
+          {fee?.status === "paid" && (
+            <Link
+              href="/student/fees/full-receipt"
+              className="flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
+            >
+              <Receipt className="h-3.5 w-3.5" aria-hidden="true" />
+              Generate Full Receipt
+            </Link>
+          )}
         </div>
         <CardContent>
           {paymentsLoading ? (

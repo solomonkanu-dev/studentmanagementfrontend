@@ -49,6 +49,37 @@ export interface ChildAttendanceStats {
   totalAbsencesThisYear: number;
 }
 
+export interface ChildPayment {
+  _id: string;
+  receiptNumber: string;
+  amount: number;
+  method: string;
+  reference?: string;
+  notes?: string;
+  recordedBy?: { _id: string; fullName: string } | null;
+  createdAt: string;
+}
+
+export interface ChildPaymentReceipt {
+  payment: ChildPayment & {
+    student: {
+      _id: string;
+      fullName: string;
+      email: string;
+      profilePhoto?: string;
+      class?: { _id: string; name: string } | null;
+      studentProfile?: { registrationNumber?: string };
+    };
+  };
+  institute: import("../types").Institute | null;
+  studentFee: {
+    totalAmount: number;
+    balance: number;
+    status: string;
+    fees: { label?: string; amount: number; paid: number }[];
+  } | null;
+}
+
 export const parentApi = {
   getMyChildren: async (): Promise<LinkedStudent[]> => {
     const { data } = await apiClient.get("/parent/my-children");
@@ -85,6 +116,16 @@ export const parentApi = {
 
   getChildPromotionHistory: async (studentId: string): Promise<ChildPromotionHistory> => {
     const { data } = await apiClient.get(`/parent/child/${studentId}/promotion-history`);
+    return data;
+  },
+
+  getChildPayments: async (studentId: string): Promise<ChildPayment[]> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/payments`);
+    return data.data ?? data;
+  },
+
+  getChildPaymentReceipt: async (studentId: string, paymentId: string): Promise<ChildPaymentReceipt> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/payments/${paymentId}/receipt`);
     return data;
   },
 };

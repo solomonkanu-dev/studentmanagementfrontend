@@ -44,13 +44,13 @@ const CREDENTIALS = {
     loginPath: "/auth/login",
   },
   lecturer: {
-    email:    process.env.PERF_LECTURER_EMAIL    || "lecturer@example.com",
-    password: process.env.PERF_LECTURER_PASSWORD || "password",
+    email:    process.env.PERF_LECTURER_EMAIL    || "mariama@gmail.com",
+    password: process.env.PERF_LECTURER_PASSWORD || "mariama@232",
     loginPath: "/auth/login",
   },
   student: {
-    email:    process.env.PERF_STUDENT_EMAIL    || "student@example.com",
-    password: process.env.PERF_STUDENT_PASSWORD || "password",
+    email:    process.env.PERF_STUDENT_EMAIL    || "solomonkanu@gmail.com",
+    password: process.env.PERF_STUDENT_PASSWORD || "Solomon@1",
     loginPath: "/auth/login",
   },
   parent: {
@@ -94,9 +94,7 @@ const SUITES = {
     { name: "GET /lecturer/my-classes",       path: "/lecturer/my-classes" },
     { name: "GET /class/institute",           path: "/class/institute" },
     { name: "GET /subject/lecturer",          path: "/subject/lecturer" },
-    { name: "GET /attendance/get-attendance", path: "/attendance/get-attendance" },
-    { name: "GET /attendance/summary/me",     path: "/attendance/summary/me" },
-    { name: "GET /assignment/mine",           path: "/assignment/mine" },
+    { name: "GET /assignment/my",             path: "/assignment/my" },
     { name: "GET /timetable",                 path: "/timetable" },
     { name: "GET /announcements",             path: "/announcements" },
     { name: "GET /notifications",             path: "/notifications" },

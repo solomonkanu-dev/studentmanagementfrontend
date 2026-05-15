@@ -14,7 +14,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Card } from "@/components/ui/Card";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
-import { Plus, Trash2, Users, User, Building2, X, Download, Receipt } from "lucide-react";
+import { Plus, Trash2, Users, User, Building2, X, Download, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
 import { exportApi } from "@/lib/api/export";
 import type { FeeStructure, AuthUser, Class, AcademicTerm } from "@/lib/types";
 import Link from "next/link";
@@ -817,12 +817,15 @@ const STATUS_BADGE: Record<string, "success" | "warning" | "danger" | "default">
   unpaid: "danger",
 };
 
+const PAYMENTS_PAGE_SIZE = 10;
+
 function StudentPaymentsTab({ classes }: { classes: Class[] }) {
   const queryClient = useQueryClient();
   const [selectedFee, setSelectedFee] = useState<AdminStudentFeeRecord | null>(null);
   const [showRecordPayment, setShowRecordPayment] = useState(false);
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [classFilter, setClassFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: feeRecords = [], isLoading } = useQuery({
     queryKey: ["admin-student-fees"],
@@ -842,6 +845,10 @@ function StudentPaymentsTab({ classes }: { classes: Class[] }) {
         return classId === classFilter;
       })
     : allRecords;
+
+  const totalPages = Math.max(1, Math.ceil(records.length / PAYMENTS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = records.slice((safePage - 1) * PAYMENTS_PAGE_SIZE, safePage * PAYMENTS_PAGE_SIZE);
   const paymentList = payments as FeePayment[];
 
   const handlePaymentRecorded = () => {
@@ -866,7 +873,7 @@ function StudentPaymentsTab({ classes }: { classes: Class[] }) {
             <label className="shrink-0 text-xs font-medium text-black dark:text-white">Filter by class</label>
             <select
               value={classFilter}
-              onChange={(e) => { setClassFilter(e.target.value); setShowHistory(null); setSelectedFee(null); }}
+              onChange={(e) => { setClassFilter(e.target.value); setShowHistory(null); setSelectedFee(null); setPage(1); }}
               className="h-8 rounded border border-stroke bg-transparent px-2 text-xs text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
             >
               <option value="">All classes</option>
@@ -905,7 +912,7 @@ function StudentPaymentsTab({ classes }: { classes: Class[] }) {
               </tr>
             </TableHead>
             <TableBody>
-              {records.map((r) => {
+              {paginated.map((r) => {
                 const paid = r.totalAmount - r.balance;
                 const className = typeof r.class === "object" && r.class ? r.class.name : "—";
                 return (
@@ -960,35 +967,54 @@ function StudentPaymentsTab({ classes }: { classes: Class[] }) {
             </TableBody>
           </Table>
         )}
+        {records.length > PAYMENTS_PAGE_SIZE && (
+          <div className="flex items-center justify-between border-t border-stroke px-5 py-3 dark:border-strokedark">
+            <p className="text-xs text-body">
+              {(safePage - 1) * PAYMENTS_PAGE_SIZE + 1}–{Math.min(safePage * PAYMENTS_PAGE_SIZE, records.length)} of {records.length} students
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-meta-4"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="px-2 text-xs text-black dark:text-white">{safePage} / {totalPages}</span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-meta-4"
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
 
-      {/* Payment history drawer */}
-      {showHistory && (
-        <Card>
-          <div className="flex items-center justify-between border-b border-stroke px-5 py-4 dark:border-strokedark">
-            <div className="flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-primary" aria-hidden="true" />
-              <h2 className="text-sm font-semibold text-black dark:text-white">
-                Payment History — {selectedFee?.student?.fullName}
-              </h2>
-            </div>
-            <button
-              onClick={() => { setShowHistory(null); setSelectedFee(null); }}
-              className="text-xs text-body hover:text-black dark:hover:text-white"
-            >
-              Close
-            </button>
+      {/* Payment history modal */}
+      <Modal
+        open={!!showHistory}
+        onClose={() => { setShowHistory(null); setSelectedFee(null); }}
+        title={`Payment History — ${selectedFee?.student?.fullName ?? ""}`}
+        className="max-w-5xl"
+      >
+        {paymentsLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
           </div>
-          {paymentsLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-            </div>
-          ) : paymentList.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <Receipt className="h-8 w-8 text-body" aria-hidden="true" />
-              <p className="text-sm text-body">No payments recorded yet.</p>
-            </div>
-          ) : (
+        ) : paymentList.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-10 text-center">
+            <Receipt className="h-8 w-8 text-body" aria-hidden="true" />
+            <p className="text-sm text-body">No payments recorded yet.</p>
+          </div>
+        ) : (
+          <div className="-mx-5 -my-4">
             <Table>
               <TableHead>
                 <tr>
@@ -1026,9 +1052,9 @@ function StudentPaymentsTab({ classes }: { classes: Class[] }) {
                 ))}
               </TableBody>
             </Table>
-          )}
-        </Card>
-      )}
+          </div>
+        )}
+      </Modal>
 
       {selectedFee && showRecordPayment && (
         <RecordPaymentModal
@@ -1055,6 +1081,7 @@ function FeesPageInner() {
   const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
   const [termFilter, setTermFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
+  const [structuresPage, setStructuresPage] = useState(1);
 
   const { data: structures = [], isLoading } = useQuery({
     queryKey: ["fee-structures"],
@@ -1098,6 +1125,14 @@ function FeesPageInner() {
       return termObj?.academicYear === yearFilter;
     });
 
+  const STRUCTURES_PAGE_SIZE = 10;
+  const structuresTotalPages = Math.max(1, Math.ceil(displayedStructures.length / STRUCTURES_PAGE_SIZE));
+  const structuresSafePage = Math.min(structuresPage, structuresTotalPages);
+  const paginatedStructures = displayedStructures.slice(
+    (structuresSafePage - 1) * STRUCTURES_PAGE_SIZE,
+    structuresSafePage * STRUCTURES_PAGE_SIZE,
+  );
+
   return (
     <div className="space-y-6">
       {/* Tabs */}
@@ -1134,7 +1169,7 @@ function FeesPageInner() {
                 {showUnassignedOnly && <span className="ml-1 text-xs">(unassigned)</span>}
               </p>
               <button
-                onClick={() => setShowUnassignedOnly((v) => !v)}
+                onClick={() => { setShowUnassignedOnly((v) => !v); setStructuresPage(1); }}
                 className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
                   showUnassignedOnly
                     ? "border-primary bg-primary text-white"
@@ -1145,7 +1180,7 @@ function FeesPageInner() {
               </button>
               <select
                 value={termFilter}
-                onChange={(e) => setTermFilter(e.target.value)}
+                onChange={(e) => { setTermFilter(e.target.value); setStructuresPage(1); }}
                 className="h-8 rounded border border-stroke bg-transparent px-2 text-xs text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
               >
                 <option value="">All terms</option>
@@ -1161,7 +1196,7 @@ function FeesPageInner() {
               {uniqueYears.length > 0 && (
                 <select
                   value={yearFilter}
-                  onChange={(e) => { setYearFilter(e.target.value); setTermFilter(""); }}
+                  onChange={(e) => { setYearFilter(e.target.value); setTermFilter(""); setStructuresPage(1); }}
                   className="h-8 rounded border border-stroke bg-transparent px-2 text-xs text-black outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark dark:text-white"
                 >
                   <option value="">All years</option>
@@ -1217,7 +1252,7 @@ function FeesPageInner() {
                       </Td>
                     </tr>
                   ) : (
-                    displayedStructures.map((f) => (
+                    paginatedStructures.map((f) => (
                       <tr key={f._id} className="hover:bg-meta-2 transition-colors dark:hover:bg-meta-4">
                         <Td>
                           <Badge variant={f.category === "all" ? "info" : f.category === "class" ? "warning" : "default"}>
@@ -1257,6 +1292,34 @@ function FeesPageInner() {
                   )}
                 </TableBody>
               </Table>
+            )}
+            {displayedStructures.length > STRUCTURES_PAGE_SIZE && (
+              <div className="flex items-center justify-between border-t border-stroke px-5 py-3 dark:border-strokedark">
+                <p className="text-xs text-body">
+                  {(structuresSafePage - 1) * STRUCTURES_PAGE_SIZE + 1}–{Math.min(structuresSafePage * STRUCTURES_PAGE_SIZE, displayedStructures.length)} of {displayedStructures.length} structures
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setStructuresPage((p) => Math.max(1, p - 1))}
+                    disabled={structuresSafePage === 1}
+                    className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-meta-4"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="px-2 text-xs text-black dark:text-white">{structuresSafePage} / {structuresTotalPages}</span>
+                  <button
+                    type="button"
+                    onClick={() => setStructuresPage((p) => Math.min(structuresTotalPages, p + 1))}
+                    disabled={structuresSafePage === structuresTotalPages}
+                    className="rounded p-1.5 text-body transition-colors hover:bg-meta-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-meta-4"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             )}
           </Card>
 

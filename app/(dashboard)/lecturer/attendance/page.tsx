@@ -4,7 +4,6 @@ import { useEffect, useRef, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { attendanceApi } from "@/lib/api/attendance";
 import { classApi } from "@/lib/api/class";
-import { subjectApi } from "@/lib/api/subject";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -29,7 +28,7 @@ import {
   XCircle,
   AlertCircle,
 } from "lucide-react";
-import type { Class, Subject, AuthUser, QRSessionStudent } from "@/lib/types";
+import type { Class, AuthUser, QRSessionStudent } from "@/lib/types";
 
 type StudentStatus = "present" | "absent";
 type TabMode = "manual" | "qr";
@@ -345,7 +344,6 @@ export default function LecturerAttendancePage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<TabMode>("manual");
   const [selectedClass, setSelectedClass] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
   const [markDate, setMarkDate] = useState(
     () => new Date().toISOString().split("T")[0]
   );
@@ -359,39 +357,23 @@ export default function LecturerAttendancePage() {
     queryFn: classApi.getForLecturer,
   });
 
-  const { data: allSubjects = [], isLoading: subjectsLoading } = useQuery({
-    queryKey: ["lecturer-subjects"],
-    queryFn: subjectApi.getForLecturer,
-  });
-
-  const classSubjects = useMemo(
-    () =>
-      (allSubjects as Subject[]).filter((s) => {
-        const classId =
-          typeof s.class === "string" ? s.class : (s.class as Class)._id;
-        return classId === selectedClass;
-      }),
-    [allSubjects, selectedClass]
-  );
-
   const {
     data: attendanceData,
     isLoading: studentsLoading,
     isError: studentsError,
   } = useQuery({
-    queryKey: ["attendance-students", selectedClass, selectedSubject],
-    queryFn: () =>
-      attendanceApi.getStudentsForAttendance(selectedClass, selectedSubject),
-    enabled: !!selectedClass && !!selectedSubject && tab === "manual",
+    queryKey: ["attendance-students", selectedClass],
+    queryFn: () => attendanceApi.getStudentsForAttendance(selectedClass),
+    enabled: !!selectedClass && tab === "manual",
   });
 
   const students = attendanceData?.students ?? [];
 
   // Fetch already-saved attendance for the selected class + date
   const { data: existingAttendance } = useQuery({
-    queryKey: ["attendance-existing", selectedClass, selectedSubject, markDate],
+    queryKey: ["attendance-existing", selectedClass, markDate],
     queryFn: () => attendanceApi.getSubjectAttendance({ classId: selectedClass, date: markDate }),
-    enabled: !!selectedClass && !!selectedSubject && tab === "manual",
+    enabled: !!selectedClass && tab === "manual",
   });
 
   // Pre-populate statuses from saved records whenever the query result changes
@@ -429,7 +411,7 @@ export default function LecturerAttendancePage() {
     mutationFn: attendanceApi.mark,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
-      queryClient.invalidateQueries({ queryKey: ["attendance-existing", selectedClass, selectedSubject, markDate] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-existing", selectedClass, markDate] });
       setFormError("");
     },
     onError: (err: unknown) => {
@@ -441,7 +423,7 @@ export default function LecturerAttendancePage() {
   });
 
   const submitAttendance = () => {
-    if (!selectedClass || !selectedSubject || !markDate) return;
+    if (!selectedClass || !markDate) return;
     setFormError("");
     const records = Object.entries(statuses).map(([studentId, status]) => ({
       studentId,
@@ -450,7 +432,6 @@ export default function LecturerAttendancePage() {
     if (records.length === 0) return;
     markMutation.mutate({
       classId: selectedClass,
-      subjectId: selectedSubject,
       date: markDate,
       records,
     });
@@ -462,10 +443,10 @@ export default function LecturerAttendancePage() {
     <div className="space-y-6">
       {/* Stat Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Students" value={selectedClass && tab === "manual" ? stats.total : "—"} icon={GraduationCap} />
-        <StatCard label="Present" value={selectedClass && tab === "manual" ? stats.present : "—"} icon={UserCheck} />
-        <StatCard label="Absent" value={selectedClass && tab === "manual" ? stats.absent : "—"} icon={UserX} />
-        <StatCard label="Unmarked" value={selectedClass && tab === "manual" ? stats.unmarked : "—"} icon={Clock} />
+        <StatCard label="Total Students" value={selectedClass && tab === "manual" && students.length > 0 ? stats.total : "—"} icon={GraduationCap} />
+        <StatCard label="Present" value={selectedClass && tab === "manual" && students.length > 0 ? stats.present : "—"} icon={UserCheck} />
+        <StatCard label="Absent" value={selectedClass && tab === "manual" && students.length > 0 ? stats.absent : "—"} icon={UserX} />
+        <StatCard label="Unmarked" value={selectedClass && tab === "manual" && students.length > 0 ? stats.unmarked : "—"} icon={Clock} />
       </div>
 
       <Card>
@@ -513,7 +494,6 @@ export default function LecturerAttendancePage() {
                   value={selectedClass}
                   onChange={(e) => {
                     setSelectedClass(e.target.value);
-                    setSelectedSubject("");
                     setStatuses({});
                     setFormError("");
                   }}
@@ -527,29 +507,9 @@ export default function LecturerAttendancePage() {
               )}
             </div>
 
-            {/* Subject + Date — manual only */}
+            {/* Date — manual only */}
             {tab === "manual" && (
               <>
-                <div className="flex flex-col gap-1.5 min-w-[180px]">
-                  <label className="text-sm font-medium text-black dark:text-white">Subject</label>
-                  {subjectsLoading ? (
-                    <div className="h-9 w-full animate-pulse rounded border border-stroke bg-stroke dark:border-strokedark dark:bg-strokedark" />
-                  ) : (
-                    <select
-                      value={selectedSubject}
-                      onChange={(e) => { setSelectedSubject(e.target.value); setStatuses({}); setFormError(""); }}
-                      disabled={!selectedClass}
-                      className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-                    >
-                      <option value="">
-                        {selectedClass ? (classSubjects.length === 0 ? "No subjects" : "Select subject") : "Select class first"}
-                      </option>
-                      {classSubjects.map((s) => (
-                        <option key={s._id} value={s._id}>{s.name}{s.code ? ` (${s.code})` : ""}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-black dark:text-white">Date</label>
                   <input
@@ -559,7 +519,7 @@ export default function LecturerAttendancePage() {
                     className="h-9 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
                   />
                 </div>
-                {selectedClass && selectedSubject && students.length > 0 && (
+                {selectedClass && students.length > 0 && (
                   <div className="flex gap-2">
                     <Button size="sm" variant="secondary" onClick={() => setAll("present")}>
                       <UserCheck className="h-3.5 w-3.5" /> All Present
@@ -590,10 +550,10 @@ export default function LecturerAttendancePage() {
           {/* ── Manual Tab Content ── */}
           {tab === "manual" && (
             <>
-              {!selectedClass || !selectedSubject ? (
+              {!selectedClass ? (
                 <div className="flex flex-col items-center gap-2 py-12 text-center">
                   <CalendarCheck className="h-8 w-8 text-body" />
-                  <p className="text-sm text-body">Select a class and subject above to begin marking attendance.</p>
+                  <p className="text-sm text-body">Select a class above to begin marking attendance.</p>
                 </div>
               ) : studentsLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -659,7 +619,7 @@ export default function LecturerAttendancePage() {
                     <p className="mt-4 rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{formError}</p>
                   )}
                   <div className="mt-4 flex justify-end">
-                    <Button onClick={submitAttendance} isLoading={markMutation.isPending} disabled={Object.keys(statuses).length === 0}>
+                    <Button onClick={submitAttendance} isLoading={markMutation.isPending} disabled={!selectedClass || Object.keys(statuses).length === 0}>
                       <CalendarCheck className="h-4 w-4" /> Submit Attendance
                     </Button>
                   </div>

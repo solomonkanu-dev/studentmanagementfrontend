@@ -85,6 +85,17 @@ export interface ReceiptData {
   } | null;
 }
 
+export interface FullReceiptData {
+  payments: Array<FeePayment & { recordedBy?: { _id: string; fullName: string } | null }>;
+  institute: import("../types").Institute | null;
+  studentFee: {
+    totalAmount: number;
+    balance: number;
+    status: string;
+    fees: { label?: string; amount: number; paid: number }[];
+  } | null;
+}
+
 export const studentApi = {
   getMyFees: async (): Promise<StudentFeeRecord | null> => {
     const { data } = await apiClient.get("/student/my-fees");
@@ -123,6 +134,11 @@ export const studentApi = {
 
   getMyPaymentReceipt: async (paymentId: string): Promise<ReceiptData> => {
     const { data } = await apiClient.get(`/student/my-payments/${paymentId}/receipt`);
+    return data;
+  },
+
+  getMyFullReceipt: async (): Promise<FullReceiptData> => {
+    const { data } = await apiClient.get("/student/my-payments/full-receipt");
     return data;
   },
 

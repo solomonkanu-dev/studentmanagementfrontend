@@ -2,27 +2,28 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { adminApi } from "@/lib/api/admin";
+import { Suspense } from "react";
+import { parentApi } from "@/lib/api/parent";
 import { ReceiptView } from "@/components/report-card/ReceiptView";
 import { Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import type { ReceiptData } from "@/lib/api/student";
 
-export default function AdminReceiptPage() {
+function ParentReceiptInner() {
   const params = useSearchParams();
+  const studentId = params.get("studentId") ?? "";
   const paymentId = params.get("paymentId") ?? "";
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["payment-receipt", paymentId],
-    queryFn: () => adminApi.getPaymentReceipt(paymentId),
-    enabled: !!paymentId,
+    queryKey: ["parent-payment-receipt", studentId, paymentId],
+    queryFn: () => parentApi.getChildPaymentReceipt(studentId, paymentId),
+    enabled: !!studentId && !!paymentId,
   });
 
-  if (!paymentId) {
+  if (!studentId || !paymentId) {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-center">
-        <p className="text-sm text-meta-1">No payment selected.</p>
-        <Link href="/admin/fees" className="text-xs text-primary underline">Back to Fees</Link>
+        <p className="text-sm text-meta-1">No receipt selected.</p>
+        <Link href="/parent/fees" className="text-xs text-primary underline">Back to Fees</Link>
       </div>
     );
   }
@@ -39,27 +40,23 @@ export default function AdminReceiptPage() {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-center">
         <p className="text-sm text-meta-1">Failed to load receipt.</p>
-        <Link href="/admin/fees" className="text-xs text-primary underline">Back to Fees</Link>
+        <Link href="/parent/fees" className="text-xs text-primary underline">Back to Fees</Link>
       </div>
     );
   }
-
-  const receipt = data as ReceiptData;
 
   return (
     <>
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link
-          href="/admin/fees"
+          href="/parent/fees"
           className="flex items-center gap-1.5 text-sm text-body hover:text-black dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Fees
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-body">
-            Receipt {receipt.payment?.receiptNumber}
-          </span>
+          <span className="text-sm text-body">Receipt {data.payment?.receiptNumber}</span>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
@@ -71,7 +68,7 @@ export default function AdminReceiptPage() {
       </div>
 
       <div className="overflow-auto print:overflow-visible">
-        <ReceiptView data={receipt} />
+        <ReceiptView data={data as Parameters<typeof ReceiptView>[0]["data"]} />
       </div>
 
       <style>{`
@@ -83,5 +80,13 @@ export default function AdminReceiptPage() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function ParentReceiptPage() {
+  return (
+    <Suspense>
+      <ParentReceiptInner />
+    </Suspense>
   );
 }
