@@ -197,7 +197,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <h1 className="text-2xl flex items-center justify-center font-bold text-black dark:text-white">
-              Edu<span style={{ color: "#1D9E75" }}>Pulse</span>
+              Edu<span style={{ color: "#1D9E75" }}>Salone</span>
             </h1>
             <p className="mt-1 flex item-center justify-center text-sm text-body">Welcome back — sign in to continue</p>
           </div>

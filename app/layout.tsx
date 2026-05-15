@@ -18,7 +18,7 @@ const satoshi = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "EduPulse",
+  title: "EduSalone",
   description: "Smart school management",
 };
 

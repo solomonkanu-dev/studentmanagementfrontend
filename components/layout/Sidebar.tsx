@@ -502,7 +502,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
             </svg>
             {/* Wordmark — hidden when collapsed on desktop */}
             <span className={["text-base font-semibold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
-              Edu<span style={{ color: "#5DCAA5" }}>Pulse</span>
+              Edu<span style={{ color: "#5DCAA5" }}>Salone SMS</span>
             </span>
           </Link>
           <button

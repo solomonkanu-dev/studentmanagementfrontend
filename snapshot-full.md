@@ -1,10 +1,10 @@
 - generic [active] [ref=e1]:
   - generic [ref=e14]:
     - complementary [ref=e15]:
-      - link "EduPulse" [ref=e17] [cursor=pointer]:
+      - link "EduSalone" [ref=e17] [cursor=pointer]:
         - /url: /
         - img [ref=e18]
-        - generic [ref=e22]: EduPulse
+        - generic [ref=e22]: EduSalone
       - navigation [ref=e23]:
         - list [ref=e24]:
           - listitem [ref=e25]:

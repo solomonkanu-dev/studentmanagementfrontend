@@ -27,7 +27,7 @@ const sharedSteps: IntroStep[] = [
 
 const adminSteps: IntroStep[] = [
   {
-    title: "Welcome to EduPulse!",
+    title: "Welcome to EduSalone!",
     intro:
       "Let's get your school set up. Follow this tour to learn the correct order for adding your school data — it matters!",
     position: "floating",

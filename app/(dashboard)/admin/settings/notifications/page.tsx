@@ -406,7 +406,7 @@ function SmtpTab() {
       <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
         <Settings className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs text-body">
-          Configure your SMTP server so EduPulse can send fee receipts, result notifications,
+          Configure your SMTP server so EduSalone can send fee receipts, result notifications,
           announcements, and other emails directly from your mail account.
           For Gmail, use <strong>smtp.gmail.com</strong>, port <strong>587</strong>, and an{" "}
           <strong>App Password</strong> (not your account password).
@@ -520,7 +520,7 @@ function SmtpTab() {
               type="text"
               value={smtp.fromName}
               onChange={(e) => set("fromName", e.target.value)}
-              placeholder="EduPulse"
+              placeholder="EduSalone"
               className="w-full rounded-xl border border-stroke bg-white px-4 py-2.5 text-sm outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
             />
           </div>
@@ -571,7 +571,7 @@ function SmtpTab() {
         <ol className="space-y-1.5 text-xs text-body">
           <li>1. Go to <strong>myaccount.google.com → Security → 2-Step Verification</strong> and enable it.</li>
           <li>2. Scroll down and click <strong>App passwords</strong>.</li>
-          <li>3. Create a new app password (name it "EduPulse") — copy the 16-character code.</li>
+          <li>3. Create a new app password (name it "EduSalone") — copy the 16-character code.</li>
           <li>4. Paste it in the Password field above (spaces are fine, they will be ignored).</li>
           <li>5. Use <strong>smtp.gmail.com</strong>, port <strong>587</strong>, SSL off.</li>
         </ol>

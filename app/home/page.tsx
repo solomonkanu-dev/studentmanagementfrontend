@@ -8,7 +8,6 @@ import {
   GraduationCap,
   BarChart3,
   Users,
-  BookOpen,
   ClipboardList,
   Shield,
   Bell,
@@ -27,6 +26,16 @@ import {
   Sparkles,
   MessageCircle,
   Send,
+  CalendarDays,
+  TableProperties,
+  ClipboardCheck,
+  Megaphone,
+  Images,
+  MessageSquare,
+  IdCard,
+  Heart,
+  Activity,
+  Palette,
 } from "lucide-react";
 
 // ─── Scroll-reveal hook ───────────────────────────────────────────────────────
@@ -222,28 +231,35 @@ const FEATURES = [
   {
     icon: GraduationCap,
     title: "Student Management",
-    desc: "Full student lifecycle — enrolment, profiles, promotions, alumni status, and document generation.",
+    desc: "Full student lifecycle — enrolment, profiles, year-end promotions, alumni status and document generation.",
     color: "from-blue-500 to-blue-600",
     bg: "bg-blue-50",
   },
   {
     icon: BarChart3,
     title: "Results & Grading",
-    desc: "Assign marks, auto-calculate grades, generate report cards with rankings and performance analytics.",
+    desc: "Assign marks, auto-calculate grades, generate report cards with class rankings and performance analytics.",
     color: "from-violet-500 to-violet-600",
     bg: "bg-violet-50",
   },
   {
+    icon: ClipboardCheck,
+    title: "Exams Management",
+    desc: "Schedule exams, define grading scales, publish results and lock terms when reporting is complete.",
+    color: "from-rose-500 to-rose-600",
+    bg: "bg-rose-50",
+  },
+  {
     icon: Users,
-    title: "Staff & Lecturers",
-    desc: "Manage lecturer profiles, class assignments, salary records and performance tracking.",
+    title: "Staff & Salaries",
+    desc: "Manage lecturer profiles, class assignments, monthly salary records and payslip downloads.",
     color: "from-emerald-500 to-emerald-600",
     bg: "bg-emerald-50",
   },
   {
     icon: CreditCard,
     title: "Fee Management",
-    desc: "Assign fee structures, record payments, issue receipts and track outstanding balances by class or student.",
+    desc: "Assign fee structures, record payments, auto-issue receipts and track outstanding balances by class or student.",
     color: "from-orange-500 to-orange-600",
     bg: "bg-orange-50",
   },
@@ -255,25 +271,88 @@ const FEATURES = [
     bg: "bg-pink-50",
   },
   {
-    icon: Bell,
-    title: "Email Notifications",
-    desc: "Automated emails for fee receipts, results, assignments, and attendance alerts via your own SMTP.",
-    color: "from-cyan-500 to-cyan-600",
-    bg: "bg-cyan-50",
+    icon: ClipboardList,
+    title: "Assignments",
+    desc: "Create assignments with attachments, set due dates, grade submissions and allow resubmissions.",
+    color: "from-teal-500 to-teal-600",
+    bg: "bg-teal-50",
+  },
+  {
+    icon: TableProperties,
+    title: "Timetable Builder",
+    desc: "Visual weekly timetables per class and teacher with conflict detection and shareable views.",
+    color: "from-amber-500 to-amber-600",
+    bg: "bg-amber-50",
+  },
+  {
+    icon: CalendarDays,
+    title: "Academic Calendar",
+    desc: "Plan terms, holidays, exam windows and events — visible to every role at a glance.",
+    color: "from-sky-500 to-sky-600",
+    bg: "bg-sky-50",
+  },
+  {
+    icon: MessageSquare,
+    title: "Real-time Messages",
+    desc: "Direct chat between admins, teachers, students and parents with live unread badges and socket delivery.",
+    color: "from-lime-500 to-lime-600",
+    bg: "bg-lime-50",
+  },
+  {
+    icon: Megaphone,
+    title: "Announcements",
+    desc: "Broadcast school-wide or role-targeted notices with read receipts and email fan-out.",
+    color: "from-yellow-500 to-yellow-600",
+    bg: "bg-yellow-50",
+  },
+  {
+    icon: Images,
+    title: "Photo Gallery",
+    desc: "Curate school albums and event photos — students, parents and admins all share the same memories.",
+    color: "from-purple-500 to-purple-600",
+    bg: "bg-purple-50",
   },
   {
     icon: FileText,
     title: "Official Documents",
-    desc: "Generate branded PDFs — Admission Letters, Transfer Certificates, Attestation Letters and ID Cards.",
+    desc: "Generate branded PDFs — Admission Letters, Transfer Certificates, Attestations and report cards.",
     color: "from-indigo-500 to-indigo-600",
     bg: "bg-indigo-50",
   },
   {
-    icon: ClipboardList,
-    title: "Assignments",
-    desc: "Create assignments, set due dates, track submissions and notify students automatically.",
-    color: "from-teal-500 to-teal-600",
-    bg: "bg-teal-50",
+    icon: IdCard,
+    title: "Student ID Cards",
+    desc: "Print branded student ID cards in bulk with photos, barcodes and institute colours.",
+    color: "from-blue-600 to-indigo-700",
+    bg: "bg-blue-50",
+  },
+  {
+    icon: Heart,
+    title: "Parent Portal",
+    desc: "Parents track results, attendance, fees and announcements for every child they're linked to.",
+    color: "from-red-500 to-red-600",
+    bg: "bg-red-50",
+  },
+  {
+    icon: Bell,
+    title: "Email Notifications",
+    desc: "Automated emails for receipts, results, assignments and attendance alerts via your own SMTP.",
+    color: "from-cyan-500 to-cyan-600",
+    bg: "bg-cyan-50",
+  },
+  {
+    icon: Activity,
+    title: "Audit Logs",
+    desc: "Every sensitive action is logged with actor, timestamp and IP — full accountability and compliance.",
+    color: "from-stone-600 to-stone-700",
+    bg: "bg-stone-50",
+  },
+  {
+    icon: Palette,
+    title: "Custom Theme",
+    desc: "Match your institution's branding — colours, logos and dark mode across every dashboard.",
+    color: "from-pink-600 to-fuchsia-600",
+    bg: "bg-pink-50",
   },
   {
     icon: Shield,
@@ -323,11 +402,11 @@ const ROLES = [
     color: "border-blue-200 bg-blue-50",
     badge: "bg-blue-100 text-blue-700",
     perks: [
-      "Full institution control",
-      "Manage students & lecturers",
-      "Fee & salary management",
-      "Generate reports & documents",
-      "Audit logs & notifications",
+      "Full institution control & branding",
+      "Students, teachers, classes, subjects",
+      "Fees, salaries & financial records",
+      "Timetables, exams & report cards",
+      "Audit logs, archive & AI analytics",
     ],
   },
   {
@@ -336,11 +415,11 @@ const ROLES = [
     color: "border-violet-200 bg-violet-50",
     badge: "bg-violet-100 text-violet-700",
     perks: [
-      "View assigned classes",
-      "Mark attendance",
-      "Publish results & grades",
-      "Create & manage assignments",
-      "View salary slips",
+      "Manage assigned classes & subjects",
+      "Mark attendance & publish results",
+      "Create assignments & grade submissions",
+      "Schedule and run exams",
+      "Chat with students, parents & admin",
     ],
   },
   {
@@ -349,11 +428,11 @@ const ROLES = [
     color: "border-emerald-200 bg-emerald-50",
     badge: "bg-emerald-100 text-emerald-700",
     perks: [
-      "View results & report cards",
-      "Track attendance",
-      "Download official documents",
-      "View fee status & receipts",
-      "Receive email notifications",
+      "Results, report cards & rankings",
+      "Attendance, timetable & exam schedule",
+      "Submit assignments & track grades",
+      "View fees, pay status & download receipts",
+      "Photo gallery, messages & announcements",
     ],
   },
   {
@@ -362,11 +441,11 @@ const ROLES = [
     color: "border-orange-200 bg-orange-50",
     badge: "bg-orange-100 text-orange-700",
     perks: [
-      "Monitor child's results",
-      "Track attendance records",
-      "View fee balances",
-      "Receive announcements",
-      "Linked to multiple children",
+      "Monitor every child from one account",
+      "Track results, attendance & timetables",
+      "View fee balances & download receipts",
+      "Direct chat with teachers & admin",
+      "Receive announcements & email alerts",
     ],
   },
 ];
@@ -377,7 +456,7 @@ const TESTIMONIALS = [
   {
     name: "Mr. Abu Bangura",
     role: "School Principal, Freetown",
-    text: "EduPulse transformed how we manage our 1,200 students. The report card generation alone saves us 3 days every term.",
+    text: "EduSalone transformed how we manage our 1,200 students. The report card generation alone saves us 3 days every term.",
     stars: 5,
   },
   {
@@ -398,8 +477,10 @@ const TESTIMONIALS = [
 
 const TICKER = [
   "Student Enrolment", "Fee Management", "Results & Grading", "Attendance Tracking",
-  "Document Generation", "Email Notifications", "Role-Based Access", "Salary Management",
-  "Assignment Tracking", "Parent Portal", "Analytics Dashboard", "Audit Logs", "AI Assistant",
+  "Exams Scheduling", "Timetable Builder", "Academic Calendar", "Assignments & Submissions",
+  "Real-time Messaging", "Photo Gallery", "ID Card Printing", "Document Generation",
+  "Email Notifications", "Salary & Payslips", "Parent Portal", "Audit Logs",
+  "Student Promotion", "Custom Branding", "Analytics Dashboard", "AI Assistant",
 ];
 
 // ─── AI Chat Mockup ───────────────────────────────────────────────────────────
@@ -450,7 +531,7 @@ function AIChatMockup() {
             <Bot className="h-4 w-4 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">EduPulse AI</p>
+            <p className="text-sm font-semibold text-white">EduSalone AI</p>
             <p className="text-[10px] text-white/50">Always available · Role-aware</p>
           </div>
           <span className="ml-auto flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-1 text-[10px] font-medium text-emerald-300">
@@ -553,7 +634,7 @@ function Navbar() {
             <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
           </svg>
           <span className={`text-lg font-bold transition-colors ${scrolled ? "text-black" : "text-white"}`}>
-            Edu<span style={{ color: "#5DCAA5" }}>Pulse</span>
+            Edu<span style={{ color: "#5DCAA5" }}>Salone</span>
           </span>
         </div>
 
@@ -705,9 +786,10 @@ export default function LandingPage() {
               className="animate-fade-up mt-6 max-w-lg text-lg leading-relaxed text-white/65"
               style={{ animationDelay: "0.25s" }}
             >
-              EduPulse is the smart way to run your school — enrolment, results,
-              fees, attendance, assignments, documents and a built-in AI assistant.
-              One platform. Every role. Sierra Leone.
+              EduSalone is the smart way to run your school — enrolment, exams,
+              fees, attendance, timetables, assignments, real-time chat, photo
+              galleries and a built-in AI assistant. One platform. Every role.
+              Sierra Leone.
             </p>
 
             <div
@@ -814,7 +896,8 @@ export default function LandingPage() {
               A complete toolkit for modern schools
             </h2>
             <p className="mt-4 max-w-xl mx-auto text-body">
-              Every feature you need to run a school efficiently — no separate tools, no integrations required.
+              Twenty modules in one platform — academics, finance, communication and AI.
+              No spreadsheets, no integrations, no separate tools.
             </p>
           </Reveal>
 
@@ -988,7 +1071,7 @@ export default function LandingPage() {
               Testimonials
             </span>
             <h2 className="text-3xl font-extrabold text-black sm:text-4xl">
-              Schools love EduPulse
+              Schools love EduSalone
             </h2>
           </Reveal>
 
@@ -1041,7 +1124,7 @@ export default function LandingPage() {
                 Ready to modernise your school?
               </h2>
               <p className="mt-4 text-white/70 max-w-lg mx-auto">
-                Join hundreds of institutions already using EduPulse. Request admin access today — setup takes less than 10 minutes.
+                Join hundreds of institutions already using EduSalone. Request admin access today — setup takes less than 10 minutes.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Link
@@ -1074,11 +1157,11 @@ export default function LandingPage() {
                 <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
               </svg>
               <span className="text-lg font-bold text-black">
-                Edu<span style={{ color: "#1D9E75" }}>Pulse</span>
+                Edu<span style={{ color: "#1D9E75" }}>Salone</span>
               </span>
             </div>
             <p className="text-xs text-body text-center">
-              © {new Date().getFullYear()} EduPulse. Built for schools that want to do more.
+              © {new Date().getFullYear()} EduSalone. Built for schools that want to do more.
             </p>
             <div className="flex gap-6">
               <Link href="/login" className="text-xs text-body hover:text-primary">Sign In</Link>

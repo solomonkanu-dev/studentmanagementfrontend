@@ -90,7 +90,7 @@ function SuccessView() {
               <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
             </svg>
             <h1 className="text-2xl font-bold text-black dark:text-white">
-              Edu<span style={{ color: "#1D9E75" }}>Pulse</span>
+              Edu<span style={{ color: "#1D9E75" }}>Salone</span>
             </h1>
           </div>
 
@@ -152,7 +152,7 @@ function RightPanel() {
 
         {/* Headline */}
         <h2 className="text-3xl font-bold leading-tight text-white">
-          Join EduPulse as
+          Join EduSalone as
           <br />
           <span className="text-white/70">an institution admin.</span>
         </h2>
@@ -240,7 +240,7 @@ export default function AdminRequestPage() {
               <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
             </svg>
             <h1 className="text-2xl font-bold text-black dark:text-white">
-              Edu<span style={{ color: "#1D9E75" }}>Pulse</span>
+              Edu<span style={{ color: "#1D9E75" }}>Salone</span>
             </h1>
             <p className="text-center text-sm text-body">
               School Management System
