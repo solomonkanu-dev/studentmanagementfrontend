@@ -11,32 +11,8 @@ import {
   GraduationCap, Plus, Trash2, Pencil, Star, StarOff, X,
 } from "lucide-react";
 import { errMsg } from "@/lib/utils/errMsg";
+import { SIERRA_LEONE_GRADE_SCALE, gradeColor } from "@/lib/utils/grading";
 import type { GradingScale, GradeEntry } from "@/lib/types";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const DEFAULT_GRADES: GradeEntry[] = [
-  { grade: "A+", minScore: 97, maxScore: 100 },
-  { grade: "A",  minScore: 93, maxScore: 96  },
-  { grade: "A-", minScore: 90, maxScore: 92  },
-  { grade: "B+", minScore: 87, maxScore: 89  },
-  { grade: "B",  minScore: 83, maxScore: 86  },
-  { grade: "B-", minScore: 80, maxScore: 82  },
-  { grade: "C+", minScore: 77, maxScore: 79  },
-  { grade: "C",  minScore: 73, maxScore: 76  },
-  { grade: "C-", minScore: 70, maxScore: 72  },
-  { grade: "D",  minScore: 60, maxScore: 69  },
-  { grade: "F",  minScore: 0,  maxScore: 59  },
-];
-
-function gradeColor(grade: string): string {
-  const g = grade.toUpperCase();
-  if (g.startsWith("A")) return "#10B981";
-  if (g.startsWith("B")) return "#3C50E0";
-  if (g.startsWith("C")) return "#F9C107";
-  if (g.startsWith("D")) return "#FF9C55";
-  return "#FA5252";
-}
 
 // ─── Grade rows editor (shared by create + edit) ──────────────────────────────
 
@@ -53,7 +29,7 @@ function GradeEditor({
   }
 
   function addRow() {
-    onChange([...rows, { grade: "", minScore: 0, maxScore: 0 }]);
+    onChange([...rows, { grade: "", minScore: 0, maxScore: 0, remark: "" }]);
   }
 
   function removeRow(i: number) {
@@ -63,11 +39,12 @@ function GradeEditor({
   return (
     <div>
       {/* Header */}
-      <div className="mb-1 hidden grid-cols-[72px_1fr_80px_80px_32px] gap-2 px-1 text-xs font-semibold uppercase tracking-wide text-body sm:grid">
+      <div className="mb-1 hidden grid-cols-[60px_1fr_64px_64px_140px_28px] gap-2 px-1 text-xs font-semibold uppercase tracking-wide text-body sm:grid">
         <span>Grade</span>
         <span></span>
         <span>Min %</span>
         <span>Max %</span>
+        <span>Remark</span>
         <span></span>
       </div>
 
@@ -75,7 +52,7 @@ function GradeEditor({
         {rows.map((row, i) => (
           <div
             key={i}
-            className="grid grid-cols-[72px_1fr_80px_80px_32px] items-center gap-2"
+            className="grid grid-cols-[60px_1fr_64px_64px_140px_28px] items-center gap-2"
           >
             {/* Grade letter */}
             <input
@@ -123,6 +100,15 @@ function GradeEditor({
               min={0}
               max={100}
               onChange={(e) => update(i, "maxScore", Number(e.target.value))}
+              className="h-8 w-full rounded border border-stroke bg-transparent px-2 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white"
+            />
+
+            {/* Remark */}
+            <input
+              type="text"
+              value={row.remark ?? ""}
+              placeholder="e.g. Credit"
+              onChange={(e) => update(i, "remark", e.target.value)}
               className="h-8 w-full rounded border border-stroke bg-transparent px-2 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:text-white"
             />
 
@@ -223,7 +209,10 @@ function ScaleCard({
             >
               {g.grade}
             </span>
-            <span className="text-xs text-body">{g.minScore}–{g.maxScore}%</span>
+            <span className="text-xs text-body">
+              {g.minScore}–{g.maxScore}%
+              {g.remark ? <span className="ml-1 text-body/70">· {g.remark}</span> : null}
+            </span>
           </div>
         ))}
       </div>
@@ -243,7 +232,7 @@ export default function MarksGradingPage() {
 
   // Form state
   const [scaleName, setScaleName] = useState("");
-  const [grades, setGrades] = useState<GradeEntry[]>(DEFAULT_GRADES);
+  const [grades, setGrades] = useState<GradeEntry[]>(SIERRA_LEONE_GRADE_SCALE);
   const [formError, setFormError] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
@@ -279,7 +268,7 @@ export default function MarksGradingPage() {
   function openCreate() {
     setEditTarget(null);
     setScaleName("");
-    setGrades(DEFAULT_GRADES);
+    setGrades(SIERRA_LEONE_GRADE_SCALE);
     setFormError("");
     setMode("create");
   }
@@ -287,7 +276,7 @@ export default function MarksGradingPage() {
   function openEdit(scale: GradingScale) {
     setEditTarget(scale);
     setScaleName(scale.name);
-    setGrades(scale.grades.length ? scale.grades : DEFAULT_GRADES);
+    setGrades(scale.grades.length ? scale.grades : SIERRA_LEONE_GRADE_SCALE);
     setFormError("");
     setMode("edit");
   }

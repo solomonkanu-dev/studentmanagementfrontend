@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ClipboardCheck, Plus, Pencil, Trash2, CheckCircle2, ChevronDown } from "lucide-react";
+import { ClipboardCheck, Plus, Pencil, Trash2 } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 import { subjectApi } from "@/lib/api/subject";
 import { examApi } from "@/lib/api/exam";
@@ -38,17 +38,6 @@ function getClassName(c: Exam["class"]) {
 }
 function getTermName(t: Exam["term"]) {
   return typeof t === "object" ? `${t.name} (${t.academicYear})` : "—";
-}
-
-// ─── Progress bar ─────────────────────────────────────────────────────────────
-
-function ProgressBar({ value, max }: { value: number; max: number }) {
-  const w = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  return (
-    <div className="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700">
-      <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${w}%` }} />
-    </div>
-  );
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -352,137 +341,9 @@ function ExamScheduleTab() {
   );
 }
 
-// ─── Publish Results Tab ───────────────────────────────────────────────────────
-
-function PublishResultsTab() {
-  const qc = useQueryClient();
-  const [classId, setClassId] = useState("");
-  const [termId, setTermId]   = useState("");
-
-  const { data: terms = [] }   = useQuery({ queryKey: ["admin-terms"],   queryFn: adminApi.getTerms });
-  const { data: classes = [] } = useQuery({ queryKey: ["admin-classes"], queryFn: adminApi.getClasses });
-
-  const statusQuery = useQuery({
-    queryKey: ["publish-status", classId, termId],
-    queryFn: () => adminApi.getResultPublishStatus(classId, termId),
-    enabled: !!classId && !!termId,
-  });
-
-  const publishMutation = useMutation({
-    mutationFn: () => adminApi.publishResults(classId, termId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["publish-status", classId, termId] }),
-  });
-
-  const unpublishMutation = useMutation({
-    mutationFn: () => adminApi.unpublishResults(classId, termId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["publish-status", classId, termId] }),
-  });
-
-  const status = statusQuery.data;
-  const allPublished = !!status && status.total > 0 && status.published === status.total;
-  const pct = status && status.total > 0 ? Math.round((status.published / status.total) * 100) : 0;
-
-  return (
-    <div className="space-y-5">
-      {/* Selectors */}
-      <div className="flex flex-wrap gap-3">
-        <select className={selectCls + " max-w-[200px]"} value={termId} onChange={(e) => setTermId(e.target.value)}>
-          <option value="">Select Term</option>
-          {(terms as AcademicTerm[]).map((t) => (
-            <option key={t._id} value={t._id}>{t.name} ({t.academicYear})</option>
-          ))}
-        </select>
-        <select className={selectCls + " max-w-[200px]"} value={classId} onChange={(e) => setClassId(e.target.value)}>
-          <option value="">Select Class</option>
-          {(classes as Class[]).map((c) => (
-            <option key={c._id} value={c._id}>{c.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Hint when not selected */}
-      {(!classId || !termId) && (
-        <div className="rounded-xl border border-stroke bg-white p-8 text-center dark:border-strokedark dark:bg-boxdark">
-          <ChevronDown size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Select a term and class to manage result visibility.</p>
-        </div>
-      )}
-
-      {/* Status card */}
-      {classId && termId && (
-        <div className="rounded-xl border border-stroke bg-white p-6 dark:border-strokedark dark:bg-boxdark">
-          {statusQuery.isLoading ? (
-            <div className="flex justify-center py-8"><div className="h-7 w-7 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>
-          ) : status ? (
-            <div className="space-y-5">
-              {/* Counts */}
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-body dark:text-bodydark">Published</p>
-                  <p className="mt-1 text-3xl font-bold text-black dark:text-white">
-                    {status.published} <span className="text-lg font-normal text-body dark:text-bodydark">/ {status.total}</span>
-                  </p>
-                  <p className="mt-0.5 text-sm text-body dark:text-bodydark">{pct}% of results are visible to students</p>
-                </div>
-                {allPublished && (
-                  <div className="flex items-center gap-1.5 text-sm font-medium text-meta-3">
-                    <CheckCircle2 size={18} /> All Published
-                  </div>
-                )}
-              </div>
-
-              <ProgressBar value={status.published} max={status.total} />
-
-              {/* Warning */}
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-400">
-                Once published, students and parents will immediately see these results.
-              </div>
-
-              {status.total === 0 && (
-                <p className="text-center text-sm text-body dark:text-bodydark">No results have been entered for this class and term yet.</p>
-              )}
-
-              {/* Actions */}
-              {status.total > 0 && (
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    onClick={() => publishMutation.mutate()}
-                    disabled={allPublished || publishMutation.isPending}
-                  >
-                    {publishMutation.isPending ? "Publishing…" : allPublished ? "All Published" : "Publish All Results"}
-                  </Button>
-                  {status.published > 0 && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => unpublishMutation.mutate()}
-                      disabled={unpublishMutation.isPending}
-                    >
-                      {unpublishMutation.isPending ? "Unpublishing…" : "Unpublish Results"}
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-center text-sm text-body">Could not load status.</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-const TABS = [
-  { id: "schedule", label: "Exam Schedule" },
-  { id: "publish",  label: "Publish Results" },
-] as const;
-type TabId = (typeof TABS)[number]["id"];
-
 export default function AdminExamsPage() {
-  const [tab, setTab] = useState<TabId>("schedule");
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -492,29 +353,11 @@ export default function AdminExamsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-black dark:text-white">Exams</h1>
-          <p className="text-sm text-body dark:text-bodydark">Schedule exams and control result visibility by term</p>
+          <p className="text-sm text-body dark:text-bodydark">Schedule exams by term</p>
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex overflow-hidden rounded-sm border border-stroke dark:border-strokedark">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`flex-1 px-5 py-2.5 text-sm font-medium transition-colors ${
-              tab === id
-                ? "bg-primary text-white"
-                : "bg-white text-body hover:bg-whiter dark:bg-boxdark dark:text-bodydark dark:hover:bg-meta-4"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "schedule" && <ExamScheduleTab />}
-      {tab === "publish"  && <PublishResultsTab />}
+      <ExamScheduleTab />
     </div>
   );
 }

@@ -4,8 +4,10 @@ import { useState, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi, type AcademicTerm } from "@/lib/api/admin";
 import { ReportCardView, type ReportCardStyle, DEFAULT_REPORT_STYLE } from "@/components/report-card/ReportCardView";
+import { TraditionalReportCardView } from "@/components/report-card/TraditionalReportCardView";
+import { reportCardTemplateApi } from "@/lib/api/reportCardTemplate";
 import type { ReportCardData } from "@/lib/api/student";
-import type { AuthUser } from "@/lib/types";
+import type { AuthUser, Class, ReportCardTemplate } from "@/lib/types";
 import { escapeHtml } from "@/lib/utils/htmlEscape";
 import {
   Palette,
@@ -61,15 +63,40 @@ function ColorRow({ label, value, onChange }: { label: string; value: string; on
   );
 }
 
+// ─── Template → style ─────────────────────────────────────────────────────────
+
+function templateToStyle(t: ReportCardTemplate): ReportCardStyle {
+  return {
+    primaryColor: t.primaryColor,
+    headerTextColor: t.headerTextColor,
+    stripeColor: t.stripeColor,
+    cardBg: t.cardBg,
+    reportTitle: t.reportTitle,
+    showSchoolHeader: t.showSchoolHeader,
+    showPhoto: t.showPhoto,
+    showAttendance: t.showAttendance,
+    showPosition: t.showPosition,
+    showTermBreakdown: t.showTermBreakdown,
+    signatureLabels: t.signatureLabels,
+    footerNote: t.footerNote,
+    fontFamily: t.fontFamily,
+    letterheadImage: t.letterheadImage,
+    watermarkImage: t.watermarkImage,
+  };
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ReportCardsPage() {
   const [rcStyle, setRcStyle] = useState<ReportCardStyle>({ ...DEFAULT_REPORT_STYLE });
+  const [templateId, setTemplateId] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [classFilter, setClassFilter] = useState<string>("");
   const [termFilter, setTermFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [generated, setGenerated] = useState<{ student: AuthUser; data: ReportCardData }[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
   const allRef = useRef<HTMLDivElement>(null);
 
@@ -84,6 +111,16 @@ export default function ReportCardsPage() {
     queryFn: adminApi.getTerms,
   });
 
+  const { data: classes = [] } = useQuery({
+    queryKey: ["admin-classes"],
+    queryFn: adminApi.getClasses,
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["report-card-templates"],
+    queryFn: reportCardTemplateApi.getAll,
+  });
+
   // Lazy preview — only fetch when a student is highlighted
   const { data: previewData, isLoading: loadingPreview } = useQuery({
     queryKey: ["admin-report-card-preview", previewStudentId, termFilter],
@@ -93,10 +130,19 @@ export default function ReportCardsPage() {
   });
 
   // ── Derived ──
-  const filtered = (students as AuthUser[]).filter((s) =>
-    s.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    (s.studentProfile?.registrationNumber ?? "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = (students as AuthUser[]).filter((s) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      s.fullName.toLowerCase().includes(q) ||
+      (s.studentProfile?.registrationNumber ?? "").toLowerCase().includes(q);
+    if (!matchesSearch) return false;
+    if (!classFilter) return true;
+    const cid = s.class && typeof s.class === "object" ? (s.class as { _id: string })._id : s.class;
+    return cid === classFilter;
+  });
+
+  const isTraditional =
+    (templates as ReportCardTemplate[]).find((t) => t._id === templateId)?.layout === "traditional";
 
   const setPreset = (p: typeof PRESETS[number]) =>
     setRcStyle((prev) => ({ ...prev, primaryColor: p.primary, headerTextColor: p.headerText, stripeColor: p.stripe }));
@@ -127,12 +173,14 @@ export default function ReportCardsPage() {
     setGenerating(true);
     setGenerated([]);
     const selected = (students as AuthUser[]).filter((s) => selectedIds.has(s._id));
+    setProgress({ done: 0, total: selected.length });
     const results: { student: AuthUser; data: ReportCardData }[] = [];
     for (const student of selected) {
       try {
         const data = await adminApi.getReportCard(student._id, termFilter || undefined);
         results.push({ student, data });
       } catch { /* skip on error */ }
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
     }
     setGenerated(results);
     setGenerating(false);
@@ -184,6 +232,29 @@ export default function ReportCardsPage() {
               <Palette className="h-4 w-4 text-primary" />
               Card Style
             </h2>
+
+            {/* Saved template */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-body">Saved Template</label>
+              <select
+                value={templateId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setTemplateId(id);
+                  const t = (templates as ReportCardTemplate[]).find((x) => x._id === id);
+                  setRcStyle(t ? templateToStyle(t) : { ...DEFAULT_REPORT_STYLE });
+                }}
+                className="w-full rounded border border-stroke bg-transparent px-3 py-2 text-xs text-black dark:border-strokedark dark:text-white"
+              >
+                <option value="">Built-in default</option>
+                {(templates as ReportCardTemplate[]).map((t) => (
+                  <option key={t._id} value={t._id}>{t.name}{t.isDefault ? " (default)" : ""}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-body">
+                Manage templates in Settings → Report Card.
+              </p>
+            </div>
 
             {/* Presets */}
             <div>
@@ -270,19 +341,38 @@ export default function ReportCardsPage() {
 
           {/* Term filter + student selector */}
           <div className="rounded-xl border border-stroke bg-white p-5 dark:border-strokedark dark:bg-boxdark shadow-sm">
-            {/* Term filter */}
-            <div className="mb-4">
-              <label className="mb-1.5 block text-xs font-medium text-body">Term Filter <span className="text-body/60">(optional)</span></label>
-              <select
-                value={termFilter}
-                onChange={(e) => setTermFilter(e.target.value)}
-                className="w-full rounded border border-stroke bg-transparent px-3 py-2 text-sm text-black dark:border-strokedark dark:text-white"
-              >
-                <option value="">All Terms</option>
-                {(terms as AcademicTerm[]).map((t) => (
-                  <option key={t._id} value={t._id}>{t.name} — {t.academicYear}</option>
-                ))}
-              </select>
+            {/* Class & Term filters */}
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-body">Class</label>
+                <select
+                  value={classFilter}
+                  onChange={(e) => {
+                    setClassFilter(e.target.value);
+                    setSelectedIds(new Set());
+                    setPreviewStudentId(null);
+                  }}
+                  className="w-full rounded border border-stroke bg-transparent px-3 py-2 text-sm text-black dark:border-strokedark dark:text-white"
+                >
+                  <option value="">All Classes</option>
+                  {(classes as Class[]).map((c) => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-body">Term <span className="text-body/60">(optional)</span></label>
+                <select
+                  value={termFilter}
+                  onChange={(e) => setTermFilter(e.target.value)}
+                  className="w-full rounded border border-stroke bg-transparent px-3 py-2 text-sm text-black dark:border-strokedark dark:text-white"
+                >
+                  <option value="">All Terms</option>
+                  {(terms as AcademicTerm[]).map((t) => (
+                    <option key={t._id} value={t._id}>{t.name} — {t.academicYear}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Student selector header */}
@@ -382,14 +472,41 @@ export default function ReportCardsPage() {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : previewData ? (
-                <div style={{ transformOrigin: "top left", transform: "scale(0.55)", width: "210mm", marginBottom: "-130mm" }}>
-                  <ReportCardView data={previewData as ReportCardData} style={rcStyle} />
-                </div>
+                isTraditional ? (
+                  <div style={{ transformOrigin: "top left", transform: "scale(0.55)", width: "297mm", marginBottom: "-95mm" }}>
+                    <TraditionalReportCardView data={previewData as ReportCardData} style={rcStyle} />
+                  </div>
+                ) : (
+                  <div style={{ transformOrigin: "top left", transform: "scale(0.55)", width: "210mm", marginBottom: "-130mm" }}>
+                    <ReportCardView data={previewData as ReportCardData} style={rcStyle} />
+                  </div>
+                )
               ) : (
                 <p className="py-8 text-center text-xs text-body">No data available for this student</p>
               )}
             </div>
           </div>
+
+          {/* Progress bar */}
+          {generating && (
+            <div className="rounded-xl border border-stroke bg-white p-4 dark:border-strokedark dark:bg-boxdark shadow-sm">
+              <div className="mb-2 flex items-center justify-between text-xs font-medium">
+                <span className="flex items-center gap-1.5 text-black dark:text-white">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  Generating report cards…
+                </span>
+                <span className="text-body">
+                  {progress.done} / {progress.total}
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-stroke dark:bg-meta-4">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Generate button */}
           <button
@@ -405,7 +522,7 @@ export default function ReportCardsPage() {
             {generating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Generating {selectedIds.size} report card{selectedIds.size !== 1 ? "s" : ""}…
+                Generating {progress.done} / {progress.total}…
               </>
             ) : (
               <>
@@ -442,6 +559,7 @@ export default function ReportCardsPage() {
                 student={student}
                 data={data}
                 rcStyle={rcStyle}
+                isTraditional={isTraditional}
               />
             ))}
           </div>
@@ -458,11 +576,13 @@ function GeneratedCard({
   student,
   data,
   rcStyle,
+  isTraditional,
 }: {
   index: number;
   student: AuthUser;
   data: ReportCardData;
   rcStyle: ReportCardStyle;
+  isTraditional: boolean;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -475,7 +595,7 @@ function GeneratedCard({
       <html><head><title>Report Card – ${escapeHtml(student.fullName)}</title>
       <style>
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        @page { size: A4; margin: 0; }
+        @page { size: A4${isTraditional ? " landscape" : ""}; margin: 0; }
         @media print { body { padding: 0; } }
       </style></head><body>
       ${el.innerHTML}
@@ -484,7 +604,7 @@ function GeneratedCard({
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); win.close(); }, 500);
-  }, [student.fullName]);
+  }, [student.fullName, isTraditional]);
 
   return (
     <div className="rc-page space-y-3">
@@ -504,7 +624,11 @@ function GeneratedCard({
       </div>
 
       <div ref={cardRef} className="overflow-x-auto">
-        <ReportCardView data={data} style={rcStyle} />
+        {isTraditional ? (
+          <TraditionalReportCardView data={data} style={rcStyle} />
+        ) : (
+          <ReportCardView data={data} style={rcStyle} />
+        )}
       </div>
     </div>
   );

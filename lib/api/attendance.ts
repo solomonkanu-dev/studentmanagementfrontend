@@ -10,7 +10,7 @@ export const attendanceApi = {
   mark: async (payload: {
     classId: string;
     date: string;
-    records: { studentId: string; status: "present" | "absent" }[];
+    records: { studentId: string; status: "present" | "absent" | "late" }[];
     subjectId?: string;
   }) => {
     const { data } = await apiClient.post("/attendance/mark-attendance", payload);

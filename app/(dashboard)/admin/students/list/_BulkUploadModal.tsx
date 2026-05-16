@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo } from "react";
-import * as XLSX from "xlsx";
+import { downloadXlsx, parseFirstSheet } from "@/lib/utils/spreadsheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 import { classApi } from "@/lib/api/class";
@@ -114,19 +114,17 @@ const TEMPLATE_EXAMPLE = [
 ];
 
 function downloadTemplate() {
-  const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, TEMPLATE_EXAMPLE]);
-  ws["!cols"] = TEMPLATE_HEADERS.map(() => ({ wch: 26 }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Students");
-  XLSX.writeFile(wb, "student_import_template.xlsx");
+  return downloadXlsx(
+    "student_import_template.xlsx",
+    [TEMPLATE_HEADERS, TEMPLATE_EXAMPLE],
+    { sheetName: "Students", columnWidths: TEMPLATE_HEADERS.map(() => 26) },
+  );
 }
 
 // ─── Excel parser ─────────────────────────────────────────────────────────────
 
-function parseWorkbook(buffer: ArrayBuffer): ParsedRow[] {
-  const wb = XLSX.read(buffer, { type: "array", cellDates: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+async function parseWorkbook(buffer: ArrayBuffer): Promise<ParsedRow[]> {
+  const rows = await parseFirstSheet(buffer);
 
   // Skip header; drop empty rows
   const data = rows.slice(1).filter((r) => (r as unknown[]).some((cell) => String(cell).trim()));
@@ -164,14 +162,14 @@ function parseWorkbook(buffer: ArrayBuffer): ParsedRow[] {
 // ─── Credential download ──────────────────────────────────────────────────────
 
 function downloadCredentials(added: BulkStudentResult[]) {
-  const ws = XLSX.utils.aoa_to_sheet([
-    ["Full Name", "Email", "Temporary Password"],
-    ...added.map((s) => [s.fullName, s.email, s.tempPassword ?? ""]),
-  ]);
-  ws["!cols"] = [{ wch: 28 }, { wch: 32 }, { wch: 22 }];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Credentials");
-  XLSX.writeFile(wb, "student_credentials.xlsx");
+  return downloadXlsx(
+    "student_credentials.xlsx",
+    [
+      ["Full Name", "Email", "Temporary Password"],
+      ...added.map((s) => [s.fullName, s.email, s.tempPassword ?? ""]),
+    ],
+    { sheetName: "Credentials", columnWidths: [28, 32, 22] },
+  );
 }
 
 // ─── Step indicators ──────────────────────────────────────────────────────────
@@ -225,9 +223,9 @@ function UploadStep({ onParsed }: { onParsed: (rows: ParsedRow[]) => void }) {
   const handleFile = (file: File) => {
     setParseError("");
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const rows = parseWorkbook(e.target!.result as ArrayBuffer);
+        const rows = await parseWorkbook(e.target!.result as ArrayBuffer);
         if (rows.length === 0) {
           setParseError("No data rows found. Make sure you have at least one student row below the header.");
           return;

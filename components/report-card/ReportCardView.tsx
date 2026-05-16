@@ -2,6 +2,7 @@
 
 import type { ReportCardData, ReportCardTerm } from "@/lib/api/student";
 import { Building2 } from "lucide-react";
+import { gradeColor, gradeFromScale, remarkFromScale } from "@/lib/utils/grading";
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -9,22 +10,16 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function gradeColor(grade?: string) {
-  if (!grade) return "#64748b";
-  const g = grade.toUpperCase();
-  if (g === "A" || g === "A+") return "#10b981";
-  if (g === "B") return "#3b82f6";
-  if (g === "C") return "#f59e0b";
-  if (g === "D") return "#f97316";
-  return "#ef4444";
-}
+const PROMOTION_LABEL: Record<string, string> = {
+  promoted: "Promoted",
+  repeated: "Repeated",
+  pending: "Pending",
+};
 
-function pctGrade(pct: number): string {
-  if (pct >= 70) return "A";
-  if (pct >= 60) return "B";
-  if (pct >= 50) return "C";
-  if (pct >= 40) return "D";
-  return "F";
+function promotionColor(status: string): string {
+  if (status === "promoted") return "#10b981";
+  if (status === "repeated") return "#ef4444";
+  return "#f59e0b";
 }
 
 export interface ReportCardStyle {
@@ -33,12 +28,16 @@ export interface ReportCardStyle {
   stripeColor: string;
   cardBg: string;
   reportTitle: string;
+  showSchoolHeader: boolean;
   showPhoto: boolean;
   showAttendance: boolean;
   showPosition: boolean;
   showTermBreakdown: boolean;
-  signatureLabels: [string, string, string];
+  signatureLabels: string[];
   footerNote: string;
+  fontFamily: string;
+  letterheadImage: string;
+  watermarkImage: string;
 }
 
 export const DEFAULT_REPORT_STYLE: ReportCardStyle = {
@@ -47,12 +46,16 @@ export const DEFAULT_REPORT_STYLE: ReportCardStyle = {
   stripeColor: "#f8fafc",
   cardBg: "#ffffff",
   reportTitle: "Report Card",
+  showSchoolHeader: true,
   showPhoto: true,
   showAttendance: true,
   showPosition: true,
   showTermBreakdown: true,
   signatureLabels: ["Class Teacher", "Head of Academics", "Principal / Director"],
   footerNote: "",
+  fontFamily: "Arial, sans-serif",
+  letterheadImage: "",
+  watermarkImage: "",
 };
 
 interface Props {
@@ -63,6 +66,8 @@ interface Props {
 export function ReportCardView({ data, style: styleProp }: Props) {
   const s: ReportCardStyle = { ...DEFAULT_REPORT_STYLE, ...styleProp };
   const { student, institute, terms, results, attendance, position } = data;
+  const scale = data.gradingScale?.grades;
+  const meta = data.meta;
 
   // Group results by subject
   const subjectMap = new Map<
@@ -121,7 +126,7 @@ export function ReportCardView({ data, style: styleProp }: Props) {
   const overallAnnualPct = allSubjectAvgs.length > 0
     ? Math.round(allSubjectAvgs.reduce((a, b) => a + b, 0) / allSubjectAvgs.length)
     : 0;
-  const overallAnnualGrade = pctGrade(overallAnnualPct);
+  const overallAnnualGrade = gradeFromScale(scale, overallAnnualPct);
 
   const totalMarksObtained = results.reduce((sum, r) => sum + (r.marksObtained ?? 0), 0);
   const totalMaxMarks = results.reduce((sum, r) => sum + (r.totalScore ?? 100), 0);
@@ -160,45 +165,82 @@ export function ReportCardView({ data, style: styleProp }: Props) {
         margin: "0 auto",
         background: s.cardBg,
         color: "#1e293b",
-        fontFamily: "'Arial', sans-serif",
+        fontFamily: s.fontFamily,
         fontSize: "12px",
         padding: "12mm 14mm",
         boxSizing: "border-box",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px", borderBottom: `3px solid ${s.primaryColor}`, paddingBottom: "12px", marginBottom: "16px" }}>
-        <div style={{ flexShrink: 0 }}>
-          {institute?.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={institute.logo} alt="Logo" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />
-          ) : (
-            <div style={{ width: 64, height: 64, background: s.primaryColor + "22", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Building2 style={{ width: 32, height: 32, color: s.primaryColor }} />
+      {/* ── Watermark ── */}
+      {s.watermarkImage && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={s.watermarkImage}
+            alt=""
+            style={{ width: "70%", maxHeight: "70%", objectFit: "contain", opacity: 0.07 }}
+          />
+        </div>
+      )}
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {/* ── Letterhead ── */}
+        {s.letterheadImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={s.letterheadImage}
+            alt="Letterhead"
+            style={{ width: "100%", display: "block", objectFit: "contain", marginBottom: "12px" }}
+          />
+        )}
+
+        {/* ── Header ── */}
+        {s.showSchoolHeader && (
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", borderBottom: `3px solid ${s.primaryColor}`, paddingBottom: "12px", marginBottom: "16px" }}>
+            <div style={{ flexShrink: 0 }}>
+              {institute?.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={institute.logo} alt="Logo" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />
+              ) : (
+                <div style={{ width: 64, height: 64, background: s.primaryColor + "22", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Building2 style={{ width: 32, height: 32, color: s.primaryColor }} />
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div style={{ flex: 1, textAlign: "center" }}>
-          <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "bold", color: "#1e293b", textTransform: "uppercase", letterSpacing: "1px" }}>
-            {institute?.name ?? "School Name"}
-          </h1>
-          {institute?.targetLine && (
-            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#64748b", fontStyle: "italic" }}>{institute.targetLine}</p>
-          )}
-          {institute?.address && (
-            <p style={{ margin: "2px 0 0", fontSize: "10px", color: "#64748b" }}>
-              {[institute.address, institute.country].filter(Boolean).join(", ")}
-              {institute.phoneNumber ? ` · ${institute.phoneNumber}` : ""}
-            </p>
-          )}
-        </div>
-        <div style={{ flexShrink: 0, textAlign: "right" }}>
-          <div style={{ background: s.primaryColor, color: s.headerTextColor, padding: "4px 10px", borderRadius: 4, fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            {s.reportTitle}
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "bold", color: "#1e293b", textTransform: "uppercase", letterSpacing: "1px" }}>
+                {institute?.name ?? "School Name"}
+              </h1>
+              {institute?.targetLine && (
+                <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#64748b", fontStyle: "italic" }}>{institute.targetLine}</p>
+              )}
+              {institute?.address && (
+                <p style={{ margin: "2px 0 0", fontSize: "10px", color: "#64748b" }}>
+                  {[institute.address, institute.country].filter(Boolean).join(", ")}
+                  {institute.phoneNumber ? ` · ${institute.phoneNumber}` : ""}
+                </p>
+              )}
+            </div>
+            <div style={{ flexShrink: 0, textAlign: "right" }}>
+              <div style={{ background: s.primaryColor, color: s.headerTextColor, padding: "4px 10px", borderRadius: 4, fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                {s.reportTitle}
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: "10px", color: "#64748b" }}>{generatedDate}</p>
+            </div>
           </div>
-          <p style={{ margin: "6px 0 0", fontSize: "10px", color: "#64748b" }}>{generatedDate}</p>
-        </div>
-      </div>
+        )}
 
       {/* ── Student Info ── */}
       <div style={{ display: "flex", gap: "16px", marginBottom: "16px", background: s.stripeColor, border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px" }}>
@@ -241,19 +283,27 @@ export function ReportCardView({ data, style: styleProp }: Props) {
                 <th style={{ ...thStyle, textAlign: "center", whiteSpace: "nowrap" }}>Annual Avg</th>
               )}
               <th style={{ ...thStyle, textAlign: "center" }}>Grade</th>
+              <th style={thStyle}>Remark</th>
             </tr>
           </thead>
           <tbody>
             {subjectRows.length === 0 ? (
               <tr>
-                <td colSpan={displayTerms.length + 3} style={{ ...tdStyle, textAlign: "center", color: "#94a3b8", padding: "20px" }}>
+                <td colSpan={displayTerms.length + 4} style={{ ...tdStyle, textAlign: "center", color: "#94a3b8", padding: "20px" }}>
                   No results recorded
                 </td>
               </tr>
             ) : (
               subjectRows.map((row, i) => {
                 const avg = annualAvg(row.termMarks);
-                const annualGrade = avg !== null ? pctGrade(avg) : null;
+                const annualGrade = avg !== null ? gradeFromScale(scale, avg) : null;
+                const latestEntry = displayTerms.slice().reverse()
+                  .map((t) => row.termMarks.get(t._id))
+                  .find(Boolean);
+                const latestPct = latestEntry
+                  ? Math.round((latestEntry.marksObtained / latestEntry.totalScore) * 100)
+                  : null;
+                const remarkPct = showAnnualAvg ? avg : latestPct;
                 return (
                   <tr key={row.subject._id} style={{ background: i % 2 === 0 ? s.cardBg : s.stripeColor }}>
                     <td style={tdStyle}>
@@ -288,17 +338,15 @@ export function ReportCardView({ data, style: styleProp }: Props) {
                           </span>
                         ) : "—"
                       ) : (
-                        (() => {
-                          const latestEntry = displayTerms.slice().reverse()
-                            .map((t) => row.termMarks.get(t._id))
-                            .find(Boolean);
-                          return latestEntry?.grade ? (
-                            <span style={{ background: gradeColor(latestEntry.grade) + "22", color: gradeColor(latestEntry.grade), fontWeight: "bold", padding: "2px 8px", borderRadius: 4 }}>
-                              {latestEntry.grade}
-                            </span>
-                          ) : "—";
-                        })()
+                        latestEntry?.grade ? (
+                          <span style={{ background: gradeColor(latestEntry.grade) + "22", color: gradeColor(latestEntry.grade), fontWeight: "bold", padding: "2px 8px", borderRadius: 4 }}>
+                            {latestEntry.grade}
+                          </span>
+                        ) : "—"
                       )}
+                    </td>
+                    <td style={{ ...tdStyle, color: "#475569" }}>
+                      {remarkPct !== null ? remarkFromScale(scale, remarkPct) : "—"}
                     </td>
                   </tr>
                 );
@@ -331,6 +379,7 @@ export function ReportCardView({ data, style: styleProp }: Props) {
                   {overallAnnualGrade}
                 </span>
               </td>
+              <td style={{ ...tdStyle, color: "#fff" }}>{remarkFromScale(scale, overallAnnualPct)}</td>
             </tr>
           </tfoot>
         </table>
@@ -344,12 +393,13 @@ export function ReportCardView({ data, style: styleProp }: Props) {
               <th style={{ ...thStyle, textAlign: "center" }}>Total</th>
               <th style={{ ...thStyle, textAlign: "center" }}>%</th>
               <th style={{ ...thStyle, textAlign: "center" }}>Grade</th>
+              <th style={thStyle}>Remark</th>
             </tr>
           </thead>
           <tbody>
             {results.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "#94a3b8", padding: "20px" }}>
+                <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "#94a3b8", padding: "20px" }}>
                   No results recorded
                 </td>
               </tr>
@@ -370,6 +420,7 @@ export function ReportCardView({ data, style: styleProp }: Props) {
                         {r.grade ?? "—"}
                       </span>
                     </td>
+                    <td style={{ ...tdStyle, color: "#475569" }}>{remarkFromScale(scale, pct)}</td>
                   </tr>
                 );
               })
@@ -386,6 +437,7 @@ export function ReportCardView({ data, style: styleProp }: Props) {
                   {overallAnnualGrade}
                 </span>
               </td>
+              <td style={{ ...tdStyle, color: "#fff" }}>{remarkFromScale(scale, overallPct)}</td>
             </tr>
           </tfoot>
         </table>
@@ -450,6 +502,28 @@ export function ReportCardView({ data, style: styleProp }: Props) {
         </div>
       )}
 
+      {/* ── Remarks & Promotion ── */}
+      {(meta?.classTeacherComment || meta?.principalComment || meta?.promotionStatus) && (
+        <div style={{ marginBottom: "16px" }}>
+          {meta?.classTeacherComment && (
+            <CommentBlock label="Class Teacher's Remark" text={meta.classTeacherComment} accent={s.primaryColor} />
+          )}
+          {meta?.principalComment && (
+            <CommentBlock label="Principal's Remark" text={meta.principalComment} accent={s.primaryColor} />
+          )}
+          {meta?.promotionStatus && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+              <span style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.4px", fontWeight: "bold" }}>
+                Promotion Status
+              </span>
+              <span style={{ background: promotionColor(meta.promotionStatus) + "22", color: promotionColor(meta.promotionStatus), fontWeight: "bold", fontSize: "11px", padding: "3px 10px", borderRadius: 4 }}>
+                {PROMOTION_LABEL[meta.promotionStatus] ?? meta.promotionStatus}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Signature Footer ── */}
       <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginTop: "8px" }}>
         {s.signatureLabels.map((title) => (
@@ -462,12 +536,13 @@ export function ReportCardView({ data, style: styleProp }: Props) {
         ))}
       </div>
 
-      {/* ── Footer ── */}
-      <p style={{ marginTop: "12px", fontSize: "9px", color: "#94a3b8", textAlign: "center" }}>
-        {s.footerNote
-          ? s.footerNote
-          : `This is an official document generated by ${institute?.name ?? "the school"}. Generated on ${generatedDate}.`}
-      </p>
+        {/* ── Footer ── */}
+        <p style={{ marginTop: "12px", fontSize: "9px", color: "#94a3b8", textAlign: "center" }}>
+          {s.footerNote
+            ? s.footerNote
+            : `This is an official document generated by ${institute?.name ?? "the school"}. Generated on ${generatedDate}.`}
+        </p>
+      </div>
     </div>
   );
 }
@@ -479,6 +554,19 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div>
       <p style={{ margin: 0, fontSize: "9px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.4px" }}>{label}</p>
       <p style={{ margin: "1px 0 0", fontSize: "11px", fontWeight: "600", color: "#1e293b" }}>{value}</p>
+    </div>
+  );
+}
+
+function CommentBlock({ label, text, accent }: { label: string; text: string; accent: string }) {
+  return (
+    <div style={{ marginBottom: "8px" }}>
+      <p style={{ margin: 0, fontSize: "9px", color: accent, textTransform: "uppercase", letterSpacing: "0.4px", fontWeight: "bold" }}>
+        {label}
+      </p>
+      <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#1e293b", fontStyle: "italic", lineHeight: 1.5 }}>
+        {text}
+      </p>
     </div>
   );
 }

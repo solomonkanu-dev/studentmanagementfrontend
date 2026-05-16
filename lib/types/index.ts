@@ -134,6 +134,9 @@ export interface Subject {
   class: string | Class;
   lecturer?: string | AuthUser;
   institute: string;
+  totalMarks?: number;
+  caTotal?: number;
+  examTotal?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -149,6 +152,9 @@ export interface Assignment {
   dueDate?: string;
   totalMarks?: number;
   status?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  lecturer?: string | AuthUser;
   createdBy: string | AuthUser;
   institute: string;
   createdAt: string;
@@ -284,6 +290,8 @@ export interface Result {
   student: string | AuthUser;
   subject: string | Subject;
   class: string | Class;
+  caScore?: number;
+  examScore?: number;
   marksObtained: number;
   totalScore?: number;
   grade?: string;
@@ -361,6 +369,7 @@ export interface GradeEntry {
   grade: string;
   minScore: number;
   maxScore: number;
+  remark?: string;
 }
 
 export interface GradingScale {
@@ -370,6 +379,49 @@ export interface GradingScale {
   isDefault: boolean;
   institute: string;
   createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Rating Traits (Affective / Psychomotor) ──────────────────────────────────
+
+export type RatingDomain = "affective" | "psychomotor";
+
+export interface RatingTrait {
+  _id: string;
+  institute: string;
+  domain: RatingDomain;
+  name: string;
+  order: number;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Report Card Template ─────────────────────────────────────────────────────
+
+export interface ReportCardTemplate {
+  _id: string;
+  institute: string;
+  name: string;
+  isDefault: boolean;
+  layout: "standard" | "traditional";
+  primaryColor: string;
+  headerTextColor: string;
+  stripeColor: string;
+  cardBg: string;
+  reportTitle: string;
+  footerNote: string;
+  signatureLabels: string[];
+  showSchoolHeader: boolean;
+  showPhoto: boolean;
+  showAttendance: boolean;
+  showPosition: boolean;
+  showTermBreakdown: boolean;
+  fontFamily: string;
+  letterheadImage: string;
+  watermarkImage: string;
+  createdBy?: string | { _id: string; fullName: string; email: string };
   createdAt: string;
   updatedAt: string;
 }

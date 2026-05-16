@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import {
 import { errMsg } from "@/lib/utils/errMsg";
 import { subjectApi } from "@/lib/api/subject";
 import { assignmentApi, submissionApi } from "@/lib/api/assignment";
+import { uploadApi } from "@/lib/api/upload";
 import { classApi } from "@/lib/api/class";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
@@ -27,6 +28,7 @@ import {
   FileText,
   Download,
   Paperclip,
+  X,
 } from "lucide-react";
 import type { Subject, Assignment, Submission, AuthUser, Class } from "@/lib/types";
 
@@ -152,6 +154,18 @@ function SubmissionPanel({
             <p className="text-xs text-body">
               Due: {formatDate(assignment.dueDate)}
             </p>
+            {assignment.attachmentUrl && (
+              <a
+                href={assignment.attachmentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="mt-1 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {assignment.attachmentName || fileName(assignment.attachmentUrl)}
+              </a>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -296,6 +310,59 @@ function SubmissionPanel({
   );
 }
 
+// ─── File picker row ──────────────────────────────────────────────────────────
+
+function FilePicker({
+  file,
+  onChange,
+  onClear,
+}: {
+  file: File | null;
+  onChange: (f: File) => void;
+  onClear: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onChange(f);
+          e.target.value = "";
+        }}
+      />
+      {file ? (
+        <div className="flex flex-1 items-center gap-2 rounded border border-stroke bg-meta-2 px-3 py-1.5 dark:border-strokedark dark:bg-meta-4">
+          <Paperclip className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate text-xs text-black dark:text-white">{file.name}</span>
+          <span className="shrink-0 text-xs text-body">{(file.size / 1024).toFixed(0)} KB</span>
+          <button
+            type="button"
+            onClick={onClear}
+            className="shrink-0 text-body hover:text-meta-1"
+            aria-label="Remove file"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex items-center gap-1.5 rounded border border-dashed border-stroke px-3 py-1.5 text-xs text-body transition-colors hover:border-primary hover:text-primary dark:border-strokedark dark:hover:border-primary"
+        >
+          <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
+          Attach file
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Create assignment modal ──────────────────────────────────────────────────
 
 interface CreateAssignmentModalProps {
@@ -311,6 +378,8 @@ function CreateAssignmentModal({
 }: CreateAssignmentModalProps) {
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const {
     register,
@@ -336,14 +405,33 @@ function CreateAssignmentModal({
     },
   });
 
-  const onSubmit = (values: AssignmentFormValues) => {
+  const onSubmit = async (values: AssignmentFormValues) => {
     setServerError("");
+
+    let attachmentUrl: string | undefined;
+    let attachmentName: string | undefined;
+    if (file) {
+      setUploading(true);
+      try {
+        const res = await uploadApi.assignmentFile(file);
+        attachmentUrl = res.fileUrl;
+        attachmentName = file.name;
+      } catch (err) {
+        setServerError(errMsg(err, "File upload failed."));
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
     createMutation.mutate({
       title: values.title,
       description: values.description,
       dueDate: values.dueDate,
       subject: subjectId,
       subjectId,
+      attachmentUrl,
+      attachmentName,
     });
   };
 
@@ -381,6 +469,16 @@ function CreateAssignmentModal({
           )}
         </div>
 
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-black dark:text-white">
+            Assignment File{" "}
+            <span className="text-body font-normal">
+              (optional — PDF, Word, or image, max 10 MB)
+            </span>
+          </label>
+          <FilePicker file={file} onChange={setFile} onClear={() => setFile(null)} />
+        </div>
+
         {serverError && (
           <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">
             {serverError}
@@ -391,9 +489,9 @@ function CreateAssignmentModal({
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={createMutation.isPending}>
+          <Button type="submit" isLoading={uploading || createMutation.isPending}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Create Assignment
+            {uploading ? "Uploading…" : "Create Assignment"}
           </Button>
         </div>
       </form>
@@ -404,6 +502,7 @@ function CreateAssignmentModal({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LecturerAssignmentsPage() {
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
@@ -413,16 +512,32 @@ export default function LecturerAssignmentsPage() {
     queryFn: subjectApi.getForLecturer,
   });
 
-  // Auto-select first subject
-  const activeSubjectId =
-    selectedSubjectId ??
-    ((subjects as Subject[]).length > 0
-      ? (subjects as Subject[])[0]._id
-      : null);
+  // Derive the classes this lecturer is assigned to, from their subjects
+  const classMap = new Map<string, string>();
+  for (const s of subjects as Subject[]) {
+    if (s.class && typeof s.class === "object") {
+      classMap.set((s.class as Class)._id, (s.class as Class).name);
+    } else if (typeof s.class === "string") {
+      classMap.set(s.class, s.class);
+    }
+  }
+  const classes = Array.from(classMap, ([id, name]) => ({ id, name }));
 
-  const activeSubject = (subjects as Subject[]).find(
-    (s) => s._id === activeSubjectId
-  );
+  const activeClassId = selectedClassId ?? classes[0]?.id ?? null;
+
+  // Subjects belonging to the active class only
+  const classSubjects = (subjects as Subject[]).filter((s) => {
+    const cid = typeof s.class === "string" ? s.class : (s.class as Class)?._id;
+    return cid === activeClassId;
+  });
+
+  // Auto-select the first subject within the active class
+  const activeSubjectId =
+    (selectedSubjectId && classSubjects.some((s) => s._id === selectedSubjectId)
+      ? selectedSubjectId
+      : classSubjects[0]?._id) ?? null;
+
+  const activeSubject = classSubjects.find((s) => s._id === activeSubjectId);
 
   const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
     queryKey: ["assignments", activeSubjectId],
@@ -430,17 +545,10 @@ export default function LecturerAssignmentsPage() {
     enabled: !!activeSubjectId,
   });
 
-  // Find the class for the active subject to get its students
-  const classId = activeSubject
-    ? typeof activeSubject.class === "string"
-      ? activeSubject.class
-      : (activeSubject.class as Class)._id
-    : null;
-
   const { data: classStudents = [] } = useQuery({
-    queryKey: ["class-students", classId],
-    queryFn: () => classApi.getStudents(classId!),
-    enabled: !!classId,
+    queryKey: ["class-students", activeClassId],
+    queryFn: () => classApi.getStudents(activeClassId!),
+    enabled: !!activeClassId,
   });
 
   const submissionCounts = useQuery({
@@ -462,7 +570,6 @@ export default function LecturerAssignmentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Subject pills */}
       {subjectsLoading ? (
         <div className="flex gap-2">
           {[1, 2, 3].map((i) => (
@@ -483,24 +590,49 @@ export default function LecturerAssignmentsPage() {
           </p>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          {(subjects as Subject[]).map((s) => (
-            <button
-              key={s._id}
-              onClick={() => {
-                setSelectedSubjectId(s._id);
-                setSelectedAssignment(null);
-              }}
-              className={[
-                "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                s._id === activeSubjectId
-                  ? "bg-primary text-white"
-                  : "border border-stroke text-body hover:border-primary hover:text-primary dark:border-strokedark dark:hover:border-primary",
-              ].join(" ")}
-            >
-              {s.name}
-            </button>
-          ))}
+        <div className="space-y-3">
+          {/* Class tabs — the classes this lecturer is assigned to */}
+          <div className="flex flex-wrap gap-2">
+            {classes.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedClassId(c.id);
+                  setSelectedSubjectId(null);
+                  setSelectedAssignment(null);
+                }}
+                className={[
+                  "rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors",
+                  c.id === activeClassId
+                    ? "bg-primary text-white"
+                    : "border border-stroke text-body hover:border-primary hover:text-primary dark:border-strokedark dark:hover:border-primary",
+                ].join(" ")}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Subject pills — filtered to the active class */}
+          <div className="flex flex-wrap gap-2">
+            {classSubjects.map((s) => (
+              <button
+                key={s._id}
+                onClick={() => {
+                  setSelectedSubjectId(s._id);
+                  setSelectedAssignment(null);
+                }}
+                className={[
+                  "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                  s._id === activeSubjectId
+                    ? "bg-primary text-white"
+                    : "border border-stroke text-body hover:border-primary hover:text-primary dark:border-strokedark dark:hover:border-primary",
+                ].join(" ")}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

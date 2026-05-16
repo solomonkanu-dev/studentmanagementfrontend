@@ -1,11 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { studentApi } from "@/lib/api/student";
-import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import type { DocStudent, DocInstitute } from "@/components/documents/DocumentsPanel";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Loader2 } from "lucide-react";
+
+// @react-pdf/renderer is heavy. Lazy-load DocumentsPanel so it only ships when
+// this page mounts, off the initial route chunk.
+const DocumentsPanel = dynamic(
+  () => import("@/components/documents/DocumentsPanel").then((m) => ({ default: m.DocumentsPanel })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12 text-body">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    ),
+  },
+);
 
 export default function StudentDocumentsPage() {
   const { user } = useAuth();

@@ -11,7 +11,19 @@ npm run start     # Start production server
 npm run lint      # Run ESLint
 ```
 
-No test runner is configured in this project.
+### Tests
+
+End-to-end tests run with Playwright. Configuration in `playwright.config.ts`; specs in `e2e/`.
+
+```bash
+npx playwright test           # run all e2e specs (chromium)
+npx playwright test --headed  # watch them run
+npx playwright test e2e/login-page.spec.ts
+```
+
+The `e2e/login-page.spec.ts`, `e2e/login-validation.spec.ts`, and `e2e/role-redirect.spec.ts` specs mock `/api/auth/me`, `/api/auth/login` and the backend `/auth/me` via `page.route`, so they run without a live backend. The legacy `e2e/teacher-login.spec.ts` still requires the Express backend with seeded credentials.
+
+No unit-test runner is configured.
 
 ## Architecture
 
@@ -23,21 +35,25 @@ Next.js App Router with two route groups:
 
 `app/page.tsx` (root) reads the auth context and redirects to the appropriate role dashboard, or `/login` if unauthenticated. `(dashboard)/layout.tsx` enforces auth on every protected route.
 
-Four roles: `super_admin | admin | lecturer | student`.
+Five roles: `super_admin | admin | lecturer | student | parent`.
 
-### Auth
+### Auth — dual-token (HttpOnly cookie + in-memory store)
 
-`context/AuthContext.tsx` — JWT stored in localStorage. Provides `user`, `login()`, `logout()`, and `isRole(...roles)`.
+The JWT is **not** stored in localStorage. The flow is:
 
-`lib/api/client.ts` — Axios instance with two interceptors:
-1. **Request**: attaches `Authorization: Bearer <token>`
-2. **Response**: on 401, clears auth and redirects to `/login` (skips this for auth endpoints so login errors surface normally)
+1. `POST /api/auth/login` (Next route handler) calls the Express backend, then sets an HttpOnly `auth_session` cookie *and* returns the token in the JSON response.
+2. `context/AuthContext.tsx` puts the token into `lib/api/tokenStore.ts` (a module-scoped variable — survives only the current page session).
+3. The Axios request interceptor in `lib/api/client.ts` reads from `tokenStore.get()` and attaches `Authorization: Bearer <token>` to every backend call.
+4. On a page refresh, `AuthContext` calls `GET /api/auth/me`, which reads the HttpOnly cookie server-side and returns the token to repopulate `tokenStore`.
+5. Logout clears `tokenStore` and deletes the cookie.
 
-Backend base URL: `process.env.NEXT_PUBLIC_API_URL` (defaults to `http://localhost:5000/api/v1`). Set in `.env.local` as `NEXT_PUBLIC_API_URL`.
+`localStorage` only holds a **non-sensitive** snapshot of the user profile for instant UI rendering — never the token. The HttpOnly cookie cannot be read by JS, which closes the XSS-steals-token vector. `lib/api/client.ts` redirects to `/login` on 401 and to `/suspended` on 403 from suspended accounts (auth endpoints are excluded so their errors surface to the form).
+
+Backend base URL: `process.env.NEXT_PUBLIC_API_URL` (defaults to `http://localhost:5000/api/v1`). Set in `.env.local` as `NEXT_PUBLIC_API_URL`. **Note:** in server-only files (route handlers under `app/api/`), prefer `process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL` — the `NEXT_PUBLIC_*` variant is inlined into the client bundle and is the wrong knob for server-side traffic.
 
 ### State Management
 
-- **Auth state**: `AuthContext` + localStorage
+- **Auth state**: `AuthContext` — user from `localStorage` snapshot + token from in-memory `tokenStore`
 - **Theme/dark mode**: `ThemeContext` injects a `<style>` tag with CSS variable overrides; `useColorMode` hook toggles `.dark` on `<body>` and persists to localStorage
 - **Server state**: TanStack Query v5 (`context/QueryProvider.tsx`) — 1-minute stale time, 1 retry
 

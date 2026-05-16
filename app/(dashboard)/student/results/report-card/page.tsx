@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { studentApi } from "@/lib/api/student";
 import { ReportCardView } from "@/components/report-card/ReportCardView";
+import { TraditionalReportCardView } from "@/components/report-card/TraditionalReportCardView";
 import { Printer, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -51,13 +52,17 @@ export default function StudentReportCardPage() {
 
       {/* Report card */}
       <div className="overflow-auto print:overflow-visible">
-        <ReportCardView data={data} />
+        {data.template?.layout === "traditional" ? (
+          <TraditionalReportCardView data={data} style={data.template ?? undefined} />
+        ) : (
+          <ReportCardView data={data} style={data.template ?? undefined} />
+        )}
       </div>
 
       {/* Print styles */}
       <style>{`
         @media print {
-          @page { size: A4; margin: 0; }
+          @page { size: A4${data.template?.layout === "traditional" ? " landscape" : ""}; margin: 0; }
           body * { visibility: hidden; }
           #report-card, #report-card * { visibility: visible; }
           #report-card { position: fixed; top: 0; left: 0; width: 100%; }

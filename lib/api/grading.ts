@@ -21,12 +21,12 @@ export const gradingApi = {
     return data.data ?? data;
   },
 
-  create: async (payload: { name: string; grades: { grade: string; minScore: number; maxScore: number }[] }): Promise<GradingScale> => {
+  create: async (payload: { name: string; grades: { grade: string; minScore: number; maxScore: number; remark?: string }[] }): Promise<GradingScale> => {
     const { data } = await apiClient.post("/grading", payload);
     return data.data ?? data;
   },
 
-  update: async (id: string, payload: { name?: string; grades?: { grade: string; minScore: number; maxScore: number }[] }): Promise<GradingScale> => {
+  update: async (id: string, payload: { name?: string; grades?: { grade: string; minScore: number; maxScore: number; remark?: string }[] }): Promise<GradingScale> => {
     const { data } = await apiClient.put(`/grading/${id}`, payload);
     return data.data ?? data;
   },

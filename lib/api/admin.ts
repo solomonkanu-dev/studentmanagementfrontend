@@ -196,6 +196,16 @@ export const adminApi = {
     const { data } = await apiClient.get(`/admin/report-card/${studentId}`, { params: termId ? { termId } : undefined });
     return data;
   },
+  saveReportCardMeta: async (
+    studentId: string,
+    payload: { classTeacherComment?: string; principalComment?: string; promotionStatus?: "promoted" | "repeated" | "pending" },
+    termId?: string,
+  ) => {
+    const { data } = await apiClient.put(`/admin/report-card/${studentId}/meta`, payload, {
+      params: termId ? { termId } : undefined,
+    });
+    return data.data ?? data;
+  },
 
   // Fee Payments
   recordPayment: async (studentId: string, payload: { amount: number; method: string; reference?: string; notes?: string }) => {

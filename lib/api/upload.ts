@@ -32,4 +32,13 @@ export const uploadApi = {
     });
     return data;
   },
+
+  reportCardAsset: async (file: File): Promise<{ url: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await apiClient.post("/upload/report-card-asset", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
 };

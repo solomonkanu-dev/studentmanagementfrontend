@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import type { Class, AuthUser, QRSessionStudent } from "@/lib/types";
 
-type StudentStatus = "present" | "absent";
+type StudentStatus = "present" | "absent" | "late";
 type TabMode = "manual" | "qr";
 
 // ─── QR Scanner Component ─────────────────────────────────────────────────────
@@ -597,6 +597,11 @@ export default function LecturerAttendancePage() {
                                   onClick={() => setStatuses((prev) => ({ ...prev, [s._id]: "present" }))}
                                   className={["rounded-md px-3 py-1.5 text-xs font-medium transition-colors", current === "present" ? "bg-meta-3 text-white" : "border border-stroke text-body hover:bg-meta-3/10 hover:text-meta-3 dark:border-strokedark"].join(" ")}
                                 >Present</button>
+                                <button
+                                  type="button"
+                                  onClick={() => setStatuses((prev) => ({ ...prev, [s._id]: "late" }))}
+                                  className={["rounded-md px-3 py-1.5 text-xs font-medium transition-colors", current === "late" ? "bg-amber-500 text-white" : "border border-stroke text-body hover:bg-amber-500/10 hover:text-amber-600 dark:border-strokedark"].join(" ")}
+                                >Late</button>
                                 <button
                                   type="button"
                                   onClick={() => setStatuses((prev) => ({ ...prev, [s._id]: "absent" }))}

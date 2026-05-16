@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { FileText, GraduationCap, History } from "lucide-react";
 import type { LinkedStudent } from "@/lib/types";
 import type { ChildPromotionHistory } from "@/lib/api/parent";
+import { gradeColor } from "@/lib/utils/grading";
 
 interface Result {
   _id: string;
@@ -20,15 +21,6 @@ interface Result {
   percentage?: number;
   examType?: string;
   term?: string;
-}
-
-function gradeColor(grade?: string) {
-  if (!grade) return "text-body";
-  const g = grade.toUpperCase();
-  if (g === "A" || g === "A+") return "text-meta-3";
-  if (g === "B" || g === "B+") return "text-primary";
-  if (g === "C") return "text-yellow-500";
-  return "text-meta-1";
 }
 
 function ResultsPage() {
@@ -216,7 +208,7 @@ function ResultsPage() {
                             {r.percentage != null ? `${r.percentage.toFixed(1)}%` : "—"}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`font-bold ${gradeColor(r.grade)}`}>
+                            <span className="font-bold" style={{ color: gradeColor(r.grade) }}>
                               {r.grade ?? "—"}
                             </span>
                           </td>

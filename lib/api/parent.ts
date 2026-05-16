@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { LinkedStudent, BulkParentRow, BulkParentImportResponse } from "../types";
+import type { LinkedStudent, BulkParentRow, BulkParentImportResponse, Assignment } from "../types";
 
 export interface ChildAttendanceSummary {
   total: number;
@@ -106,6 +106,11 @@ export const parentApi = {
 
   getChildFees: async (studentId: string): Promise<ChildFee[]> => {
     const { data } = await apiClient.get(`/parent/child/${studentId}/fees`);
+    return data.data ?? data;
+  },
+
+  getChildAssignments: async (studentId: string): Promise<Assignment[]> => {
+    const { data } = await apiClient.get(`/parent/child/${studentId}/assignments`);
     return data.data ?? data;
   },
 

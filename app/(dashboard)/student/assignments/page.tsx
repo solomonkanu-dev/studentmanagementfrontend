@@ -397,6 +397,18 @@ export default function StudentAssignmentsPage() {
                               Due: {formatDate(a.dueDate)}
                             </p>
                           )}
+                          {a.attachmentUrl && (
+                            <a
+                              href={a.attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              className="mt-1.5 inline-flex items-center gap-1.5 rounded border border-stroke bg-meta-2 px-2.5 py-1 text-xs text-primary transition-colors hover:border-primary dark:border-strokedark dark:bg-meta-4"
+                            >
+                              <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                              {a.attachmentName || fileName(a.attachmentUrl)}
+                            </a>
+                          )}
                           {mySub?.feedback && (
                             <p className="mt-1 text-xs text-body">
                               Feedback: <span className="text-black dark:text-white">{mySub.feedback}</span>

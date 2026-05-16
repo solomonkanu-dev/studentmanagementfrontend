@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useId, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "./Button";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface ModalProps {
   open: boolean;
@@ -13,6 +14,9 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, className = "" }: ModalProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
+  const titleId = useId();
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -31,6 +35,10 @@ export function Modal({ open, onClose, title, children, className = "" }: ModalP
         aria-hidden="true"
       />
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className={[
           "relative z-10 w-full max-w-md rounded-sm border border-stroke bg-white shadow-default",
           "dark:border-strokedark dark:bg-boxdark",
@@ -39,7 +47,7 @@ export function Modal({ open, onClose, title, children, className = "" }: ModalP
         ].join(" ")}
       >
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4 dark:border-strokedark">
-          <h2 className="text-base font-semibold text-black dark:text-white">{title}</h2>
+          <h2 id={titleId} className="text-base font-semibold text-black dark:text-white">{title}</h2>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 p-0">
             <X className="h-5 w-5" aria-hidden="true" />
             <span className="sr-only">Close</span>

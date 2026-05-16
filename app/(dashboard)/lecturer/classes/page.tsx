@@ -9,8 +9,10 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { School, Users, ChevronRight, X } from "lucide-react";
+import { School, Users, ChevronRight, X, FileText } from "lucide-react";
+import Link from "next/link";
 import type { Class, AuthUser, Result, AttendanceSummary } from "@/lib/types";
+import type { AcademicTerm } from "@/lib/api/admin";
 
 // ─── Student detail modal ─────────────────────────────────────────────────────
 
@@ -206,11 +208,12 @@ function StudentModal({
 
 interface ClassPanelProps {
   cls: Class;
+  termId: string;
   onClose: () => void;
   onSelectStudent: (student: AuthUser) => void;
 }
 
-function ClassStudentsPanel({ cls, onClose, onSelectStudent }: ClassPanelProps) {
+function ClassStudentsPanel({ cls, termId, onClose, onSelectStudent }: ClassPanelProps) {
   const { data: students = [], isLoading } = useQuery({
     queryKey: ["class-students", cls._id],
     queryFn: () => classApi.getStudents(cls._id),
@@ -248,11 +251,11 @@ function ClassStudentsPanel({ cls, onClose, onSelectStudent }: ClassPanelProps) 
         ) : (
           <ul className="divide-y divide-stroke dark:divide-strokedark">
             {(students as AuthUser[]).map((s) => (
-              <li key={s._id}>
+              <li key={s._id} className="flex items-center">
                 <button
                   type="button"
                   onClick={() => onSelectStudent(s)}
-                  className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-whiter transition-colors dark:hover:bg-meta-4"
+                  className="flex flex-1 items-center gap-3 px-5 py-3 text-left hover:bg-whiter transition-colors dark:hover:bg-meta-4"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-meta-2 text-sm font-bold uppercase text-primary dark:bg-meta-4 dark:text-white">
                     {s.fullName.charAt(0)}
@@ -268,6 +271,14 @@ function ClassStudentsPanel({ cls, onClose, onSelectStudent }: ClassPanelProps) 
                     aria-hidden="true"
                   />
                 </button>
+                <Link
+                  href={`/lecturer/results/report-card?studentId=${s._id}${termId ? `&termId=${termId}` : ""}`}
+                  className="mr-4 flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                  title="Open report card to rate traits"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Report Card
+                </Link>
               </li>
             ))}
           </ul>
@@ -282,17 +293,43 @@ function ClassStudentsPanel({ cls, onClose, onSelectStudent }: ClassPanelProps) 
 export default function LecturerClassesPage() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<AuthUser | null>(null);
+  const [termId, setTermId] = useState("");
 
   const { data: classes = [], isLoading } = useQuery({
     queryKey: ["lecturer-classes"],
     queryFn: classApi.getForLecturer,
   });
 
+  const { data: terms = [] } = useQuery({
+    queryKey: ["terms"],
+    queryFn: adminApi.getTerms,
+  });
+
+  const currentTerm = (terms as AcademicTerm[]).find((t) => t.isCurrent);
+  const effectiveTermId = termId || currentTerm?._id || "";
+
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-black dark:text-white">
-        My Classes
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-black dark:text-white">
+          My Classes
+        </h1>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-body">Report card term</label>
+          <select
+            value={effectiveTermId}
+            onChange={(e) => setTermId(e.target.value)}
+            className="h-9 rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white"
+          >
+            <option value="">No term</option>
+            {(terms as AcademicTerm[]).map((t) => (
+              <option key={t._id} value={t._id}>
+                {t.name} {t.isCurrent ? "(current)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
@@ -368,6 +405,7 @@ export default function LecturerClassesPage() {
             <div className="lg:col-span-2">
               <ClassStudentsPanel
                 cls={selectedClass}
+                termId={effectiveTermId}
                 onClose={() => setSelectedClass(null)}
                 onSelectStudent={setSelectedStudent}
               />

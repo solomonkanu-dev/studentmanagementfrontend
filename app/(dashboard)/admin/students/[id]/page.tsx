@@ -1,12 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 import { attendanceApi } from "@/lib/api/attendance";
-import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import type { DocStudent, DocInstitute } from "@/components/documents/DocumentsPanel";
+
+// Defer @react-pdf/renderer until DocumentsPanel actually renders.
+const DocumentsPanel = dynamic(
+  () => import("@/components/documents/DocumentsPanel").then((m) => ({ default: m.DocumentsPanel })),
+  { ssr: false },
+);
 import CardDataStats from "@/components/ui/CardDataStats";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";

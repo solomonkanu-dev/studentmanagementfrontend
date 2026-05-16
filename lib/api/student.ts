@@ -1,5 +1,20 @@
 import { apiClient } from "./client";
-import type { Result, InvoiceAccount, Institute } from "../types";
+import type { Result, InvoiceAccount, Institute, GradeEntry, ReportCardTemplate, RatingTrait } from "../types";
+
+export type PromotionStatus = "promoted" | "repeated" | "pending";
+
+export interface TraitRating {
+  trait: string;
+  rating: number;
+}
+
+export interface ReportCardMeta {
+  term?: string | null;
+  classTeacherComment?: string;
+  principalComment?: string;
+  promotionStatus?: PromotionStatus;
+  traitRatings?: TraitRating[];
+}
 
 export interface StudentFeeRecord {
   _id: string;
@@ -37,14 +52,33 @@ export interface ReportCardData {
   terms: ReportCardTerm[];
   results: Array<{
     _id: string;
-    subject: { _id: string; name: string; code?: string; totalMarks?: number } | null;
+    subject: { _id: string; name: string; code?: string; totalMarks?: number; caTotal?: number; examTotal?: number } | null;
     term: ReportCardTerm | null;
+    caScore?: number;
+    examScore?: number;
     marksObtained: number;
     totalScore: number;
     grade?: string;
   }>;
-  attendance: { total: number; present: number; percentage: number };
+  attendance: { total: number; present: number; percentage: number; absent?: number; late?: number; opened?: number };
   position: { rank: number; outOf: number };
+  /** Roll info for the traditional report card. */
+  roll?: {
+    numberOnRoll: number;
+    age: number | null;
+    averageAge: number | null;
+    formTeacher: string | null;
+  };
+  /** The institute's affective + psychomotor trait lists. */
+  traits?: { affective: RatingTrait[]; psychomotor: RatingTrait[] };
+  /** Every term's report-card meta for this student (traditional/annual card). */
+  metaByTerm?: ReportCardMeta[];
+  /** The institute's default grading scale — used to derive aggregate grades and remarks. */
+  gradingScale?: { name: string; grades: GradeEntry[] } | null;
+  /** Class-teacher / principal comments and promotion status for this student + term. */
+  meta?: ReportCardMeta | null;
+  /** The school's default report card template (styling, brand assets). */
+  template?: ReportCardTemplate | null;
   generatedAt: string;
 }
 

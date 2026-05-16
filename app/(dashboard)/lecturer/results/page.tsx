@@ -6,6 +6,8 @@ import { errMsg } from "@/lib/utils/errMsg";
 import { classApi } from "@/lib/api/class";
 import { subjectApi } from "@/lib/api/subject";
 import { adminApi } from "@/lib/api/admin";
+import { gradingApi } from "@/lib/api/grading";
+import { gradeFromScale, gradeVariant } from "@/lib/utils/grading";
 import type { AcademicTerm } from "@/lib/api/admin";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -24,18 +26,8 @@ import {
   CheckCircle2,
   BookOpen,
 } from "lucide-react";
+import Link from "next/link";
 import type { Class, Subject, AuthUser, Result } from "@/lib/types";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function computeGrade(pct: number): { label: string; variant: "success" | "info" | "warning" | "danger" | "default" } {
-  if (pct >= 90) return { label: "A+", variant: "success" };
-  if (pct >= 80) return { label: "A",  variant: "success" };
-  if (pct >= 70) return { label: "B",  variant: "info" };
-  if (pct >= 60) return { label: "C",  variant: "warning" };
-  if (pct >= 50) return { label: "D",  variant: "warning" };
-  return { label: "F", variant: "danger" };
-}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -45,10 +37,17 @@ export default function LecturerResultsPage() {
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [selectedTermId, setSelectedTermId] = useState("");
-  const [marks, setMarks] = useState<Record<string, string>>({});
-  const [totals, setTotals] = useState<Record<string, string>>({});
+  const [caMarks, setCaMarks] = useState<Record<string, string>>({});
+  const [examMarks, setExamMarks] = useState<Record<string, string>>({});
   const [successIds, setSuccessIds] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function resetEntry() {
+    setCaMarks({});
+    setExamMarks({});
+    setErrors({});
+    setSuccessIds(new Set());
+  }
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -73,6 +72,11 @@ export default function LecturerResultsPage() {
     queryFn: adminApi.getTerms,
   });
 
+  const { data: defaultScale } = useQuery({
+    queryKey: ["grading-default"],
+    queryFn: gradingApi.getDefault,
+  });
+
   // Default to current term on first load
   const currentTerm = (terms as AcademicTerm[]).find((t) => t.isCurrent);
   const effectiveTermId = selectedTermId || currentTerm?._id || "";
@@ -92,6 +96,11 @@ export default function LecturerResultsPage() {
       return cid === selectedClassId;
     });
   }, [allSubjects, selectedClassId]);
+
+  const selectedSubject = classSubjects.find((s) => s._id === selectedSubjectId);
+  const caTotal = selectedSubject?.caTotal ?? 30;
+  const examTotal = selectedSubject?.examTotal ?? 70;
+  const combinedTotal = caTotal + examTotal;
 
   // Build a lookup: studentId → result for the selected subject
   const resultMap = useMemo(() => {
@@ -113,25 +122,25 @@ export default function LecturerResultsPage() {
   const assignMarksMutation = useMutation({
     mutationFn: ({
       studentId,
-      marksObtained,
-      totalScore,
+      caScore,
+      examScore,
     }: {
       studentId: string;
-      marksObtained: number;
-      totalScore: number;
+      caScore: number;
+      examScore: number;
     }) =>
       adminApi.assignMarks({
         studentId,
         subjectId: selectedSubjectId,
         classId: selectedClassId,
-        marksObtained,
-        totalScore,
+        caScore,
+        examScore,
         termId: effectiveTermId || undefined,
       }),
     onSuccess: (savedResult, vars) => {
       // Update the cache in-place — no refetch, no loading flash
       queryClient.setQueryData(
-        ["class-results", selectedClassId],
+        ["class-results", selectedClassId, effectiveTermId],
         (old: Result[] = []) => {
           const exists = old.some((r) => {
             if (!r.student || !r.subject) return false;
@@ -150,9 +159,8 @@ export default function LecturerResultsPage() {
           return [...old, savedResult];
         },
       );
-      // Clear the input for this student so the row resets cleanly
-      setMarks((prev) => { const next = { ...prev }; delete next[vars.studentId]; return next; });
-      setTotals((prev) => { const next = { ...prev }; delete next[vars.studentId]; return next; });
+      setCaMarks((prev) => { const next = { ...prev }; delete next[vars.studentId]; return next; });
+      setExamMarks((prev) => { const next = { ...prev }; delete next[vars.studentId]; return next; });
       setSuccessIds((prev) => new Set([...prev, vars.studentId]));
     },
     onError: (err, vars) => {
@@ -164,38 +172,31 @@ export default function LecturerResultsPage() {
   });
 
   const handleSubmitMark = (student: AuthUser) => {
-    const rawMark = marks[student._id] ?? "";
-    const rawTotal = totals[student._id] ?? "100";
-    const marksObtained = Number(rawMark);
-    const totalScore = Number(rawTotal);
+    const rawCa = caMarks[student._id] ?? "";
+    const rawExam = examMarks[student._id] ?? "";
+    const caScore = Number(rawCa);
+    const examScore = Number(rawExam);
 
-    if (rawMark === "" || isNaN(marksObtained) || marksObtained < 0) {
-      setErrors((prev) => ({
-        ...prev,
-        [student._id]: "Enter a valid marks value (≥ 0)",
-      }));
+    const setErr = (msg: string) =>
+      setErrors((prev) => ({ ...prev, [student._id]: msg }));
+
+    if (rawCa === "" || isNaN(caScore) || caScore < 0) {
+      setErr(`Enter a valid CA score (0–${caTotal})`);
       return;
     }
-    if (!totalScore || totalScore <= 0) {
-      setErrors((prev) => ({
-        ...prev,
-        [student._id]: "Total score must be > 0",
-      }));
+    if (rawExam === "" || isNaN(examScore) || examScore < 0) {
+      setErr(`Enter a valid Exam score (0–${examTotal})`);
       return;
     }
-    if (marksObtained > totalScore) {
-      setErrors((prev) => ({
-        ...prev,
-        [student._id]: "Marks cannot exceed total score",
-      }));
-      return;
-    }
+    if (caScore > caTotal) { setErr(`CA cannot exceed ${caTotal}`); return; }
+    if (examScore > examTotal) { setErr(`Exam cannot exceed ${examTotal}`); return; }
+
     setErrors((prev) => {
       const next = { ...prev };
       delete next[student._id];
       return next;
     });
-    assignMarksMutation.mutate({ studentId: student._id, marksObtained, totalScore });
+    assignMarksMutation.mutate({ studentId: student._id, caScore, examScore });
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -215,13 +216,7 @@ export default function LecturerResultsPage() {
               <label className="text-sm font-medium text-black dark:text-white">Term</label>
               <select
                 value={selectedTermId}
-                onChange={(e) => {
-                  setSelectedTermId(e.target.value);
-                  setMarks({});
-                  setTotals({});
-                  setErrors({});
-                  setSuccessIds(new Set());
-                }}
+                onChange={(e) => { setSelectedTermId(e.target.value); resetEntry(); }}
                 className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
               >
                 <option value="">All Terms</option>
@@ -246,10 +241,7 @@ export default function LecturerResultsPage() {
                   onChange={(e) => {
                     setSelectedClassId(e.target.value);
                     setSelectedSubjectId("");
-                    setMarks({});
-                    setTotals({});
-                    setErrors({});
-                    setSuccessIds(new Set());
+                    resetEntry();
                   }}
                   className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
                 >
@@ -273,13 +265,7 @@ export default function LecturerResultsPage() {
               ) : (
                 <select
                   value={selectedSubjectId}
-                  onChange={(e) => {
-                    setSelectedSubjectId(e.target.value);
-                    setMarks({});
-                    setTotals({});
-                    setErrors({});
-                    setSuccessIds(new Set());
-                  }}
+                  onChange={(e) => { setSelectedSubjectId(e.target.value); resetEntry(); }}
                   disabled={!selectedClassId || classSubjects.length === 0}
                   className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
                 >
@@ -329,12 +315,15 @@ export default function LecturerResultsPage() {
                 aria-hidden="true"
               />
               <h2 className="text-sm font-semibold text-black dark:text-white">
-                {classSubjects.find((s) => s._id === selectedSubjectId)?.name} — Assign Marks
+                {selectedSubject?.name} — Assign Marks
                 {effectiveTermId && (
                   <span className="ml-2 text-xs font-normal text-body">
                     · {(terms as AcademicTerm[]).find((t) => t._id === effectiveTermId)?.name}
                   </span>
                 )}
+                <span className="ml-2 text-xs font-normal text-body">
+                  · CA /{caTotal} · Exam /{examTotal}
+                </span>
               </h2>
             </div>
           </CardHeader>
@@ -344,8 +333,8 @@ export default function LecturerResultsPage() {
                 <tr>
                   <Th>Student</Th>
                   <Th>Current</Th>
-                  <Th>Marks</Th>
-                  <Th>Total</Th>
+                  <Th>CA /{caTotal}</Th>
+                  <Th>Exam /{examTotal}</Th>
                   <Th>Grade</Th>
                   <Th>Actions</Th>
                 </tr>
@@ -353,24 +342,24 @@ export default function LecturerResultsPage() {
               <TableBody>
                 {(students as AuthUser[]).map((s) => {
                   const existing = resultMap.get(s._id);
-                  const marksVal = marks[s._id] ?? "";
-                  const totalVal = totals[s._id] ?? "100";
+                  const caVal = caMarks[s._id] ?? "";
+                  const examVal = examMarks[s._id] ?? "";
                   const isSuccess = successIds.has(s._id);
 
-                  // Preview grade from input or fall back to existing
-                  let gradePreview: ReturnType<typeof computeGrade> | null = null;
-                  if (marksVal !== "") {
-                    const m = Number(marksVal);
-                    const t = Number(totalVal) || 100;
-                    if (!isNaN(m) && m >= 0 && m <= t) {
-                      gradePreview = computeGrade(Math.round((m / t) * 100));
+                  // Preview grade from input or fall back to the stored grade
+                  let gradePreview: { label: string; variant: ReturnType<typeof gradeVariant> } | null = null;
+                  if (caVal !== "" && examVal !== "") {
+                    const ca = Number(caVal);
+                    const exam = Number(examVal);
+                    if (!isNaN(ca) && !isNaN(exam) && ca >= 0 && exam >= 0 && ca <= caTotal && exam <= examTotal) {
+                      const label = gradeFromScale(defaultScale?.grades, Math.round(((ca + exam) / combinedTotal) * 100));
+                      gradePreview = { label, variant: gradeVariant(label) };
                     }
                   } else if (existing) {
                     const t = existing.totalScore ?? 100;
                     const pct = Math.round((existing.marksObtained / t) * 100);
-                    gradePreview = existing.grade
-                      ? { label: existing.grade, variant: computeGrade(pct).variant }
-                      : computeGrade(pct);
+                    const label = existing.grade ?? gradeFromScale(defaultScale?.grades, pct);
+                    gradePreview = { label, variant: gradeVariant(label) };
                   }
 
                   return (
@@ -394,34 +383,26 @@ export default function LecturerResultsPage() {
                       <Td>
                         {existing ? (
                           <span className="text-sm text-body">
-                            {existing.marksObtained}/{existing.totalScore ?? 100}
+                            {existing.caScore != null && existing.examScore != null
+                              ? `CA ${existing.caScore} · Exam ${existing.examScore}`
+                              : `${existing.marksObtained}/${existing.totalScore ?? 100}`}
                           </span>
                         ) : (
                           <span className="text-xs text-body">—</span>
                         )}
                       </Td>
                       <Td>
-                        <div className="w-24">
+                        <div className="w-20">
                           <Input
                             type="number"
                             min={0}
-                            placeholder="Marks"
-                            value={marksVal}
+                            max={caTotal}
+                            placeholder={`0–${caTotal}`}
+                            value={caVal}
                             onChange={(e) => {
-                              setMarks((prev) => ({
-                                ...prev,
-                                [s._id]: e.target.value,
-                              }));
-                              setErrors((prev) => {
-                                const next = { ...prev };
-                                delete next[s._id];
-                                return next;
-                              });
-                              setSuccessIds((prev) => {
-                                const next = new Set(prev);
-                                next.delete(s._id);
-                                return next;
-                              });
+                              setCaMarks((prev) => ({ ...prev, [s._id]: e.target.value }));
+                              setErrors((prev) => { const n = { ...prev }; delete n[s._id]; return n; });
+                              setSuccessIds((prev) => { const n = new Set(prev); n.delete(s._id); return n; });
                             }}
                             error={errors[s._id]}
                           />
@@ -431,15 +412,15 @@ export default function LecturerResultsPage() {
                         <div className="w-20">
                           <Input
                             type="number"
-                            min={1}
-                            placeholder="100"
-                            value={totalVal}
-                            onChange={(e) =>
-                              setTotals((prev) => ({
-                                ...prev,
-                                [s._id]: e.target.value,
-                              }))
-                            }
+                            min={0}
+                            max={examTotal}
+                            placeholder={`0–${examTotal}`}
+                            value={examVal}
+                            onChange={(e) => {
+                              setExamMarks((prev) => ({ ...prev, [s._id]: e.target.value }));
+                              setErrors((prev) => { const n = { ...prev }; delete n[s._id]; return n; });
+                              setSuccessIds((prev) => { const n = new Set(prev); n.delete(s._id); return n; });
+                            }}
                           />
                         </div>
                       </Td>
@@ -453,31 +434,40 @@ export default function LecturerResultsPage() {
                         )}
                       </Td>
                       <Td>
-                        {isSuccess ? (
-                          <span className="flex items-center gap-1 text-xs text-meta-3">
-                            <CheckCircle2
-                              className="h-3.5 w-3.5 shrink-0"
-                              aria-hidden="true"
-                            />
-                            Saved
-                          </span>
-                        ) : (
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleSubmitMark(s)}
-                            isLoading={
-                              assignMarksMutation.isPending &&
-                              (
-                                assignMarksMutation.variables as
-                                  | { studentId: string }
-                                  | undefined
-                              )?.studentId === s._id
-                            }
+                        <div className="flex items-center gap-3">
+                          {isSuccess ? (
+                            <span className="flex items-center gap-1 text-xs text-meta-3">
+                              <CheckCircle2
+                                className="h-3.5 w-3.5 shrink-0"
+                                aria-hidden="true"
+                              />
+                              Saved
+                            </span>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleSubmitMark(s)}
+                              isLoading={
+                                assignMarksMutation.isPending &&
+                                (
+                                  assignMarksMutation.variables as
+                                    | { studentId: string }
+                                    | undefined
+                                )?.studentId === s._id
+                              }
+                            >
+                              Save
+                            </Button>
+                          )}
+                          <Link
+                            href={`/lecturer/results/report-card?studentId=${s._id}${effectiveTermId ? `&termId=${effectiveTermId}` : ""}`}
+                            className="flex items-center gap-1 text-xs text-primary hover:underline"
                           >
-                            Save
-                          </Button>
-                        )}
+                            <FileText className="h-3.5 w-3.5" />
+                            Report Card
+                          </Link>
+                        </div>
                       </Td>
                     </tr>
                   );

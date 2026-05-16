@@ -30,7 +30,7 @@ import { exportApi } from "@/lib/api/export";
 import type { AuthUser, Class } from "@/lib/types";
 
 type ViewMode = "students" | "lecturers";
-type StudentStatus = "present" | "absent";
+type StudentStatus = "present" | "absent" | "late";
 type LecturerStatus = "present" | "absent" | "leave";
 
 export default function AttendancePage() {
@@ -318,6 +318,20 @@ function StudentAttendanceView({
                               ].join(" ")}
                             >
                               Present
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setStatuses((prev) => ({ ...prev, [s._id]: "late" }))
+                              }
+                              className={[
+                                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                                current === "late"
+                                  ? "bg-amber-500 text-white"
+                                  : "border border-stroke text-body hover:bg-amber-500/10 hover:text-amber-600 dark:border-strokedark",
+                              ].join(" ")}
+                            >
+                              Late
                             </button>
                             <button
                               type="button"

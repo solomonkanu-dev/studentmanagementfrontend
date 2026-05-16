@@ -10,22 +10,13 @@ import { FileText, Printer, Trophy, History } from "lucide-react";
 import Link from "next/link";
 import type { Result, Subject } from "@/lib/types";
 import type { AcademicTerm } from "@/lib/api/term";
+import { gradeVariant } from "@/lib/utils/grading";
 
 function ordinal(n: number | null): string {
   if (n === null) return "—";
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-function gradeVariant(grade?: string): "success" | "info" | "warning" | "danger" | "default" {
-  if (!grade) return "default";
-  const g = grade.toUpperCase();
-  if (g.startsWith("A")) return "success";
-  if (g.startsWith("B")) return "info";
-  if (g.startsWith("C")) return "warning";
-  if (g.startsWith("D")) return "warning";
-  return "danger";
 }
 
 export default function StudentResultsPage() {

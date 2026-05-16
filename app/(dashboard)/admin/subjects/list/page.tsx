@@ -21,6 +21,8 @@ const createSchema = z.object({
   classId: z.string().min(1, "Select a class"),
   lecturerId: z.string().min(1, "Select a lecturer"),
   totalMarks: z.coerce.number().min(1).optional(),
+  caTotal: z.coerce.number().min(1).optional(),
+  examTotal: z.coerce.number().min(1).optional(),
 });
 type CreateForm = z.infer<typeof createSchema>;
 
@@ -234,7 +236,13 @@ export default function SubjectsListPage() {
             </select>
             {errors.lecturerId && <p className="text-xs text-meta-1">{errors.lecturerId.message}</p>}
           </div>
-          <Input label="Total Marks (optional)" type="number" placeholder="100" {...register("totalMarks")} />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="CA Total (default 30)" type="number" placeholder="30" {...register("caTotal")} />
+            <Input label="Exam Total (default 70)" type="number" placeholder="70" {...register("examTotal")} />
+          </div>
+          <p className="-mt-1 text-xs text-body">
+            Each subject mark is split into Continuous Assessment + Exam. The grade % uses CA + Exam over their combined total.
+          </p>
           {formError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{formError}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
