@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { LiveSystemStrip } from "@/components/super-admin/LiveSystemStrip";
 import { SubscriptionSection } from "@/components/super-admin/SubscriptionSection";
 import { AcademicSection } from "@/components/super-admin/AcademicSection";
+import { GlobalSearch } from "@/components/super-admin/GlobalSearch";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -879,6 +880,7 @@ function AttentionPanel({
 
 export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
+  const [growthMonths, setGrowthMonths] = useState(6);
 
   const {
     data: stats, isError: statsError, refetch: refetchStats, dataUpdatedAt: statsUpdatedAt,
@@ -888,7 +890,10 @@ export default function SuperAdminDashboard() {
   } = useQuery<SystemOverview>({ queryKey: ["monitor-overview"], queryFn: monitorApi.getOverview });
   const {
     data: growth, isError: growthError, refetch: refetchGrowth,
-  } = useQuery<GrowthTrends>({ queryKey: ["monitor-growth"], queryFn: () => monitorApi.getGrowth(6) });
+  } = useQuery<GrowthTrends>({
+    queryKey: ["monitor-growth", growthMonths],
+    queryFn: () => monitorApi.getGrowth(growthMonths),
+  });
   const {
     data: feeRevenue, isError: feeRevenueError, refetch: refetchFeeRevenue,
   } = useQuery<FeeRevenueReport>({ queryKey: ["monitor-fee-revenue"], queryFn: monitorApi.getFeeRevenue });
@@ -977,6 +982,7 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <GlobalSearch />
           {lastUpdated > 0 && (
             <span className="text-xs text-body">
               Updated {relativeTime(new Date(lastUpdated).toISOString())}
@@ -1070,7 +1076,26 @@ export default function SuperAdminDashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <h2 className="text-sm font-semibold text-black dark:text-white">Platform Growth (last 6 months)</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-black dark:text-white">Platform Growth</h2>
+              <div className="flex items-center gap-0.5 rounded-sm border border-stroke p-0.5 dark:border-strokedark">
+                {[3, 6, 12].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setGrowthMonths(m)}
+                    aria-pressed={growthMonths === m}
+                    className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors ${
+                      growthMonths === m
+                        ? "bg-primary text-white"
+                        : "text-body hover:text-black dark:hover:text-white"
+                    }`}
+                  >
+                    {m}M
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {growthError ? (

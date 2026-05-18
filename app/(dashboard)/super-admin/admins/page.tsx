@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { superAdminApi } from "@/lib/api/superAdmin";
 import { Card } from "@/components/ui/Card";
@@ -28,8 +29,11 @@ import { errMsg } from "@/lib/utils/errMsg";
 
 export default function AdminsPage() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"pending" | "all">("pending");
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
+  const [tab, setTab] = useState<"pending" | "all">(
+    () => (searchParams.get("q") ? "all" : "pending")
+  );
   const [actionTarget, setActionTarget] = useState<{ admin: PendingAdmin; type: "suspend" | "unsuspend" } | null>(null);
   const [actionError, setActionError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<PendingAdmin | null>(null);

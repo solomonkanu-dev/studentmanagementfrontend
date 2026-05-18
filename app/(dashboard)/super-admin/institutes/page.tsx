@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { monitorApi } from "@/lib/api/monitor";
 import { superAdminApi } from "@/lib/api/superAdmin";
 import { Modal } from "@/components/ui/Modal";
@@ -184,7 +185,8 @@ function StatusTag({ status }: { status: InstituteStatus }) {
 
 export default function InstitutesPage() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
   const [actionTarget, setActionTarget] = useState<
     { id: string; name: string; action: LifecycleAction } | null
