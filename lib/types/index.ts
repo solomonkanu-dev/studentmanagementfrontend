@@ -48,6 +48,8 @@ export interface LoginResponse {
 
 export type SchoolType = 'primary' | 'secondary';
 
+export type InstituteStatus = 'active' | 'suspended' | 'archived';
+
 export interface InstituteChannelState {
   instituteId: string;
   name: string;
@@ -71,6 +73,8 @@ export interface Institute {
   admin: string;
   schoolType?: SchoolType;
   onboardingCompleted?: boolean;
+  status?: InstituteStatus;
+  statusReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -514,7 +518,7 @@ export interface SystemOverview {
 }
 
 export interface InstituteHealthReport {
-  institute: { id: string; name: string; email?: string };
+  institute: { id: string; name: string; email?: string; status?: InstituteStatus };
   users: { students: number; lecturers: number; admins: number };
   academics: { classes: number; subjects: number };
   fees: { totalBilled: number; totalCollected: number; outstanding: number; paidCount: number; unpaidCount: number };
@@ -554,6 +558,69 @@ export interface SalaryExpenditureReport {
   };
   byStatus: { status: string; count: number; totalAmount: number }[];
   byInstitute: { instituteName: string; totalDisbursed: number; totalPaid: number; totalPending: number; staffCount: number }[];
+}
+
+// Subscription / revenue report — see docs/api-spec-super-admin-subscriptions.md
+export interface SubscriptionReport {
+  summary: {
+    mrr: number;
+    arr: number;
+    activeSubscriptions: number;
+    paidSubscriptions: number;
+    freeSubscriptions: number;
+    expiringSoon: number;
+    expired: number;
+    unassigned: number;
+  };
+  byPlan: {
+    planId: string;
+    name: string;
+    displayName: string | null;
+    price: number;
+    instituteCount: number;
+    mrr: number;
+  }[];
+  expiring: {
+    instituteId: string;
+    instituteName: string;
+    planName: string;
+    planExpiry: string;
+    daysUntilExpiry: number;
+  }[];
+  expired: {
+    instituteId: string;
+    instituteName: string;
+    planName: string;
+    planExpiry: string;
+    daysSinceExpiry: number;
+  }[];
+}
+
+// Academic oversight report — see docs/api-spec-super-admin-academics.md
+export interface AcademicReport {
+  summary: {
+    classes: number;
+    subjects: number;
+    assignments: number;
+    assignmentsGraded: number;
+    assignmentsPending: number;
+    submissionRate: number | null;
+    attendanceRate: number | null;
+    resultsPublished: number;
+    examsPassRate: number | null;
+  };
+  attendanceTrend: { year: number; month: number; rate: number | null }[];
+  gradeDistribution: { grade: string; count: number }[];
+  byInstitute: {
+    instituteId: string;
+    instituteName: string;
+    students: number;
+    attendanceRate: number | null;
+    passRate: number | null;
+    assignmentsGraded: number;
+    assignmentsPending: number;
+  }[];
+  inactiveInstitutes: { instituteId: string; instituteName: string; reason: string }[];
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────

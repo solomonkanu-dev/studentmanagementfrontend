@@ -1,8 +1,6 @@
 import type { GrowthPoint } from "@/lib/types";
 
 export function fmt(n: number) {
-  if (n >= 1_000_000) return `NLe ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `NLe ${(n / 1_000).toFixed(1)}K`;
   return `NLe ${n.toLocaleString()}`;
 }
 

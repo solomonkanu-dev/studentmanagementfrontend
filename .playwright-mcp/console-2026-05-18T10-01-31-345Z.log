@@ -1,0 +1,2 @@
+[      -1ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://admissions.usl.edu.sl/api/bank/documentation:0
+[     165ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://admissions.usl.edu.sl/favicon.ico:0

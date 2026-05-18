@@ -6,6 +6,8 @@ import type {
   GrowthTrends,
   FeeRevenueReport,
   SalaryExpenditureReport,
+  SubscriptionReport,
+  AcademicReport,
   OnlineUserReport,
   OnlineReportListResponse,
 } from "../types";
@@ -67,6 +69,16 @@ export const monitorApi = {
 
   getOnlineReport: async (id: string): Promise<OnlineUserReport> => {
     const { data } = await apiClient.get(`${BASE}/online-reports/${id}`);
+    return data.data ?? data;
+  },
+
+  getSubscriptions: async (expiringDays = 30): Promise<SubscriptionReport> => {
+    const { data } = await apiClient.get(`${BASE}/subscriptions`, { params: { expiringDays } });
+    return data.data ?? data;
+  },
+
+  getAcademics: async (months = 6): Promise<AcademicReport> => {
+    const { data } = await apiClient.get(`${BASE}/academics`, { params: { months } });
     return data.data ?? data;
   },
 };

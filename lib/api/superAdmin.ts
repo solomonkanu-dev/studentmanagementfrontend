@@ -30,4 +30,24 @@ export const superAdminApi = {
     const { data } = await apiClient.delete(`/super-admin/pending-admins/${adminId}`);
     return data;
   },
+  suspendInstitute: async (instituteId: string, reason?: string) => {
+    const { data } = await apiClient.patch(
+      `/super-admin/institutes/${instituteId}/suspend`,
+      { reason }
+    );
+    return data;
+  },
+  archiveInstitute: async (instituteId: string, reason?: string) => {
+    const { data } = await apiClient.patch(
+      `/super-admin/institutes/${instituteId}/archive`,
+      { reason }
+    );
+    return data;
+  },
+  restoreInstitute: async (instituteId: string) => {
+    const { data } = await apiClient.patch(
+      `/super-admin/institutes/${instituteId}/restore`
+    );
+    return data;
+  },
 };

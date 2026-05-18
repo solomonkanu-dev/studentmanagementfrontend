@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { monitorApi } from "@/lib/api/monitor";
 import { auditLogApi } from "@/lib/api/auditLog";
 import { planApi } from "@/lib/api/plan";
 import { adminParentApi } from "@/lib/api/parent";
+import { systemConfigApi } from "@/lib/api/systemConfig";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -29,9 +30,16 @@ import {
   BookOpen,
   Zap,
   Users2,
+  AlertTriangle,
+  RefreshCw,
+  LayoutDashboard,
 } from "lucide-react";
 import type { PendingAdmin, InstituteHealthReport, GrowthTrends, FeeRevenueReport, SalaryExpenditureReport, SystemOverview, AuditLog, Plan, AuditLogSummary } from "@/lib/types";
 import { errMsg } from "@/lib/utils/errMsg";
+import { toast } from "sonner";
+import { LiveSystemStrip } from "@/components/super-admin/LiveSystemStrip";
+import { SubscriptionSection } from "@/components/super-admin/SubscriptionSection";
+import { AcademicSection } from "@/components/super-admin/AcademicSection";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -53,8 +61,6 @@ const C = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function currency(n: number) {
-  if (n >= 1_000_000) return `NLe ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `NLe ${(n / 1_000).toFixed(1)}K`;
   return `NLe ${n.toLocaleString()}`;
 }
 
@@ -70,6 +76,39 @@ const baseChart: ApexCharts.ApexOptions = {
   legend: { fontSize: "12px", labels: { colors: C.body } },
   dataLabels: { enabled: false },
 };
+
+// ─── Shared loading / error states ────────────────────────────────────────────
+
+function Loader({ className = "h-60" }: { className?: string }) {
+  return (
+    <div className={`flex items-center justify-center ${className}`}>
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
+    </div>
+  );
+}
+
+function ErrorBlock({
+  onRetry,
+  className = "h-60",
+}: {
+  onRetry: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col items-center justify-center gap-2 text-center ${className}`}>
+      <AlertTriangle className="h-7 w-7 text-meta-1" aria-hidden="true" />
+      <p className="text-sm text-body">Couldn&apos;t load this data.</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+      >
+        <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+        Retry
+      </button>
+    </div>
+  );
+}
 
 // ─── Platform Growth Chart ────────────────────────────────────────────────────
 
@@ -297,7 +336,17 @@ function InstituteHealthBars({ institutes }: { institutes: InstituteHealthReport
 
 // ─── Plan Distribution ────────────────────────────────────────────────────────
 
-function PlanDistributionSection({ plans, isLoading }: { plans: Plan[]; isLoading: boolean }) {
+function PlanDistributionSection({
+  plans,
+  isLoading,
+  isError,
+  onRetry,
+}: {
+  plans: Plan[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}) {
   return (
     <Card>
       <CardHeader>
@@ -312,10 +361,10 @@ function PlanDistributionSection({ plans, isLoading }: { plans: Plan[]; isLoadin
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-          </div>
+        {isError ? (
+          <ErrorBlock onRetry={onRetry} className="py-10" />
+        ) : isLoading ? (
+          <Loader className="py-10" />
         ) : plans.length === 0 ? (
           <p className="py-6 text-center text-sm text-body">No plans configured.</p>
         ) : (
@@ -368,10 +417,14 @@ interface ParentRecord {
 function ParentAdoptionCard({
   parents,
   isLoading,
+  isError,
+  onRetry,
   totalStudents,
 }: {
   parents: ParentRecord[];
   isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
   totalStudents: number;
 }) {
   const totalParents = parents.length;
@@ -381,21 +434,16 @@ function ParentAdoptionCard({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <UserCheck className="h-4 w-4 text-primary" aria-hidden="true" />
-            <h2 className="text-sm font-semibold text-black dark:text-white">Parent Portal Adoption</h2>
-          </div>
-          <Link href="/admin/parents" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-            View Parents <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
+        <div className="flex items-center gap-2">
+          <UserCheck className="h-4 w-4 text-primary" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-black dark:text-white">Parent Portal Adoption</h2>
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-          </div>
+        {isError ? (
+          <ErrorBlock onRetry={onRetry} className="py-10" />
+        ) : isLoading ? (
+          <Loader className="py-10" />
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -441,9 +489,13 @@ function formatActionLabel(action: string) {
 function PlatformActivityChart({
   summary,
   isLoading,
+  isError,
+  onRetry,
 }: {
   summary: AuditLogSummary | undefined;
   isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
 }) {
   const top8 = useMemo(() => (summary?.byAction ?? []).slice(0, 8), [summary]);
   const totalEvents = useMemo(
@@ -497,10 +549,10 @@ function PlatformActivityChart({
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center h-60">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-          </div>
+        {isError ? (
+          <ErrorBlock onRetry={onRetry} />
+        ) : isLoading ? (
+          <Loader />
         ) : top8.length === 0 ? (
           <p className="py-10 text-center text-sm text-body">No activity data available.</p>
         ) : (
@@ -539,9 +591,13 @@ function relativeTime(dateStr: string): string {
 function RecentAuditFeed({
   logs,
   isLoading,
+  isError,
+  onRetry,
 }: {
   logs: AuditLog[];
   isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
 }) {
   return (
     <Card className="lg:col-span-2">
@@ -557,10 +613,10 @@ function RecentAuditFeed({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-          </div>
+        {isError ? (
+          <ErrorBlock onRetry={onRetry} className="py-10" />
+        ) : isLoading ? (
+          <Loader className="py-10" />
         ) : logs.length === 0 ? (
           <p className="py-8 text-center text-sm text-body">No recent activity.</p>
         ) : (
@@ -594,9 +650,15 @@ function RecentAuditFeed({
 function NewInstitutesList({
   growth,
   institutes,
+  isLoading,
+  isError,
+  onRetry,
 }: {
   growth: GrowthTrends | undefined;
   institutes: InstituteHealthReport[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
 }) {
   const recent6 = useMemo(() => {
     if (!growth) return [];
@@ -619,6 +681,12 @@ function NewInstitutesList({
         </div>
       </CardHeader>
       <CardContent>
+        {isError ? (
+          <ErrorBlock onRetry={onRetry} className="py-10" />
+        ) : isLoading ? (
+          <Loader className="py-10" />
+        ) : (
+          <>
         {recent6.length > 0 && (
           <div className="mb-4">
             <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-body">Last 6 Months</p>
@@ -665,6 +733,143 @@ function NewInstitutesList({
             })}
           </ul>
         )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Attention Required ───────────────────────────────────────────────────────
+
+type AlertSeverity = "critical" | "warning" | "info";
+
+const ALERT_CHIP: Record<AlertSeverity, string> = {
+  critical: "bg-meta-1/10 text-meta-1",
+  warning: "bg-warning/10 text-warning",
+  info: "bg-primary/10 text-primary",
+};
+
+function AttentionPanel({
+  institutes,
+  pendingCount,
+}: {
+  institutes: InstituteHealthReport[];
+  pendingCount: number;
+}) {
+  // Shares the ["maintenance-status"] cache with LiveSystemStrip / the system page.
+  const { data: maintenance } = useQuery({
+    queryKey: ["maintenance-status"],
+    queryFn: systemConfigApi.getMaintenance,
+  });
+  // Shares the ["monitor-academics"] cache with the Academic Activity section.
+  const { data: academics } = useQuery({
+    queryKey: ["monitor-academics"],
+    queryFn: () => monitorApi.getAcademics(),
+  });
+
+  const lowCollection = institutes.filter(
+    (r) => r.fees.totalBilled > 0 && pct(r.fees.totalCollected, r.fees.totalBilled) < 50
+  ).length;
+  const emptyInstitutes = institutes.filter((r) => r.users.students === 0).length;
+  const noClasses = academics?.inactiveInstitutes.length ?? 0;
+  const maintenanceOn = maintenance?.globalMaintenance ?? false;
+
+  const plural = (n: number) => (n === 1 ? "" : "s");
+
+  const alerts: {
+    id: string;
+    severity: AlertSeverity;
+    icon: React.ReactNode;
+    label: string;
+    href: string;
+  }[] = [];
+
+  if (maintenanceOn) {
+    alerts.push({
+      id: "maintenance",
+      severity: "critical",
+      icon: <AlertTriangle className="h-4 w-4" aria-hidden="true" />,
+      label: "Global maintenance mode is ON — institutes are offline",
+      href: "/super-admin/system",
+    });
+  }
+  if (pendingCount > 0) {
+    alerts.push({
+      id: "pending",
+      severity: "warning",
+      icon: <Clock className="h-4 w-4" aria-hidden="true" />,
+      label: `${pendingCount} admin request${plural(pendingCount)} awaiting approval`,
+      href: "/super-admin/admins",
+    });
+  }
+  if (lowCollection > 0) {
+    alerts.push({
+      id: "low-collection",
+      severity: "warning",
+      icon: <DollarSign className="h-4 w-4" aria-hidden="true" />,
+      label: `${lowCollection} institute${plural(lowCollection)} below 50% fee collection`,
+      href: "/super-admin/institutes",
+    });
+  }
+  if (emptyInstitutes > 0) {
+    alerts.push({
+      id: "empty",
+      severity: "info",
+      icon: <Building2 className="h-4 w-4" aria-hidden="true" />,
+      label: `${emptyInstitutes} institute${plural(emptyInstitutes)} with no students enrolled`,
+      href: "/super-admin/institutes",
+    });
+  }
+  if (noClasses > 0) {
+    alerts.push({
+      id: "no-classes",
+      severity: "info",
+      icon: <BookOpen className="h-4 w-4" aria-hidden="true" />,
+      label: `${noClasses} institute${plural(noClasses)} with no classes set up`,
+      href: "/super-admin/institutes",
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-primary" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-black dark:text-white">Attention Required</h2>
+          {alerts.length > 0 && (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-meta-1 px-1.5 text-[10px] font-bold text-white">
+              {alerts.length}
+            </span>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        {alerts.length === 0 ? (
+          <div className="flex items-center gap-2 px-5 py-6">
+            <CheckCircle2 className="h-5 w-5 text-meta-3" aria-hidden="true" />
+            <p className="text-sm text-body">All clear — nothing needs attention right now.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-stroke dark:divide-strokedark">
+            {alerts.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={a.href}
+                  className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-whiter dark:hover:bg-meta-4"
+                >
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ALERT_CHIP[a.severity]}`}>
+                    {a.icon}
+                  </span>
+                  <span className="min-w-0 flex-1 text-sm font-medium text-black dark:text-white">
+                    {a.label}
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-body" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </CardContent>
     </Card>
   );
@@ -675,27 +880,40 @@ function NewInstitutesList({
 export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
 
-  const { data: stats } = useQuery({ queryKey: ["super-stats"], queryFn: superAdminApi.getStats });
-  const { data: overview } = useQuery<SystemOverview>({ queryKey: ["monitor-overview"], queryFn: monitorApi.getOverview });
-  const { data: growth } = useQuery<GrowthTrends>({ queryKey: ["monitor-growth"], queryFn: () => monitorApi.getGrowth(6) });
-  const { data: feeRevenue } = useQuery<FeeRevenueReport>({ queryKey: ["monitor-fee-revenue"], queryFn: monitorApi.getFeeRevenue });
-  const { data: salary, isLoading: salaryLoading } = useQuery<SalaryExpenditureReport>({ queryKey: ["monitor-salary"], queryFn: monitorApi.getSalaryExpenditure });
-  const { data: institutes = [] } = useQuery<InstituteHealthReport[]>({ queryKey: ["monitor-institutes"], queryFn: monitorApi.getInstitutes });
-  const { data: pendingList = [] } = useQuery({ queryKey: ["pending-admins"], queryFn: superAdminApi.getPendingAdmins });
+  const {
+    data: stats, isError: statsError, refetch: refetchStats, dataUpdatedAt: statsUpdatedAt,
+  } = useQuery({ queryKey: ["super-stats"], queryFn: superAdminApi.getStats });
+  const {
+    data: overview, isError: overviewError, refetch: refetchOverview, dataUpdatedAt: overviewUpdatedAt,
+  } = useQuery<SystemOverview>({ queryKey: ["monitor-overview"], queryFn: monitorApi.getOverview });
+  const {
+    data: growth, isError: growthError, refetch: refetchGrowth,
+  } = useQuery<GrowthTrends>({ queryKey: ["monitor-growth"], queryFn: () => monitorApi.getGrowth(6) });
+  const {
+    data: feeRevenue, isError: feeRevenueError, refetch: refetchFeeRevenue,
+  } = useQuery<FeeRevenueReport>({ queryKey: ["monitor-fee-revenue"], queryFn: monitorApi.getFeeRevenue });
+  const {
+    data: salary, isLoading: salaryLoading, isError: salaryError, refetch: refetchSalary,
+  } = useQuery<SalaryExpenditureReport>({ queryKey: ["monitor-salary"], queryFn: monitorApi.getSalaryExpenditure });
+  const {
+    data: institutes = [], isLoading: institutesLoading, isError: institutesError, refetch: refetchInstitutes,
+  } = useQuery<InstituteHealthReport[]>({ queryKey: ["monitor-institutes"], queryFn: monitorApi.getInstitutes });
+  const {
+    data: pendingList = [], isError: pendingError, refetch: refetchPending,
+  } = useQuery({ queryKey: ["pending-admins"], queryFn: superAdminApi.getPendingAdmins });
 
-  const { data: auditFeed, isLoading: auditFeedLoading } = useQuery({
-    queryKey: ["audit-feed"],
-    queryFn: () => auditLogApi.getAll({ limit: 8, page: 1 }),
-  });
-  const { data: auditSummary, isLoading: auditSummaryLoading } = useQuery({
-    queryKey: ["audit-summary"],
-    queryFn: auditLogApi.getSummary,
-  });
-  const { data: plans = [], isLoading: plansLoading } = useQuery<Plan[]>({
-    queryKey: ["plans-all"],
-    queryFn: planApi.getAll,
-  });
-  const { data: parentsRaw = [], isLoading: parentsLoading } = useQuery<ParentRecord[]>({
+  const {
+    data: auditFeed, isLoading: auditFeedLoading, isError: auditFeedError, refetch: refetchAuditFeed,
+  } = useQuery({ queryKey: ["audit-feed"], queryFn: () => auditLogApi.getAll({ limit: 8, page: 1 }) });
+  const {
+    data: auditSummary, isLoading: auditSummaryLoading, isError: auditSummaryError, refetch: refetchAuditSummary,
+  } = useQuery({ queryKey: ["audit-summary"], queryFn: auditLogApi.getSummary });
+  const {
+    data: plans = [], isLoading: plansLoading, isError: plansError, refetch: refetchPlans,
+  } = useQuery<Plan[]>({ queryKey: ["plans-all"], queryFn: planApi.getAll });
+  const {
+    data: parentsRaw = [], isLoading: parentsLoading, isError: parentsError, refetch: refetchParents,
+  } = useQuery<ParentRecord[]>({
     queryKey: ["admin-parents"],
     queryFn: adminParentApi.getAll as () => Promise<ParentRecord[]>,
   });
@@ -708,7 +926,9 @@ export default function SuperAdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["pending-admins"] });
       queryClient.invalidateQueries({ queryKey: ["super-stats"] });
       queryClient.invalidateQueries({ queryKey: ["monitor-overview"] });
+      toast.success("Admin approved.");
     },
+    onError: (e) => toast.error(errMsg(e, "Failed to approve admin.")),
   });
 
   // Platform totals
@@ -716,21 +936,77 @@ export default function SuperAdminDashboard() {
     ? pct(feeRevenue.summary.totalCollected, feeRevenue.summary.totalBilled)
     : null;
 
+  // Header: refresh control + freshness indicator
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const lastUpdated = Math.max(statsUpdatedAt, overviewUpdatedAt);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // KPI deltas — genuine new-signup counts for the current calendar month,
+  // read from the growth series (replaces the previously hardcoded arrows).
+  const now = new Date();
+  const newThisMonth = (
+    pts?: { year: number; month: number; count: number }[]
+  ): number | null => {
+    if (!pts) return null;
+    return pts.find((p) => p.year === now.getFullYear() && p.month === now.getMonth() + 1)?.count ?? 0;
+  };
+  const newInstitutes = newThisMonth(growth?.institutes);
+  const newLecturers = newThisMonth(growth?.lecturers);
+  const newStudents = newThisMonth(growth?.students);
+  const monthRate = (n: number | null) => (n && n > 0 ? `+${n} this month` : "");
+
   return (
     <div className="space-y-6">
 
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <LayoutDashboard className="h-5 w-5 text-primary" aria-hidden="true" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-black dark:text-white">Platform Overview</h1>
+            <p className="text-sm text-body">System-wide metrics across all institutes</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {lastUpdated > 0 && (
+            <span className="text-xs text-body">
+              Updated {relativeTime(new Date(lastUpdated).toISOString())}
+            </span>
+          )}
+          <Button variant="ghost" size="sm" onClick={handleRefresh} isLoading={isRefreshing}>
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Live Activity + System Health ──────────────────────────────────── */}
+      <LiveSystemStrip />
+
+      {/* ── Attention Required ─────────────────────────────────────────────── */}
+      <AttentionPanel institutes={institutes} pendingCount={pendingAdmins.length} />
+
       {/* ── KPI Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <CardDataStats title="Institutes" total={String(stats?.institutes?.total ?? "—")} rate="" levelUp>
+        <CardDataStats title="Institutes" total={String(stats?.institutes?.total ?? "—")} rate={monthRate(newInstitutes)} levelUp={!!newInstitutes && newInstitutes > 0}>
           <Building2 className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
         <CardDataStats title="Admins" total={String(stats?.admins?.total ?? "—")} rate={stats?.admins?.pending ? `${stats.admins.pending} pending` : ""} levelUp={false}>
           <ShieldCheck className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
-        <CardDataStats title="Teachers" total={String(stats?.lecturers?.total ?? "—")} rate="" levelUp>
+        <CardDataStats title="Teachers" total={String(stats?.lecturers?.total ?? "—")} rate={monthRate(newLecturers)} levelUp={!!newLecturers && newLecturers > 0}>
           <Users className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
-        <CardDataStats title="Students" total={String(stats?.students?.total ?? "—")} rate="" levelUp>
+        <CardDataStats title="Students" total={String(stats?.students?.total ?? "—")} rate={monthRate(newStudents)} levelUp={!!newStudents && newStudents > 0}>
           <GraduationCap className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
       </div>
@@ -784,6 +1060,12 @@ export default function SuperAdminDashboard() {
         ))}
       </div>
 
+      {/* ── Subscription Revenue ───────────────────────────────────────────── */}
+      <SubscriptionSection />
+
+      {/* ── Academic Activity ──────────────────────────────────────────────── */}
+      <AcademicSection />
+
       {/* ── Growth chart + User status donut ───────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -791,12 +1073,12 @@ export default function SuperAdminDashboard() {
             <h2 className="text-sm font-semibold text-black dark:text-white">Platform Growth (last 6 months)</h2>
           </CardHeader>
           <CardContent>
-            {growth ? (
+            {growthError ? (
+              <ErrorBlock onRetry={() => refetchGrowth()} />
+            ) : growth ? (
               <GrowthChart data={growth} />
             ) : (
-              <div className="flex items-center justify-center h-60">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-              </div>
+              <Loader />
             )}
           </CardContent>
         </Card>
@@ -806,12 +1088,12 @@ export default function SuperAdminDashboard() {
             <h2 className="text-sm font-semibold text-black dark:text-white">User Status Breakdown</h2>
           </CardHeader>
           <CardContent>
-            {overview ? (
+            {overviewError ? (
+              <ErrorBlock onRetry={() => refetchOverview()} />
+            ) : overview ? (
               <UserStatusDonut overview={overview} />
             ) : (
-              <div className="flex items-center justify-center h-60">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-              </div>
+              <Loader />
             )}
           </CardContent>
         </Card>
@@ -824,12 +1106,14 @@ export default function SuperAdminDashboard() {
             <h2 className="text-sm font-semibold text-black dark:text-white">Fee Revenue by Institute (Top 6)</h2>
           </CardHeader>
           <CardContent>
-            {feeRevenue && feeRevenue.topInstitutes.length > 0 ? (
+            {feeRevenueError ? (
+              <ErrorBlock onRetry={() => refetchFeeRevenue()} />
+            ) : !feeRevenue ? (
+              <Loader />
+            ) : feeRevenue.topInstitutes.length > 0 ? (
               <FeeRevenueChart data={feeRevenue} />
             ) : (
-              <div className="flex items-center justify-center h-60">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-              </div>
+              <p className="flex h-60 items-center justify-center text-sm text-body">No fee data yet.</p>
             )}
           </CardContent>
         </Card>
@@ -839,7 +1123,11 @@ export default function SuperAdminDashboard() {
             <h2 className="text-sm font-semibold text-black dark:text-white">Fee Payment Status</h2>
           </CardHeader>
           <CardContent>
-            {feeRevenue && feeRevenue.byStatus.length > 0 ? (
+            {feeRevenueError ? (
+              <ErrorBlock onRetry={() => refetchFeeRevenue()} />
+            ) : !feeRevenue ? (
+              <Loader />
+            ) : feeRevenue.byStatus.length > 0 ? (
               <>
                 <FeeStatusDonut data={feeRevenue} />
                 <div className="mt-2 grid grid-cols-3 gap-2 text-center">
@@ -858,9 +1146,7 @@ export default function SuperAdminDashboard() {
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-60">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-              </div>
+              <p className="flex h-60 items-center justify-center text-sm text-body">No fee data yet.</p>
             )}
           </CardContent>
         </Card>
@@ -873,10 +1159,10 @@ export default function SuperAdminDashboard() {
             <h2 className="text-sm font-semibold text-black dark:text-white">Salary: Paid vs Pending by Institute</h2>
           </CardHeader>
           <CardContent>
-            {salaryLoading ? (
-              <div className="flex items-center justify-center h-60">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-              </div>
+            {salaryError ? (
+              <ErrorBlock onRetry={() => refetchSalary()} />
+            ) : salaryLoading ? (
+              <Loader />
             ) : salary && Array.isArray(salary.byInstitute) && salary.byInstitute.length > 0 ? (
               <SalaryChart data={salary} />
             ) : (
@@ -896,7 +1182,9 @@ export default function SuperAdminDashboard() {
             <h2 className="text-sm font-semibold text-black dark:text-white">Admin Approval Rate</h2>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            {stats ? (
+            {statsError ? (
+              <ErrorBlock onRetry={() => refetchStats()} className="h-52" />
+            ) : stats ? (
               <>
                 <AdminApprovalRadial
                   approved={stats.admins.approved}
@@ -918,9 +1206,7 @@ export default function SuperAdminDashboard() {
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-52">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-              </div>
+              <Loader className="h-52" />
             )}
           </CardContent>
         </Card>
@@ -938,12 +1224,14 @@ export default function SuperAdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {institutes.length > 0 ? (
+            {institutesError ? (
+              <ErrorBlock onRetry={() => refetchInstitutes()} className="py-10" />
+            ) : institutesLoading ? (
+              <Loader className="py-10" />
+            ) : institutes.length > 0 ? (
               <InstituteHealthBars institutes={institutes} />
             ) : (
-              <div className="flex items-center justify-center py-10">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-primary" />
-              </div>
+              <p className="py-10 text-center text-sm text-body">No institutes found.</p>
             )}
           </CardContent>
         </Card>
@@ -965,7 +1253,9 @@ export default function SuperAdminDashboard() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {pendingAdmins.length === 0 ? (
+            {pendingError ? (
+              <ErrorBlock onRetry={() => refetchPending()} className="py-10" />
+            ) : pendingAdmins.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center">
                 <ShieldCheck className="h-8 w-8 text-meta-3" aria-hidden="true" />
                 <p className="text-sm text-body">All admin requests are approved.</p>
@@ -1011,11 +1301,15 @@ export default function SuperAdminDashboard() {
         <ParentAdoptionCard
           parents={parentsRaw}
           isLoading={parentsLoading}
+          isError={parentsError}
+          onRetry={() => refetchParents()}
           totalStudents={overview?.students.total ?? 0}
         />
         <PlatformActivityChart
           summary={auditSummary}
           isLoading={auditSummaryLoading}
+          isError={auditSummaryError}
+          onRetry={() => refetchAuditSummary()}
         />
       </div>
 
@@ -1024,15 +1318,25 @@ export default function SuperAdminDashboard() {
         <RecentAuditFeed
           logs={auditFeed?.data ?? []}
           isLoading={auditFeedLoading}
+          isError={auditFeedError}
+          onRetry={() => refetchAuditFeed()}
         />
         <NewInstitutesList
           growth={growth}
           institutes={institutes}
+          isLoading={institutesLoading}
+          isError={growthError || institutesError}
+          onRetry={() => { refetchGrowth(); refetchInstitutes(); }}
         />
       </div>
 
       {/* ── Row C: Plan Distribution ───────────────────────────────────────── */}
-      <PlanDistributionSection plans={plans} isLoading={plansLoading} />
+      <PlanDistributionSection
+        plans={plans}
+        isLoading={plansLoading}
+        isError={plansError}
+        onRetry={() => refetchPlans()}
+      />
 
     </div>
   );

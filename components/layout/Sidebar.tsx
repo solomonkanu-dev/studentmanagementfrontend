@@ -35,6 +35,7 @@ import {
   Layers,
   Wrench,
   ScrollText,
+  ShieldAlert,
   FolderOpen,
   CalendarDays,
   Sparkles,
@@ -231,6 +232,7 @@ const superAdminNav: NavItem[] = [
   { label: "Plans", href: "/super-admin/plans", icon: Layers },
   { label: "Announcements", href: "/super-admin/announcements", icon: Megaphone },
   { label: "System Config", href: "/super-admin/system", icon: Wrench },
+  { label: "Security", href: "/super-admin/security", icon: ShieldAlert },
   { label: "Audit Logs", href: "/super-admin/audit-logs", icon: Activity },
 ];
 

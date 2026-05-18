@@ -1,0 +1,10 @@
+[    1718ms] Unexpected token '<'
+[  107345ms] [INFO] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner. @ https://collect.tpemis.app/:0
+[  118879ms] [INFO] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner. @ https://collect.tpemis.app/admin:0
+[  133689ms] [INFO] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner. @ https://collect.tpemis.app/admin/campuses:0
+[  267305ms] [INFO] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner. @ https://collect.tpemis.app/admin/classrooms:0
+[  274868ms] [INFO] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner. @ https://collect.tpemis.app/admin/buildings:0
+[  286438ms] [INFO] Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner. @ https://collect.tpemis.app/admin/users:0
+[  338015ms] [INFO] [pwa] appinstalled @ https://collect.tpemis.app/_next/static/chunks/app/layout-7f71337e1653f4c6.js?dpl=dpl_5UpmEykfwz4aYbqSfExzdrETYVw4:0
+[  409198ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://collect.tpemis.app/capture:0
+[  425379ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://collect.tpemis.app/capture:0
