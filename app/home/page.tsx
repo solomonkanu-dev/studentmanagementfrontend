@@ -640,7 +640,7 @@ function Navbar() {
 
         {/* Desktop links */}
         <div className="hidden items-center gap-8 md:flex">
-          {["Features", "AI Assistant", "How It Works", "Roles", "Testimonials"].map((label) => (
+          {["Features", "AI Assistant", "How It Works", "Roles", "Pricing", "Testimonials"].map((label) => (
             <a
               key={label}
               href={`#${label.toLowerCase().replace(/ /g, "-")}`}
@@ -683,7 +683,7 @@ function Navbar() {
       {/* Mobile drawer */}
       {open && (
         <div className="md:hidden bg-white border-t border-stroke px-6 py-4 shadow-lg space-y-4">
-          {["Features", "AI Assistant", "How It Works", "Roles", "Testimonials"].map((label) => (
+          {["Features", "AI Assistant", "How It Works", "Roles", "Pricing", "Testimonials"].map((label) => (
             <a
               key={label}
               href={`#${label.toLowerCase().replace(/ /g, "-")}`}
@@ -704,6 +704,99 @@ function Navbar() {
         </div>
       )}
     </nav>
+  );
+}
+
+// ─── Benefits ─────────────────────────────────────────────────────────────────
+
+const BENEFITS = [
+  {
+    icon: CalendarCheck,
+    title: "Save days every term",
+    desc: "Report cards, receipts and ID cards generate themselves. What used to take a week now takes minutes.",
+  },
+  {
+    icon: CreditCard,
+    title: "Collect fees faster",
+    desc: "Online payments, instant receipts and live balance tracking — chase fewer defaulters and collect more.",
+  },
+  {
+    icon: Heart,
+    title: "Keep parents informed",
+    desc: "A parent portal with results, attendance and fees for every child — fewer phone calls, happier families.",
+  },
+  {
+    icon: Bot,
+    title: "Decide with real data",
+    desc: "Live dashboards plus an AI assistant that answers questions about your school in plain English.",
+  },
+  {
+    icon: Shield,
+    title: "One secure source of truth",
+    desc: "No more scattered spreadsheets — students, staff, money and academics in one audited system.",
+  },
+  {
+    icon: Globe,
+    title: "Built for Sierra Leone",
+    desc: "Priced in Leones, pay by mobile money, bank or cash, and tuned to our school terms and calendar.",
+  },
+];
+
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+
+const PRICE_PER_STUDENT = 100;
+
+const FREE_FEATURES = [
+  "Up to 40 students",
+  "Up to 5 teachers and 3 classes",
+  "Attendance, results and report cards",
+  "Fee tracking and receipts",
+  "Timetable and academic calendar",
+];
+
+const STANDARD_FEATURES = [
+  "Unlimited classes and teachers",
+  "All 20 modules — every feature unlocked",
+  "Built-in AI assistant for every role",
+  "Parent portal and real-time messaging",
+  "ID cards and official document generation",
+  "Audit logs, analytics and priority support",
+];
+
+function PricingCalculator() {
+  const [count, setCount] = useState(250);
+  const total = count * PRICE_PER_STUDENT;
+
+  return (
+    <div className="mx-auto mt-12 max-w-2xl rounded-3xl border border-stroke bg-gray-50 p-8">
+      <p className="text-center text-xs font-semibold uppercase tracking-wide text-primary">
+        Estimate your termly cost
+      </p>
+      <div className="mt-3 flex items-end justify-center gap-2">
+        <span className="text-4xl font-extrabold text-black sm:text-5xl">
+          NLe {total.toLocaleString()}
+        </span>
+        <span className="mb-1.5 text-sm text-body">/ term</span>
+      </div>
+      <p className="mt-1 text-center text-sm text-body">
+        {count.toLocaleString()} students × NLe {PRICE_PER_STUDENT}
+      </p>
+      <input
+        type="range"
+        min={10}
+        max={3000}
+        step={10}
+        value={count}
+        onChange={(e) => setCount(Number(e.target.value))}
+        aria-label="Number of students"
+        className="mt-6 w-full cursor-pointer"
+        style={{ accentColor: "var(--color-primary)" }}
+      />
+      <div className="mt-1 flex justify-between text-xs text-body">
+        <span>10 students</span>
+        <span>3,000 students</span>
+      </div>
+    </div>
   );
 }
 
@@ -786,10 +879,10 @@ export default function LandingPage() {
               className="animate-fade-up mt-6 max-w-lg text-lg leading-relaxed text-white/65"
               style={{ animationDelay: "0.25s" }}
             >
-              EduSalone is the smart way to run your school — enrolment, exams,
-              fees, attendance, timetables, assignments, real-time chat, photo
-              galleries and a built-in AI assistant. One platform. Every role.
-              Sierra Leone.
+              EduSalone runs your whole school — enrolment, exams, fees,
+              attendance, timetables, results, real-time chat and a built-in AI
+              assistant. Start free, then pay just NLe 100 per student each term.
+              One platform. Every role. Sierra Leone.
             </p>
 
             <div
@@ -902,7 +995,7 @@ export default function LandingPage() {
           </Reveal>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ icon: Icon, title, desc, color, bg }, i) => (
+            {FEATURES.map(({ icon: Icon, title, desc, color }, i) => (
               <Reveal key={title} delay={Math.min(i * 0.08, 0.5)}>
                 <div className="group flex flex-col gap-4 rounded-2xl border border-stroke bg-white p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${color} shadow-lg`}>
@@ -912,6 +1005,39 @@ export default function LandingPage() {
                     <h3 className="text-base font-bold text-black">{title}</h3>
                     <p className="mt-1.5 text-sm leading-relaxed text-body">{desc}</p>
                   </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Benefits ──────────────────────────────────────────────────────── */}
+      <section className="py-24 bg-white">
+        <div className="mx-auto max-w-7xl px-6">
+          <Reveal className="text-center mb-16">
+            <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary mb-4">
+              What You Gain
+            </span>
+            <h2 className="text-3xl font-extrabold text-black sm:text-4xl">
+              Less admin. More teaching.
+            </h2>
+            <p className="mt-4 max-w-xl mx-auto text-body">
+              EduSalone isn&apos;t just software — it&apos;s time handed back to your
+              staff, fees collected on time, and parents who finally know what&apos;s
+              going on.
+            </p>
+          </Reveal>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {BENEFITS.map(({ icon: Icon, title, desc }, i) => (
+              <Reveal key={title} delay={Math.min(i * 0.08, 0.4)}>
+                <div className="flex h-full flex-col gap-3 rounded-2xl border border-stroke bg-gray-50 p-6">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-base font-bold text-black">{title}</h3>
+                  <p className="text-sm leading-relaxed text-body">{desc}</p>
                 </div>
               </Reveal>
             ))}
@@ -1063,8 +1189,96 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing ───────────────────────────────────────────────────────── */}
+      <section id="pricing" className="py-24 bg-white">
+        <div className="mx-auto max-w-7xl px-6">
+          <Reveal className="text-center mb-16">
+            <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary mb-4">
+              Simple Pricing
+            </span>
+            <h2 className="text-3xl font-extrabold text-black sm:text-4xl">
+              Pay only for the students you teach
+            </h2>
+            <p className="mt-4 max-w-xl mx-auto text-body">
+              No setup fees. No contracts. Start free, then move to one fair
+              per-student rate when you&apos;re ready — billed each academic term.
+            </p>
+          </Reveal>
+
+          <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+            {/* Free plan */}
+            <Reveal>
+              <div className="flex h-full flex-col rounded-3xl border border-stroke bg-white p-8">
+                <h3 className="text-lg font-bold text-black">Free</h3>
+                <p className="mt-1 text-sm text-body">For small schools getting started.</p>
+                <div className="mt-5 flex items-end gap-1.5">
+                  <span className="text-4xl font-extrabold text-black">NLe 0</span>
+                  <span className="mb-1 text-sm text-body">/ forever</span>
+                </div>
+                <ul className="mt-6 flex-1 space-y-3">
+                  {FREE_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-gray-700">
+                      <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/admin-request"
+                  className="mt-8 rounded-xl border border-primary py-3 text-center text-sm font-bold text-primary transition-colors hover:bg-primary/5"
+                >
+                  Start Free
+                </Link>
+              </div>
+            </Reveal>
+
+            {/* Standard plan — highlighted */}
+            <Reveal delay={0.1}>
+              <div className="relative flex h-full flex-col rounded-3xl border-2 border-primary bg-primary p-8 shadow-2xl shadow-primary/30">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-1 text-xs font-bold text-primary shadow-md">
+                  Most Popular
+                </span>
+                <h3 className="text-lg font-bold text-white">Standard</h3>
+                <p className="mt-1 text-sm text-white/70">Everything your school needs.</p>
+                <div className="mt-5 flex items-end gap-1.5">
+                  <span className="text-4xl font-extrabold text-white">NLe {PRICE_PER_STUDENT}</span>
+                  <span className="mb-1 text-sm text-white/70">/ student / term</span>
+                </div>
+                <ul className="mt-6 flex-1 space-y-3">
+                  {STANDARD_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-white/90">
+                      <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/admin-request"
+                  className="mt-8 rounded-xl bg-white py-3 text-center text-sm font-bold text-primary transition-transform hover:scale-105"
+                >
+                  Get Started
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+
+          <Reveal>
+            <PricingCalculator />
+          </Reveal>
+
+          <Reveal className="mt-10 text-center">
+            <p className="text-sm text-body">
+              Pay your way —{" "}
+              <span className="font-semibold text-black">
+                Card · Mobile Money · Bank Transfer · Cash
+              </span>
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── Testimonials ──────────────────────────────────────────────────── */}
-      <section id="testimonials" className="py-24 bg-white">
+      <section id="testimonials" className="py-24 bg-gray-50">
         <div className="mx-auto max-w-7xl px-6">
           <Reveal className="text-center mb-16">
             <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary mb-4">
@@ -1124,7 +1338,9 @@ export default function LandingPage() {
                 Ready to modernise your school?
               </h2>
               <p className="mt-4 text-white/70 max-w-lg mx-auto">
-                Join hundreds of institutions already using EduSalone. Request admin access today — setup takes less than 10 minutes.
+                Join hundreds of institutions already using EduSalone. Start free
+                today — no card needed — and upgrade for just NLe 100 per student
+                when you&apos;re ready.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <Link
@@ -1164,6 +1380,7 @@ export default function LandingPage() {
               © {new Date().getFullYear()} EduSalone. Built for schools that want to do more.
             </p>
             <div className="flex gap-6">
+              <a href="#pricing" className="text-xs text-body hover:text-primary">Pricing</a>
               <Link href="/login" className="text-xs text-body hover:text-primary">Sign In</Link>
               <Link href="/admin-request" className="text-xs text-body hover:text-primary">Get Started</Link>
             </div>

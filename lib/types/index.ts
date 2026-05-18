@@ -730,12 +730,69 @@ export interface InstitutePlan {
   institute: string;
   assignedAt: string;
   planExpiry?: string | null;
-  subscription?: { assignedAt: string; assignedBy?: string };
+  expired?: boolean;
+  subscription?: {
+    assignedAt: string;
+    assignedBy?: string;
+    studentsPaidFor?: number;
+    term?: string | null;
+  };
   usage?: {
     students: { current: number; max: number };
     lecturers: { current: number; max: number };
     classes: { current: number; max: number };
   };
+}
+
+export type PlanPaymentMethod = "card" | "mobile_money" | "bank_transfer" | "cash";
+
+// A subscription payment + receipt — see docs/api-spec for the payment flow.
+export interface PlanPayment {
+  _id: string;
+  institute: string | { _id: string; name?: string };
+  plan: string | { _id: string; name: string; displayName?: string; price?: number };
+  term?: string | { _id: string; name: string; academicYear?: string } | null;
+  studentCount: number;
+  pricePerStudent: number;
+  amount: number;
+  method: PlanPaymentMethod;
+  channel: "online" | "manual";
+  status: "pending" | "completed" | "failed";
+  reference?: string;
+  monimeSessionId?: string | null;
+  receiptNumber?: string | null;
+  recordedBy?: { _id: string; fullName: string; email?: string } | null;
+  note?: string;
+  paidAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Drives the admin checkout calculator (NLe 100 × students, per term).
+export interface BillingSummary {
+  liveStudentCount: number;
+  pricePerStudent: number;
+  planId: string;
+  planName: string;
+  currentTerm: {
+    id: string;
+    name: string;
+    academicYear?: string;
+    endDate: string;
+  } | null;
+}
+
+export interface SubscriptionReceiptData {
+  payment: PlanPayment;
+  institute: Institute | null;
+  plan: { _id?: string; name: string; displayName?: string; price?: number } | null;
+  term: {
+    _id: string;
+    name: string;
+    academicYear?: string;
+    startDate?: string;
+    endDate?: string;
+  } | null;
 }
 
 // ─── System Config ────────────────────────────────────────────────────────────

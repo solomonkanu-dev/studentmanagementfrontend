@@ -7,13 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { planApi } from "@/lib/api/plan";
 import { superAdminApi } from "@/lib/api/superAdmin";
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Table, TableHead, TableBody, Th, Td } from "@/components/ui/Table";
 import { CreditCard, Pencil, Building2, Plus } from "lucide-react";
-import type { Plan, PendingAdmin } from "@/lib/types";
+import type { Plan, PendingAdmin, PlanPayment } from "@/lib/types";
 import { errMsg } from "@/lib/utils/errMsg";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -152,67 +152,147 @@ function EditPlanModal({ plan, onClose }: { plan: Plan; onClose: () => void }) {
   );
 }
 
-// ─── Assign Plan Modal ────────────────────────────────────────────────────────
+// ─── Record Manual Payment Modal ──────────────────────────────────────────────
+// Cash / bank-transfer payments are recorded here by the super-admin; the
+// system activates the subscription and issues a receipt (online card / mobile
+// money payments go through Monime instead).
 
-function AssignPlanModal({
-  plans,
+const SELECT_CLASS =
+  "h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary";
+
+function RecordPaymentModal({
   institutes,
   onClose,
 }: {
-  plans: Plan[];
   institutes: { id: string; name: string }[];
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
   const [instituteId, setInstituteId] = useState("");
-  const [planName, setPlanName] = useState(plans[0]?.name ?? "");
+  const [studentCount, setStudentCount] = useState(1);
+  const [method, setMethod] = useState<"cash" | "bank_transfer">("cash");
+  const [reference, setReference] = useState("");
+  const [note, setNote] = useState("");
   const [serverError, setServerError] = useState("");
+  const [done, setDone] = useState<PlanPayment | null>(null);
 
   const mutation = useMutation({
-    mutationFn: () => planApi.assignToInstitute({ instituteId, planName }),
-    onSuccess: () => {
+    mutationFn: () =>
+      planApi.recordManualPayment({
+        instituteId,
+        studentCount,
+        method,
+        reference: reference || undefined,
+        note: note || undefined,
+      }),
+    onSuccess: (payment) => {
       queryClient.invalidateQueries({ queryKey: ["plans"] });
-      onClose();
+      setDone(payment);
     },
-    onError: (e: unknown) => setServerError(errMsg(e, "Failed to assign plan.")),
+    onError: (e: unknown) => setServerError(errMsg(e, "Failed to record payment.")),
   });
 
   return (
-    <Modal open onClose={onClose} title="Assign Plan to Institute">
-      <div className="space-y-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-black dark:text-white">Institute</label>
-          <select
-            value={instituteId}
-            onChange={(e) => setInstituteId(e.target.value)}
-            className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          >
-            <option value="">— Select institute —</option>
-            {institutes.map((inst) => (
-              <option key={inst.id} value={inst.id}>{inst.name}</option>
-            ))}
-          </select>
+    <Modal
+      open
+      onClose={onClose}
+      title={done ? "Payment Recorded" : "Record Cash / Bank Payment"}
+    >
+      {done ? (
+        <div className="space-y-4">
+          <p className="text-sm text-body">
+            Payment recorded and the subscription activated. Receipt{" "}
+            <span className="font-semibold text-black dark:text-white">
+              {done.receiptNumber}
+            </span>{" "}
+            is ready.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Close
+            </Button>
+            <Button
+              onClick={() => window.open(`/admin/plan/receipt?paymentId=${done._id}`, "_blank")}
+            >
+              View Receipt
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-black dark:text-white">Plan</label>
-          <select
-            value={planName}
-            onChange={(e) => setPlanName(e.target.value)}
-            className="h-9 w-full rounded border border-stroke bg-transparent px-3 text-sm text-black outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          >
-            {plans.map((p) => (
-              <option key={p._id} value={p.name}>{p.displayName ?? p.name}</option>
-            ))}
-          </select>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">Institute</label>
+            <select
+              value={instituteId}
+              onChange={(e) => setInstituteId(e.target.value)}
+              className={SELECT_CLASS}
+            >
+              <option value="">— Select institute —</option>
+              {institutes.map((inst) => (
+                <option key={inst.id} value={inst.id}>
+                  {inst.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Students paid for"
+              type="number"
+              min={1}
+              value={studentCount}
+              onChange={(e) =>
+                setStudentCount(Math.max(1, parseInt(e.target.value, 10) || 1))
+              }
+            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-black dark:text-white">Method</label>
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value as "cash" | "bank_transfer")}
+                className={SELECT_CLASS}
+              >
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+              </select>
+            </div>
+          </div>
+          <Input
+            label="Reference (optional)"
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+          />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-black dark:text-white">
+              Note (optional)
+            </label>
+            <textarea
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full rounded border border-stroke bg-transparent px-3 py-2 text-sm text-black placeholder:text-body outline-none focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+            />
+          </div>
+          {serverError && (
+            <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{serverError}</p>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setServerError("");
+                mutation.mutate();
+              }}
+              isLoading={mutation.isPending}
+              disabled={!instituteId || studentCount < 1}
+            >
+              Record Payment
+            </Button>
+          </div>
         </div>
-        {serverError && <p className="rounded-md bg-meta-1/10 px-3 py-2 text-xs text-meta-1">{serverError}</p>}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => { setServerError(""); mutation.mutate(); }} isLoading={mutation.isPending} disabled={!instituteId || !planName}>
-            Assign Plan
-          </Button>
-        </div>
-      </div>
+      )}
     </Modal>
   );
 }
@@ -221,7 +301,7 @@ function AssignPlanModal({
 
 export default function PlansPage() {
   const [editTarget, setEditTarget] = useState<Plan | null>(null);
-  const [showAssign, setShowAssign] = useState(false);
+  const [showRecord, setShowRecord] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -254,9 +334,9 @@ export default function PlansPage() {
             <Plus className="h-4 w-4" aria-hidden="true" />
             New Plan
           </Button>
-          <Button onClick={() => setShowAssign(true)} disabled={plans.length === 0}>
+          <Button onClick={() => setShowRecord(true)} disabled={institutes.length === 0}>
             <Building2 className="h-4 w-4" aria-hidden="true" />
-            Assign to Institute
+            Record Payment
           </Button>
         </div>
       </div>
@@ -320,7 +400,9 @@ export default function PlansPage() {
 
       {showCreate && <CreatePlanModal onClose={() => setShowCreate(false)} />}
       {editTarget && <EditPlanModal plan={editTarget} onClose={() => setEditTarget(null)} />}
-      {showAssign && <AssignPlanModal plans={plans} institutes={institutes} onClose={() => setShowAssign(false)} />}
+      {showRecord && (
+        <RecordPaymentModal institutes={institutes} onClose={() => setShowRecord(false)} />
+      )}
     </div>
   );
 }
