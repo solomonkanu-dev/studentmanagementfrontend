@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldAlert, LogIn, Globe, Users, KeyRound } from "lucide-react";
+import { ShieldAlert, LogIn, Globe, KeyRound, AlertTriangle } from "lucide-react";
 import { auditLogApi } from "@/lib/api/auditLog";
 import type { AuditLog } from "@/lib/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -106,6 +106,45 @@ function StatTile({
   );
 }
 
+// Login activity table — shared by the recent-logins and failed-logins cards.
+function LoginTable({ rows }: { rows: AuditLog[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-stroke bg-whiter dark:border-strokedark dark:bg-meta-4">
+            <th className="px-4 py-2.5 text-left font-semibold text-body">User</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-body">Role</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-body">IP Address</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-body">Device</th>
+            <th className="px-4 py-2.5 text-right font-semibold text-body">When</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-stroke dark:divide-strokedark">
+          {rows.map((l) => (
+            <tr key={l._id}>
+              <td className="max-w-[180px] px-4 py-2.5">
+                <p className="truncate font-medium text-black dark:text-white">
+                  {l.userFullName}
+                </p>
+                <p className="truncate text-[10px] text-body">{l.userEmail}</p>
+              </td>
+              <td className="px-4 py-2.5">
+                <RoleTag role={l.role} />
+              </td>
+              <td className="px-4 py-2.5 font-mono text-body">{l.ipAddress || "—"}</td>
+              <td className="px-4 py-2.5 text-body">{deviceLabel(l.userAgent)}</td>
+              <td className="whitespace-nowrap px-4 py-2.5 text-right text-body">
+                {fmtTime(l.createdAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SecurityMonitoringPage() {
@@ -117,9 +156,18 @@ export default function SecurityMonitoringPage() {
     queryKey: ["security-recent"],
     queryFn: () => auditLogApi.getAll({ limit: 100 }),
   });
+  const failedQuery = useQuery({
+    queryKey: ["security-failed-logins"],
+    queryFn: () => auditLogApi.getAll({ action: "LOGIN_FAILED", limit: 100 }),
+  });
 
   const logins: AuditLog[] = useMemo(() => loginsQuery.data?.data ?? [], [loginsQuery.data]);
   const totalLogins = loginsQuery.data?.total ?? 0;
+  const failedLogins: AuditLog[] = useMemo(
+    () => failedQuery.data?.data ?? [],
+    [failedQuery.data]
+  );
+  const totalFailed = failedQuery.data?.total ?? 0;
 
   const sensitive = useMemo(
     () => (recentQuery.data?.data ?? []).filter((l) => SENSITIVE_ACTIONS.has(l.action)),
@@ -139,10 +187,6 @@ export default function SecurityMonitoringPage() {
   }, [logins]);
 
   const uniqueIps = byIp.length;
-  const uniqueUsers = useMemo(
-    () => new Set(logins.map((l) => l.userEmail)).size,
-    [logins]
-  );
 
   return (
     <div className="space-y-6">
@@ -176,11 +220,11 @@ export default function SecurityMonitoringPage() {
           bg="bg-meta-3/10"
         />
         <StatTile
-          label="Users Seen"
-          value={uniqueUsers.toLocaleString()}
-          sub={`across last ${logins.length} logins`}
-          icon={<Users className="h-5 w-5 text-indigo-500" />}
-          bg="bg-indigo-500/10"
+          label="Failed Logins"
+          value={totalFailed.toLocaleString()}
+          sub="all-time, platform-wide"
+          icon={<AlertTriangle className="h-5 w-5 text-meta-1" />}
+          bg="bg-meta-1/10"
         />
         <StatTile
           label="Sensitive Actions"
@@ -205,41 +249,7 @@ export default function SecurityMonitoringPage() {
             ) : logins.length === 0 ? (
               <p className="py-10 text-center text-sm text-body">No login activity recorded.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-stroke bg-whiter dark:border-strokedark dark:bg-meta-4">
-                      <th className="px-4 py-2.5 text-left font-semibold text-body">User</th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-body">Role</th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-body">IP Address</th>
-                      <th className="px-4 py-2.5 text-left font-semibold text-body">Device</th>
-                      <th className="px-4 py-2.5 text-right font-semibold text-body">When</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stroke dark:divide-strokedark">
-                    {logins.slice(0, 20).map((l) => (
-                      <tr key={l._id}>
-                        <td className="max-w-[180px] px-4 py-2.5">
-                          <p className="truncate font-medium text-black dark:text-white">
-                            {l.userFullName}
-                          </p>
-                          <p className="truncate text-[10px] text-body">{l.userEmail}</p>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <RoleTag role={l.role} />
-                        </td>
-                        <td className="px-4 py-2.5 font-mono text-body">
-                          {l.ipAddress || "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-body">{deviceLabel(l.userAgent)}</td>
-                        <td className="whitespace-nowrap px-4 py-2.5 text-right text-body">
-                          {fmtTime(l.createdAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <LoginTable rows={logins.slice(0, 20)} />
             )}
           </CardContent>
         </Card>
@@ -287,6 +297,31 @@ export default function SecurityMonitoringPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Failed login attempts */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-meta-1" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-black dark:text-white">
+              Failed Login Attempts
+            </h2>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {failedQuery.isError ? (
+            <ErrorBlock onRetry={() => failedQuery.refetch()} className="py-10" />
+          ) : failedQuery.isLoading ? (
+            <Loader className="py-10" />
+          ) : failedLogins.length === 0 ? (
+            <p className="py-10 text-center text-sm text-body">
+              No failed login attempts recorded.
+            </p>
+          ) : (
+            <LoginTable rows={failedLogins.slice(0, 20)} />
+          )}
+        </CardContent>
+      </Card>
 
       {/* Sensitive actions */}
       <Card>
