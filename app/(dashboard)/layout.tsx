@@ -11,6 +11,7 @@ import { AdminChatWidget } from "@/components/ui/AdminChatWidget";
 import { SocketProvider } from "@/context/SocketContext";
 import { FeaturesProvider } from "@/context/FeaturesContext";
 import { DashboardErrorBoundary } from "@/components/ui/DashboardErrorBoundary";
+import PageBreadcrumb from "@/components/Breadcrumbs/PageBreadcrumb";
 import useColorMode from "@/hooks/useColorMode";
 import { PageTitleProvider } from "@/context/PageTitleContext";
 
@@ -70,6 +71,7 @@ export default function DashboardLayout({
         <main className="flex-1">
           <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
             <DashboardErrorBoundary>
+              <PageBreadcrumb />
               {children}
             </DashboardErrorBoundary>
           </div>
