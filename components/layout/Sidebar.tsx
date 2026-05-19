@@ -14,6 +14,7 @@ import { useSocket } from "@/context/SocketContext";
 import type { Subject, Assignment, Submission } from "@/lib/types";
 import {
   LayoutDashboard,
+  Brain,
   Users,
   GraduationCap,
   BookOpen,
@@ -67,6 +68,7 @@ interface NavItem {
 
 const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "AI Agent", href: "/admin/ai-agent", icon: Brain },
 
   // ── People ─────────────────────────────────────────────────────────────────
   {
@@ -175,6 +177,7 @@ const adminNav: NavItem[] = [
 
 const lecturerNav: NavItem[] = [
   { label: "Dashboard", href: "/lecturer", icon: LayoutDashboard },
+  { label: "AI Agent",          href: "/lecturer/ai-agent",           icon: Brain },
   { label: "Subjects",          href: "/lecturer/subjects",           icon: BookOpen,       moduleKey: "subjects" },
   { label: "Classes",           href: "/lecturer/classes",            icon: School,         moduleKey: "classes" },
   { label: "Assignments",       href: "/lecturer/assignments",        icon: ClipboardList,  moduleKey: "assignments" },
@@ -192,6 +195,7 @@ const lecturerNav: NavItem[] = [
 
 const studentNav: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: LayoutDashboard },
+  { label: "AI Agent",                  href: "/student/ai-agent",                  icon: Brain },
   { label: "Subjects",                  href: "/student/subjects",                  icon: BookOpen,       moduleKey: "subjects" },
   { label: "Assignments",               href: "/student/assignments",               icon: ClipboardList,  moduleKey: "assignments" },
   { label: "Attendance",                href: "/student/attendance",                icon: CalendarCheck,  moduleKey: "attendance" },

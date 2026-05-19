@@ -7,6 +7,7 @@ import { attendanceApi } from "@/lib/api/attendance";
 import { StatCard } from "@/components/ui/StatCard";
 import AcademicTermBanner from "@/components/ui/AcademicTermBanner";
 import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
+import AIInsightsPanel from "@/components/ui/AIInsightsPanel";
 import { BookOpen, ClipboardList, CalendarCheck, CheckCircle } from "lucide-react";
 
 export default function StudentDashboard() {
@@ -23,6 +24,7 @@ export default function StudentDashboard() {
   return (
     <div className="space-y-6">
       <AcademicTermBanner />
+      <AIInsightsPanel role="student" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Enrolled Subjects" value={subjects.length} icon={BookOpen} />
         <StatCard label="Submissions" value={submissions.length} icon={ClipboardList} />

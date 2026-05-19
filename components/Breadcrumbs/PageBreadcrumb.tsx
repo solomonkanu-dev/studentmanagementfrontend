@@ -17,6 +17,7 @@ const NON_ROUTABLE = new Set(["settings"]);
 /** Explicit labels for segments that title-casing would mangle. */
 const SEGMENT_LABELS: Record<string, string> = {
   "academic-calendar": "Academic Calendar",
+  "ai-agent": "AI Agent",
   "ai-analytics": "AI Analytics",
   "audit-logs": "Audit Logs",
   "financial-records": "Financial Records",

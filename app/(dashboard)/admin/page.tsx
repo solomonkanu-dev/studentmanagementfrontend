@@ -42,6 +42,7 @@ import type {
   AuthUser, LinkedStudent, Subject, Class, Salary,
 } from "@/lib/types";
 import { useClassLabel } from "@/hooks/useClassLabel";
+import AIInsightsPanel from "@/components/ui/AIInsightsPanel";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -404,6 +405,9 @@ export default function AdminDashboard() {
           <Heart className="h-6 w-6 text-primary" aria-hidden="true" />
         </CardDataStats>
       </div>
+
+      {/* ── AI Insights ─────────────────────────────────────────────────────── */}
+      <AIInsightsPanel role="admin" />
 
       {/* ── School overview charts ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

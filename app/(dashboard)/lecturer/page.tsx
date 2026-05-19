@@ -12,6 +12,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import TodayAttendanceCard from "@/components/ui/TodayAttendanceCard";
 import AcademicTermBanner from "@/components/ui/AcademicTermBanner";
 import AcademicCalendarWidget from "@/components/ui/AcademicCalendarWidget";
+import AIInsightsPanel from "@/components/ui/AIInsightsPanel";
 import { BookOpen, School, ClipboardList, CalendarCheck } from "lucide-react";
 import type { Subject, AuthUser, Class, Assignment } from "@/lib/types";
 import { useClassLabel } from "@/hooks/useClassLabel";
@@ -224,6 +225,9 @@ export default function LecturerDashboard() {
     <div className="space-y-6">
       {/* ── Current Term ────────────────────────────────────────────────────── */}
       <AcademicTermBanner />
+
+      {/* ── AI Insights ─────────────────────────────────────────────────────── */}
+      <AIInsightsPanel role="lecturer" />
 
       {/* ── Stat Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
