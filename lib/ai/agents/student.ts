@@ -80,6 +80,36 @@ export const studentTools: AgentTool[] = [
     },
     run: (_input, ctx) => get("/calendar", ctx.token),
   },
+  {
+    kind: "read",
+    def: {
+      name: "get_report_card",
+      description:
+        "Get the student's full report card for the current term — every subject's marks, grade, teacher comment, and overall position. Use for questions about the term report, performance summary, or graded comments.",
+      input_schema: { type: "object" as const, properties: {}, required: [] },
+    },
+    run: (_input, ctx) => get("/student/my-report-card", ctx.token),
+  },
+  {
+    kind: "read",
+    def: {
+      name: "get_promotion_history",
+      description:
+        "Get the student's promotion history — every class they have been promoted to, with year/term. Use for questions about which class they were in before, when they were promoted, or their academic journey.",
+      input_schema: { type: "object" as const, properties: {}, required: [] },
+    },
+    run: (_input, ctx) => get("/student/my-promotion-history", ctx.token),
+  },
+  {
+    kind: "read",
+    def: {
+      name: "get_payment_history",
+      description:
+        "Get the student's full payment history — each payment's date, amount, method, and reference. Use for questions about past payments or receipts.",
+      input_schema: { type: "object" as const, properties: {}, required: [] },
+    },
+    run: (_input, ctx) => get("/student/my-payments", ctx.token),
+  },
 ];
 
 // ─── System prompt ───────────────────────────────────────────────────────────
@@ -107,7 +137,7 @@ Present information clearly, like a personal academic report:
 - Do not reveal other students' data, internal IDs, email addresses, or phone numbers.
 - Round all percentages and decimals to 1 decimal place.
 - Politely decline questions outside your scope (other students, admin tasks, general knowledge).
-- You have access to the class timetable and academic calendar in addition to grades, attendance, fees, assignments, and rankings.
+- You have access to the class timetable and academic calendar in addition to grades, attendance, fees, assignments, rankings, the term report card, promotion history, and payment history.
 
 Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
 }

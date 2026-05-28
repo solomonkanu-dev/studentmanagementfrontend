@@ -4,6 +4,7 @@ import type { InsightsAgentConfig } from "@/lib/ai/insights";
 import { adminTools } from "./admin";
 import { lecturerTools } from "./lecturer";
 import { studentTools } from "./student";
+import { parentTools } from "./parent";
 
 /** JSON contract appended to every insights system prompt. */
 const SCHEMA = `## Output format
@@ -103,6 +104,34 @@ Call your tools to gather live data, then surface the most important things this
 - Attendance: attendance below the eligibility threshold (deepLink /student/attendance)
 - Academics: pending assignments, recent grades, upcoming exams (deepLink /student/assignments)
 Round percentages to 1 decimal place.
+
+${SCHEMA}
+
+${dateLine()}`,
+};
+
+// ─── Parent insights ─────────────────────────────────────────────────────────
+
+export const parentInsightsConfig: InsightsAgentConfig = {
+  name: "parent-insights",
+  requiredRole: "parent",
+  model: MODELS.haiku,
+  tools: readTools(parentTools),
+  scrubKeepIds: false,
+  userPrompt:
+    "Generate today's briefing for this parent across all of their children.",
+  buildSystemPrompt: () =>
+    `You are a proactive insights engine for StudentMS, generating a daily briefing for a parent in Sierra Leone.
+
+Call get_my_children FIRST to learn every linked child, then call the per-child read tools to gather live data for each one. Surface the most important things this parent should know today across all of their children.
+
+## Focus areas
+- Fees: any child with an outstanding tuition balance (deepLink /parent/fees)
+- Attendance: any child whose attendance has dropped or is below the eligibility threshold (deepLink /parent/results)
+- Academics: pending assignments, recent grades worth celebrating, or concerning drops (deepLink /parent/assignments)
+- Operations: new school announcements they have not read (deepLink /parent/announcements)
+
+Keep a warm, supportive tone in the detail text. If you have more than one child, prefix the title with the child's first name (e.g. "Amina — Attendance dropped to 78%"). Round percentages to 1 decimal place. Format currency as NLe.
 
 ${SCHEMA}
 

@@ -13,6 +13,9 @@ const send = (
   body: unknown
 ) => callBackend({ path, token, method, body, timeout: 8000 });
 
+const del = (path: string, token: string) =>
+  callBackend({ path, token, method: "DELETE", timeout: 8000 });
+
 // ─── Read tools ────────────────────────────────────────────────────────────
 
 export const lecturerTools: AgentTool[] = [
@@ -351,6 +354,113 @@ export const lecturerTools: AgentTool[] = [
       confirmLabel: "Create assignment",
     }),
   },
+  {
+    kind: "write",
+    def: {
+      name: "update_assignment",
+      description:
+        "Edit an existing assignment — change the title, description, due date, or total marks. Use get_my_assignments first to find the assignmentId.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          assignmentId: { type: "string", description: "The assignment ID" },
+          currentTitle: {
+            type: "string",
+            description: "Current title (for the confirmation card)",
+          },
+          title: { type: "string", description: "New title (optional)" },
+          description: {
+            type: "string",
+            description: "New description (optional)",
+          },
+          dueDate: {
+            type: "string",
+            description: "New due date YYYY-MM-DD (optional)",
+          },
+          totalMarks: {
+            type: "number",
+            description: "New total marks (optional)",
+          },
+        },
+        required: ["assignmentId", "currentTitle"],
+      },
+    },
+    run: (input, ctx) =>
+      send(`/assignment/${input.assignmentId}`, ctx.token, "PATCH", {
+        ...(input.title ? { title: input.title } : {}),
+        ...(input.description ? { description: input.description } : {}),
+        ...(input.dueDate ? { dueDate: input.dueDate } : {}),
+        ...(typeof input.totalMarks === "number"
+          ? { totalMarks: input.totalMarks }
+          : {}),
+      }),
+    summarize: async (input) => ({
+      toolName: "update_assignment",
+      title: "Update assignment",
+      description: `Edit "${String(input.currentTitle ?? "this assignment")}".`,
+      fields: [
+        ...(input.title
+          ? [
+              {
+                label: "New title",
+                value: String(input.title),
+                editable: true,
+                key: "title",
+              },
+            ]
+          : []),
+        ...(input.description
+          ? [
+              {
+                label: "New description",
+                value: String(input.description),
+                editable: true,
+                key: "description",
+              },
+            ]
+          : []),
+        ...(input.dueDate
+          ? [{ label: "New due date", value: String(input.dueDate) }]
+          : []),
+        ...(typeof input.totalMarks === "number"
+          ? [
+              {
+                label: "New total marks",
+                value: String(input.totalMarks),
+                editable: true,
+                key: "totalMarks",
+              },
+            ]
+          : []),
+      ],
+      confirmLabel: "Save changes",
+    }),
+  },
+  {
+    kind: "write",
+    def: {
+      name: "delete_assignment",
+      description:
+        "Permanently delete an assignment and its submissions. Use get_my_assignments to find the assignmentId.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          assignmentId: { type: "string", description: "The assignment ID" },
+          title: { type: "string", description: "Title (display)" },
+        },
+        required: ["assignmentId", "title"],
+      },
+    },
+    run: (input, ctx) => del(`/assignment/${input.assignmentId}`, ctx.token),
+    summarize: async (input) => ({
+      toolName: "delete_assignment",
+      title: "Delete assignment",
+      description: `Permanently delete "${String(input.title ?? "this assignment")}" and all its submissions.`,
+      fields: [{ label: "Title", value: String(input.title ?? "") }],
+      warning: "This cannot be undone. Student submissions will also be lost.",
+      confirmLabel: "Delete assignment",
+    }),
+  },
 ];
 
 // ─── System prompt ───────────────────────────────────────────────────────────
@@ -382,8 +492,8 @@ Structure responses like professional teaching reports:
 - You have access to the class timetable and academic calendar in addition to subjects, assignments, attendance, and salary.
 
 ## Performing actions
-You can perform actions, not only answer questions. Available actions: recording class attendance (mark_class_attendance), grading a submission (grade_submission), and creating an assignment (create_assignment).
-- Before marking attendance, call list_class_students to get every student's ID. Before grading, call list_submissions_for_assignment to get the submission ID. Never invent or guess an ID.
+You can perform actions, not only answer questions. Available actions: recording class attendance (mark_class_attendance), grading a submission (grade_submission), creating an assignment (create_assignment), editing an existing assignment (update_assignment), and deleting an assignment (delete_assignment).
+- Before marking attendance, call list_class_students to get every student's ID. Before grading, call list_submissions_for_assignment to get the submission ID. Before editing or deleting an assignment, call get_my_assignments to find the assignmentId. Never invent or guess an ID.
 - Clearly state what you are about to do before calling an action tool.
 - Call at most one action tool per turn.
 - Every action is shown to the teacher for explicit confirmation before it runs — you do not need to ask "are you sure"; the confirmation card handles that.
