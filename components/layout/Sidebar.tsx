@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useFeatures } from "@/context/FeaturesContext";
+import { LogoIcon } from "@/components/ui/Logo";
 import type { ModuleKey } from "@/lib/types";
 
 interface SubItem {
@@ -503,15 +504,14 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed }: Sideb
           sidebarCollapsed ? "lg:justify-center" : "justify-between px-5",
         ].join(" ")}>
           <Link href="/" className="flex items-center gap-2">
-            {/* Icon mark — always visible */}
-            <svg width="32" height="32" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-              <rect x="0" y="0" width="80" height="80" rx="20" fill="#1D9E75"/>
-              <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#E1F5EE" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
-            </svg>
-            {/* Wordmark — hidden when collapsed on desktop */}
-            <span className={["text-base font-semibold text-white", sidebarCollapsed ? "lg:hidden" : ""].join(" ")}>
-              Edu<span style={{ color: "#5DCAA5" }}>Salone SMS</span>
+            <LogoIcon size={32} className="shrink-0" />
+            <span
+              className={[
+                "text-base font-semibold text-white tracking-wide",
+                sidebarCollapsed ? "lg:hidden" : "",
+              ].join(" ")}
+            >
+              Edu<span style={{ color: "#7DD3FC" }}>Salone</span>
             </span>
           </Link>
           <button

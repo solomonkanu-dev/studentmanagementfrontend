@@ -10,6 +10,7 @@ import { usePageTitle } from "@/context/PageTitleContext";
 import { notificationApi } from "@/lib/api/notification";
 import { uploadApi } from "@/lib/api/upload";
 import DarkModeSwitcher from "@/components/ui/Header/DarkModeSwitcher";
+import { LogoIcon } from "@/components/ui/Logo";
 import type { Notification } from "@/lib/types";
 
 function pageTitle(pathname: string): string {
@@ -255,9 +256,12 @@ export function Header({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSideb
           </div>
         )}
 
-        <h1 className="text-base font-semibold text-black dark:text-white">
-          {contextTitle ?? pageTitle(pathname)}
-        </h1>
+        <div className="flex items-center gap-2">
+          <LogoIcon size={22} className="shrink-0" />
+          <h1 className="text-base font-semibold text-black dark:text-white">
+            {contextTitle ?? pageTitle(pathname)}
+          </h1>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
