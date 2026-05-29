@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -797,6 +798,100 @@ function PricingCalculator() {
   );
 }
 
+// ─── Phone & store badge components ──────────────────────────────────────────
+
+function PhoneMockup({ variant }: { variant: "ios" | "android" }) {
+  const isIos = variant === "ios";
+  // Frame is a tall rounded rectangle. Screen is inset to leave bezel.
+  // iOS adds a notch pill at the top; Android gets a hole-punch camera.
+  return (
+    <div className="group relative">
+      {/* Soft glow behind the device */}
+      <div
+        className="absolute inset-0 -z-10 mx-auto my-auto h-[460px] w-[230px] rounded-[60px] bg-white/20 blur-2xl"
+        aria-hidden="true"
+      />
+      <div
+        className={[
+          "relative h-[480px] w-[240px] overflow-hidden bg-black p-2 shadow-2xl transition-transform duration-500 group-hover:-translate-y-2",
+          isIos ? "rounded-[44px] ring-[3px] ring-zinc-700/80" : "rounded-[32px] ring-2 ring-zinc-700/80",
+        ].join(" ")}
+      >
+        {/* Side buttons */}
+        <span className={`absolute ${isIos ? "left-[-3px]" : "right-[-3px]"} top-[110px] h-10 w-[3px] rounded-l bg-zinc-700`} />
+        <span className={`absolute ${isIos ? "left-[-3px]" : "right-[-3px]"} top-[160px] h-14 w-[3px] rounded-l bg-zinc-700`} />
+        <span className={`absolute ${isIos ? "right-[-3px]" : "left-[-3px]"} top-[140px] h-16 w-[3px] rounded-r bg-zinc-700`} />
+
+        {/* Inner screen */}
+        <div
+          className={[
+            "relative h-full w-full overflow-hidden bg-[#0b1220]",
+            isIos ? "rounded-[36px]" : "rounded-[24px]",
+          ].join(" ")}
+        >
+          {/* Notch (iOS) or hole-punch (Android) */}
+          {isIos ? (
+            <span className="absolute left-1/2 top-2 z-10 h-6 w-24 -translate-x-1/2 rounded-full bg-black" />
+          ) : (
+            <span className="absolute left-1/2 top-2 z-10 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-black" />
+          )}
+
+          {/* Screenshot */}
+          <Image
+            src="/mobile-dashboard.jpeg"
+            alt="EduSalone mobile admin dashboard"
+            width={591}
+            height={1280}
+            className="absolute inset-0 h-full w-full object-cover object-top"
+            priority={false}
+          />
+        </div>
+      </div>
+
+      {/* Label under each device */}
+      <p className="mt-4 text-center text-xs font-semibold uppercase tracking-widest text-white/70">
+        {isIos ? "iOS" : "Android"}
+      </p>
+    </div>
+  );
+}
+
+function StoreBadge({ variant }: { variant: "ios" | "android" }) {
+  const isIos = variant === "ios";
+  return (
+    <div className="group flex w-56 cursor-not-allowed select-none items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-sm transition-colors hover:bg-white/15">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20">
+        {isIos ? (
+          // Apple logo (Lucide doesn't ship an Apple mark; small inline svg)
+          <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white" aria-hidden="true">
+            <path d="M16.365 1.43c0 1.14-.41 2.16-1.23 3.04-1.06 1.14-2.42 1.8-3.62 1.7-.16-1.16.4-2.34 1.18-3.18.83-.9 2.15-1.58 3.27-1.62.07.34.4.7.4 1.06ZM20.5 17.04c-.78 1.74-1.16 2.52-2.16 4.06-1.4 2.16-3.38 4.86-5.84 4.88-2.18.02-2.74-1.4-5.7-1.38-2.96.02-3.58 1.4-5.76 1.38-2.46-.04-4.34-2.48-5.74-4.64C-1.66 16.94-1.92 9.7 2.3 6.34c1.5-1.2 3.46-1.92 5.3-1.92 1.74 0 2.86.96 4.74.96 1.82 0 2.94-.96 4.94-.96 1.86 0 3.84.94 5.18 2.56-4.56 2.5-3.82 8.96-1.96 10.06Z" />
+          </svg>
+        ) : (
+          // Lucide play-icon-ish: Google Play triangle
+          <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+            <defs>
+              <linearGradient id="gp" x1="0" y1="0" x2="0" y2="1">
+                <stop stopColor="#34d399" />
+                <stop offset="1" stopColor="#0ea5e9" />
+              </linearGradient>
+            </defs>
+            <path d="M3 2.5 14.5 12 3 21.5V2.5Z" fill="url(#gp)" />
+            <path d="M3 2.5 14.5 12 3 21.5V2.5Z" fill="white" fillOpacity=".15" />
+          </svg>
+        )}
+      </div>
+      <div className="flex-1">
+        <p className="text-[10px] font-medium uppercase tracking-widest text-white/60">
+          Coming soon to
+        </p>
+        <p className="text-sm font-bold text-white">
+          {isIos ? "App Store" : "Google Play"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
@@ -1309,6 +1404,67 @@ export default function LandingPage() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Mobile App (coming soon) ──────────────────────────────────────── */}
+      <section
+        id="mobile"
+        className="relative overflow-hidden py-24 px-6"
+        style={{ background: "linear-gradient(135deg, #0a2647 0%, #1e3a8a 55%, #3c50e0 100%)" }}
+      >
+        {/* Decorative blobs */}
+        <div className="pointer-events-none absolute left-[-80px] top-[-80px] h-72 w-72 animate-drift rounded-full bg-sky-400/20 blur-3xl" />
+        <div
+          className="pointer-events-none absolute right-[-80px] bottom-[-80px] h-80 w-80 animate-drift rounded-full bg-violet-300/20 blur-3xl"
+          style={{ animationDelay: "1.5s" }}
+        />
+
+        <div className="relative z-10 mx-auto max-w-6xl">
+          <Reveal>
+            <div className="text-center">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80 ring-1 ring-white/20 backdrop-blur-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Coming soon
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold text-white sm:text-4xl">
+                EduSalone in your pocket
+              </h2>
+              <p className="mt-3 mx-auto max-w-2xl text-white/70">
+                Native iOS and Android apps — the same EduSalone, everywhere
+                your school day takes you. Take attendance, post announcements,
+                approve fees, chat with parents, and let our AI assistant do
+                the heavy lifting from anywhere.
+              </p>
+            </div>
+          </Reveal>
+
+          {/* Phone mockups */}
+          <Reveal delay={0.15}>
+            <div className="mt-14 flex flex-col items-center justify-center gap-10 sm:flex-row sm:gap-14">
+              {/* iPhone mockup */}
+              <PhoneMockup variant="ios" />
+              {/* Android mockup */}
+              <PhoneMockup variant="android" />
+            </div>
+          </Reveal>
+
+          {/* Store badges */}
+          <Reveal delay={0.3}>
+            <div className="mt-14 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-5">
+              <StoreBadge variant="ios" />
+              <StoreBadge variant="android" />
+            </div>
+            <p className="mt-6 text-center text-xs text-white/60">
+              Want early access?{" "}
+              <Link
+                href="/admin-request"
+                className="font-medium text-white underline decoration-white/40 underline-offset-4 hover:decoration-white"
+              >
+                Join the waitlist
+              </Link>
+            </p>
+          </Reveal>
         </div>
       </section>
 
