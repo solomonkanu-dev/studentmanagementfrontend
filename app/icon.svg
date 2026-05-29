@@ -1,5 +1,22 @@
-<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
-  <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="EduSalone">
+  <defs>
+    <linearGradient id="icnBg" x1="0" y1="0" x2="240" y2="240" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#0A2647"/>
+    </linearGradient>
+    <linearGradient id="icnBoardR" x1="120" y1="78" x2="184" y2="148" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#BFE2FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="54" fill="url(#icnBg)"/>
+  <path d="M88 138 Q120 156 152 138 L152 152 Q120 170 88 152 Z" fill="#0A2647" fill-opacity="0.55"/>
+  <path d="M120 78 L56 112 L120 146 Z" fill="#BFE2FF"/>
+  <path d="M120 78 L184 112 L120 146 Z" fill="url(#icnBoardR)"/>
+  <line x1="120" y1="78" x2="120" y2="146" stroke="#2563EB" stroke-opacity="0.25" stroke-width="2"/>
+  <path d="M120 112 C152 107 178 109 178 120 L178 150" stroke="#7DD3FC" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <circle cx="178" cy="151" r="6" fill="#7DD3FC"/>
+  <path d="M174.8 155 H181.2 L179.4 171 Q178 174 176.6 171 Z" fill="#7DD3FC"/>
+  <circle cx="120" cy="112" r="8" fill="#0A2647"/>
+  <circle cx="120" cy="112" r="3.4" fill="#FFFFFF"/>
 </svg>

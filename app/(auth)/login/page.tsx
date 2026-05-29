@@ -8,6 +8,8 @@ import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { LogoIcon } from "@/components/ui/Logo";
+import { BrandedLoader } from "@/components/ui/BrandedLoader";
 import {
   GraduationCap,
   Users,
@@ -184,22 +186,21 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
+      {isSubmitting && <BrandedLoader message="Signing you in…" />}
       {/* ── Left: Login form ────────────────────────────────────────────── */}
       <div className="flex w-full flex-col items-center justify-center bg-white px-6 py-12 dark:bg-boxdark lg:w-[42%] lg:px-12">
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="mb-10">
-            <div className="flex item-center justify-center mb-4">
-              <svg width="48" height="48" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-                <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
-                <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
-              </svg>
+            <div className="flex items-center justify-center mb-4">
+              <LogoIcon size={56} />
             </div>
             <h1 className="text-2xl flex items-center justify-center font-bold text-black dark:text-white">
-              Edu<span style={{ color: "#1D9E75" }}>Salone</span>
+              Edu<span style={{ color: "#2563EB" }}>Salone</span>
             </h1>
-            <p className="mt-1 flex item-center justify-center text-sm text-body">Welcome back — sign in to continue</p>
+            <p className="mt-1 flex items-center justify-center text-sm text-body">
+              Welcome back — sign in to continue
+            </p>
           </div>
 
           {/* Form */}

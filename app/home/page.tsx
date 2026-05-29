@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { LogoIcon } from "@/components/ui/Logo";
 import {
   GraduationCap,
   BarChart3,
@@ -628,13 +629,9 @@ function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
-          <svg width="36" height="36" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-            <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
-            <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
-          </svg>
+          <LogoIcon size={36} className="shrink-0" />
           <span className={`text-lg font-bold transition-colors ${scrolled ? "text-black" : "text-white"}`}>
-            Edu<span style={{ color: "#5DCAA5" }}>Salone</span>
+            Edu<span style={{ color: "#7DD3FC" }}>Salone</span>
           </span>
         </div>
 
@@ -1367,13 +1364,9 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
             <div className="flex items-center gap-2.5">
-              <svg width="36" height="36" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
-                <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
-              </svg>
+              <LogoIcon size={36} className="shrink-0" />
               <span className="text-lg font-bold text-black">
-                Edu<span style={{ color: "#1D9E75" }}>Salone</span>
+                Edu<span style={{ color: "#2563EB" }}>Salone</span>
               </span>
             </div>
             <p className="text-xs text-body text-center">

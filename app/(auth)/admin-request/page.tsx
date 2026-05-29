@@ -8,6 +8,7 @@ import Link from "next/link";
 
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { LogoIcon } from "@/components/ui/Logo";
 import {
   CheckCircle2,
   Building2,
@@ -84,13 +85,9 @@ function SuccessView() {
         <div className="w-full max-w-sm text-center">
           {/* Logo */}
           <div className="mb-8 flex flex-col items-center gap-3">
-            <svg width="52" height="52" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
-              <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
-            </svg>
+            <LogoIcon size={56} />
             <h1 className="text-2xl font-bold text-black dark:text-white">
-              Edu<span style={{ color: "#1D9E75" }}>Salone</span>
+              Edu<span style={{ color: "#2563EB" }}>Salone</span>
             </h1>
           </div>
 
@@ -234,13 +231,9 @@ export default function AdminRequestPage() {
         <div className="w-full max-w-sm">
           {/* Logo — centred */}
           <div className="mb-10 flex flex-col items-center gap-2">
-            <svg width="52" height="52" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <rect x="0" y="0" width="80" height="80" rx="20" fill="#0F6E56"/>
-              <polyline points="12,40 24,40 32,24 40,56 48,32 56,46 62,40 68,40" fill="none" stroke="#5DCAA5" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="48" cy="32" r="4" fill="#9FE1CB"/>
-            </svg>
+            <LogoIcon size={56} />
             <h1 className="text-2xl font-bold text-black dark:text-white">
-              Edu<span style={{ color: "#1D9E75" }}>Salone</span>
+              Edu<span style={{ color: "#2563EB" }}>Salone</span>
             </h1>
             <p className="text-center text-sm text-body">
               School Management System
