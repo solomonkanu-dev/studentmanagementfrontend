@@ -986,3 +986,19 @@ export interface BulkParentImportResponse {
   failed: BulkStudentResult[];
   duplicates: BulkStudentResult[];
 }
+
+// ─── Rules & Regulations ──────────────────────────────────────────────────────
+
+export interface RuleSection {
+  id: string;
+  title: string;
+  content: string;
+  order?: number;
+}
+
+export interface RuleBook {
+  sections: RuleSection[];
+  isDefault: boolean;
+  updatedAt: string | null;
+  updatedBy?: { _id: string; fullName?: string; email?: string } | null;
+}

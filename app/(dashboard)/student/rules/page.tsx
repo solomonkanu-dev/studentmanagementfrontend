@@ -1,64 +1,61 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/Card";
-import { ScrollText } from "lucide-react";
-
-interface RuleSection {
-  id: string;
-  title: string;
-  content: string;
-}
-
-const STORAGE_KEY = "rules_and_regulations";
-
-const DEFAULT_SECTIONS: RuleSection[] = [
-  {
-    id: "academic",
-    title: "Academic Rules",
-    content:
-      "1. Students must attend at least 75% of classes to be eligible for examinations.\n2. Assignments must be submitted by the specified due date. Late submissions will incur a penalty.\n3. Academic dishonesty including plagiarism and cheating is strictly prohibited.\n4. Students must maintain a minimum GPA of 2.0 to remain in good academic standing.\n5. All examination rules as communicated by the examinations office must be followed.",
-  },
-  {
-    id: "conduct",
-    title: "Conduct & Discipline",
-    content:
-      "1. Students must treat all staff, lecturers, and fellow students with respect.\n2. Use of abusive language, bullying, or harassment of any kind will result in disciplinary action.\n3. Students are responsible for the upkeep of school property. Damage to property will be charged to the responsible student.\n4. Mobile phones must be on silent during class sessions unless explicitly permitted by the lecturer.\n5. Dress code must be adhered to at all times while on school premises.",
-  },
-  {
-    id: "attendance",
-    title: "Attendance Policy",
-    content:
-      "1. Attendance is compulsory for all scheduled classes, lectures, and examinations.\n2. Absences must be reported to the class teacher or administration before the class, or within 24 hours of the absence.\n3. Medical absences must be supported by a valid medical certificate.\n4. Students with attendance below 75% in any subject will not be permitted to sit the final examination for that subject.\n5. Persistent truancy will result in suspension or expulsion.",
-  },
-  {
-    id: "examination",
-    title: "Examination Rules",
-    content:
-      "1. Students must arrive at least 15 minutes before the scheduled examination time.\n2. No student will be admitted to the examination hall after 30 minutes from the start time.\n3. Electronic devices, notes, or any unauthorized materials are strictly prohibited in the examination hall.\n4. Students must present their valid student ID to enter the examination hall.\n5. Results will be released within 4 weeks of the examination date.",
-  },
-  {
-    id: "fees",
-    title: "Fee Policy",
-    content:
-      "1. All school fees must be paid in full by the specified deadline each term.\n2. Students with outstanding fees may be suspended from classes until the balance is settled.\n3. Fee receipts must be kept and presented upon request.\n4. Requests for fee deferrals must be made in writing to the administration at least two weeks before the due date.\n5. Refund requests are subject to the school's refund policy as communicated at enrollment.",
-  },
-];
+import { ScrollText, CloudOff } from "lucide-react";
+import { rulesApi } from "@/lib/api/rules";
 
 export default function StudentRulesPage() {
-  const [sections, setSections] = useState<RuleSection[]>(DEFAULT_SECTIONS);
-  const [activeId, setActiveId] = useState("academic");
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["rules"],
+    queryFn: rulesApi.get,
+    staleTime: 5 * 60_000,
+  });
+
+  const sections = data?.sections ?? [];
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setSections(JSON.parse(stored));
-    } catch {
-      /* ignore */
-    }
-  }, []);
+    if (sections.length && !activeId) setActiveId(sections[0].id);
+  }, [sections, activeId]);
 
   const active = sections.find((s) => s.id === activeId) ?? sections[0];
+
+  if (isLoading) {
+    return (
+      <div className="flex h-60 items-center justify-center text-sm text-body">
+        Loading rules…
+      </div>
+    );
+  }
+
+  if (isError && sections.length === 0) {
+    return (
+      <Card>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+            <CloudOff className="h-6 w-6 text-body" aria-hidden="true" />
+            <p className="text-sm text-body">
+              Couldn&apos;t load rules. Check your connection and try again.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (sections.length === 0) {
+    return (
+      <Card>
+        <CardContent>
+          <p className="py-6 text-center text-sm text-body">
+            No rules published yet.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -76,7 +73,7 @@ export default function StudentRulesPage() {
                   onClick={() => setActiveId(s.id)}
                   className={[
                     "w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition-colors",
-                    activeId === s.id
+                    s.id === active?.id
                       ? "bg-primary text-white"
                       : "text-body hover:bg-stroke hover:text-black dark:hover:bg-meta-4 dark:hover:text-white",
                   ].join(" ")}
@@ -92,13 +89,29 @@ export default function StudentRulesPage() {
       {/* Content */}
       <Card className="lg:col-span-3">
         <div className="border-b border-stroke px-5 py-4 dark:border-strokedark">
-          <h2 className="text-sm font-semibold text-black dark:text-white">{active?.title}</h2>
+          <h2 className="text-sm font-semibold text-black dark:text-white">
+            {active?.title}
+          </h2>
         </div>
         <CardContent>
           {active ? (
-            <div className="whitespace-pre-line text-sm leading-relaxed text-body">
-              {active.content}
-            </div>
+            <ol className="space-y-2">
+              {(active.content ?? "")
+                .split("\n")
+                .map((l) => l.trim())
+                .filter(Boolean)
+                .map((line, i) => {
+                  const text = line.replace(/^\d+\.\s*/, "");
+                  return (
+                    <li key={i} className="flex gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {i + 1}
+                      </span>
+                      <p className="pt-0.5 text-sm text-black dark:text-white">{text}</p>
+                    </li>
+                  );
+                })}
+            </ol>
           ) : (
             <p className="text-sm text-body">Select a section to read.</p>
           )}
